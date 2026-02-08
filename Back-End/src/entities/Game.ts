@@ -13,5 +13,17 @@
 // Used by: Manager, socketHandlers
 // Emits events that socketHandlers listens to
 
+import { Role } from './roles';
+import { Player } from './Player';
 import { EventEmitter } from 'events';
-export class Game extends EventEmitter { }
+export class Game extends EventEmitter {
+  public players: Player[] = [];
+  public groundRoles: Role[] = [];
+  public phase: string;
+  public code: string;
+  public votes: number[] = [];
+  public winners: Player[] = [];
+  constructor() {
+    super();
+  }
+}

@@ -14,15 +14,3 @@ export { Seer } from "./Seer";
 export { Troublemaker } from "./Troublemaker";
 export { Werewolf } from "./Werewolf";
 
-export const RoleClasses = {
-  Clone,
-  Drunk,
-  Insomniac,
-  Joker,
-  Mason,
-  Minion,
-  Robber,
-  Seer,
-  Troublemaker,
-  Werewolf,
-};

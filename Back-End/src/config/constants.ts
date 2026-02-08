@@ -25,9 +25,9 @@ export enum Phase {
 
 // TEAMS
 export enum Team {
-  WereWolf = "werewolf", 
-  Villagers = "villagers", 
-  Joker = "joker", 
+  WereWolf = "werewolf",
+  Villagers = "villagers",
+  Joker = "joker",
 }
 
 // ROLE NAMES
@@ -55,7 +55,7 @@ export const ROLE_ACTION_ORDER = [
   ROLE_NAMES.ROBBER,
   ROLE_NAMES.TROUBLEMAKER,
   ROLE_NAMES.DRUNK,
-  ROLE_NAMES.INSOMNIAC, 
+  ROLE_NAMES.INSOMNIAC,
 ];
 
 // ROLE DISTRIBUTION
@@ -67,7 +67,7 @@ export const getRoleDistribution = (playerCount: number) => {
     [ROLE_NAMES.WEREWOLF]: werewolfCount,
     [ROLE_NAMES.MINION]: 1,
     [ROLE_NAMES.SEER]: 1,
-    [ROLE_NAMES.MASON]: 2, 
+    [ROLE_NAMES.MASON]: 2,
     [ROLE_NAMES.ROBBER]: 1,
     [ROLE_NAMES.TROUBLEMAKER]: 1,
     [ROLE_NAMES.CLONE]: 1,
@@ -130,3 +130,5 @@ export const ERROR_MESSAGES = {
   INVALID_PHASE: "Action not allowed in this phase",
   UNKNOWN_ERROR: "An unexpected error occurred. Please try again or contact support if the issue persists.",
 };
+// Game configuration constants
+// Number of players , Timers , etc 

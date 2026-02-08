@@ -3,6 +3,7 @@
 // Methods: performAction() → returns a function that executes the role's ability
 
 import { Team } from "../Team";
+import { performActionReturn } from "../../types/game.types";
 
 // Used by: All role classes implement this interface
 export interface Role {
@@ -10,6 +11,6 @@ export interface Role {
   name: string;
   team: Team;
   description: string;
-  performAction(): () => any;
+  performAction(): performActionReturn;
 }
 
