@@ -1,6 +1,7 @@
 // Manages multiple game instances
 // Holds array of Game objects
 import { Game } from './Game';
+import { Phase } from '../config/constants';
 import { Logger } from '../utils/Logger';
 export class Manager {
   public games: Game[];
@@ -56,7 +57,7 @@ export class Manager {
     this.games = this.games.filter((g) => g.code !== code);
   }
   private deleteFinishedGames(): void {
-    let finished = this.games.filter((g) => g.phase === Phase.Finished);
+    let finished = this.games.filter((g) => g.phase === Phase.EndGame);
     finished.forEach((game) => this.deleteGame(game));
   }
 }

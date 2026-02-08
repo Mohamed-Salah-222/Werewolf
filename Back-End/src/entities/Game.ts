@@ -52,6 +52,11 @@ export class Game extends EventEmitter {
     this.logger.info('Game created');
   }
 
+  playerJoin(name: string): void {
+    const player = new Player(name);
+    this.players.push(player);
+    this.logger.info(`${name} joined the game`);
+  }
 
   start(): Result {
     try {
