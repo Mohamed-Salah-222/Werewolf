@@ -1,5 +1,5 @@
 // GAME LIMITS
-export const MAX_PLAYERS = 12;
+export const MAX_PLAYERS = 10;
 export const MIN_PLAYERS = 6;
 export const NUMBER_OF_GROUND_ROLES = 3;
 

@@ -2,7 +2,7 @@
 import { Role } from "./Role";
 import { Team } from "../../config/constants";
 
-class Minion implements Role {
+export class Minion implements Role {
   id: number;
   name: "Minion";
   team: Team.Villains;
