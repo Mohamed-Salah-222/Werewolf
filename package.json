@@ -2,4 +2,7 @@
   "devDependencies": {
     "@types/node": "^25.2.1"
   }
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
 }
