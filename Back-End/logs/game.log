@@ -1,0 +1,24 @@
+2026-02-08T21:24:11.575Z INFO: available roles: ,,,,,,,,
+2026-02-08T21:24:11.575Z INFO: Game created
+2026-02-08T21:24:11.578Z INFO: playerJoin Alice
+2026-02-08T21:24:11.578Z INFO: playerJoin Bob
+2026-02-08T21:24:11.578Z INFO: playerJoin Charlie
+2026-02-08T21:24:11.578Z INFO: playerJoin Diana
+2026-02-08T21:24:11.578Z INFO: playerJoin Eva
+2026-02-08T21:24:11.578Z INFO: playerJoin Frank
+2026-02-08T21:24:11.578Z INFO: available roles: ,,,,,,,,
+2026-02-08T21:30:24.562Z INFO: available roles: ,,,,,,,,
+2026-02-08T21:30:24.563Z INFO: Game created
+2026-02-08T21:30:24.565Z INFO: playerJoin Alice
+2026-02-08T21:30:24.565Z INFO: playerJoin Bob
+2026-02-08T21:30:24.565Z INFO: playerJoin Charlie
+2026-02-08T21:30:24.566Z INFO: playerJoin Diana
+2026-02-08T21:30:24.566Z INFO: playerJoin Eve
+2026-02-08T21:30:24.566Z INFO: playerJoin Frank
+2026-02-08T21:30:24.566Z INFO: available roles: ,,,,,,,,
+2026-02-08T21:30:27.569Z LOG: Game state is now voting
+2026-02-08T21:30:27.569Z INFO: Game Ended
+2026-02-08T21:30:27.569Z LOG: Voter: tdj voted: 1
+2026-02-08T21:30:27.570Z LOG: Voter: 7dq voted: 1
+2026-02-08T21:30:27.570Z LOG: Voter: dvp voted: 3
+2026-02-08T21:30:27.570Z LOG: Voter: 030 voted: 1
