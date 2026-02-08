@@ -12,3 +12,6 @@
 //   - finish() → calculates winners
 // Used by: Manager, socketHandlers
 // Emits events that socketHandlers listens to
+
+import { EventEmitter } from 'events';
+export class Game extends EventEmitter { }
