@@ -1,7 +1,7 @@
 // GAME LIMITS
 export const MAX_PLAYERS = 12;
 export const MIN_PLAYERS = 6;
-export const NUMBER_OF_GROUND_CARDS = 3;
+export const NUMBER_OF_GROUND_ROLES = 3;
 
 // TIMER OPTIONS (in minutes)
 export enum TimerOption {
@@ -25,8 +25,8 @@ export enum Phase {
 
 // TEAMS
 export enum Team {
-  WereWolf = "werewolf",
-  Villagers = "villagers",
+  Villains = "werewolves",
+  Heroes = "villagers",
   Joker = "joker",
 }
 
@@ -60,8 +60,12 @@ export const ROLE_ACTION_ORDER = [
 
 // ROLE DISTRIBUTION
 // Werewolf count increases to 3 if player count is high
-export const getRoleDistribution = (playerCount: number) => {
-  const werewolfCount = playerCount >= 9 ? 3 : 2;
+export const getRoleDistribution = (playerCount?: number) => {
+  let werewolfCount = 2
+
+  if (playerCount && playerCount >= 9) {
+    werewolfCount = 3
+  }
 
   return {
     [ROLE_NAMES.WEREWOLF]: werewolfCount,

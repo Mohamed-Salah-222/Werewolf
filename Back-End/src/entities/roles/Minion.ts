@@ -1,8 +1,8 @@
 // Each role is a class implementing the Role interface
 import { Role } from "./Role";
-import { Team } from "../Team";
+import { Team } from "../../config/constants";
 
-export class Minion implements Role {
+class Minion implements Role {
   id: number;
   name: "Minion";
   team: Team.Villains;
