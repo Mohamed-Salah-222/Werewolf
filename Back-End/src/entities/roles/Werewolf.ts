@@ -1,0 +1,1 @@
+// Each role is a class implementing the Role interface

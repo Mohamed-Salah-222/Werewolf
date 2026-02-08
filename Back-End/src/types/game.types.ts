@@ -1,0 +1,1 @@
+// TypeScript types/interfaces for game-related data

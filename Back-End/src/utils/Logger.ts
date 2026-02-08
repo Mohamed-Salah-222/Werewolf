@@ -1,0 +1,1 @@
+// Singleton class for logging to file and console
