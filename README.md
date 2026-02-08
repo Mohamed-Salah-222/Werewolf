@@ -1,1 +1,1 @@
-Slta is Dickless
+Salah is Dickless
