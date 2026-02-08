@@ -3,8 +3,9 @@ import { Server as SocketIOServer } from "socket.io";
 import app from "./app";
 import dotenv from "dotenv";
 
-// import { Manager } from './entities/Manager';
-// import { initializeSocketHandlers } from './socket/socketHandlers';
+// import { Manager } from "./entities/Manager";
+import { setManager } from "./controllers/gameController";
+
 // import { connectDatabase } from './config/database';
 
 dotenv.config();
@@ -20,8 +21,9 @@ const io = new SocketIOServer(server, {
   },
 });
 
-// Create Manager instance ( uncomment this later)
 // const manager = new Manager();
+
+// setManager(manager);
 
 // Initialize socket handlers ( uncomment this later)
 // initializeSocketHandlers(io, manager);

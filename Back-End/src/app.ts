@@ -2,7 +2,7 @@ import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import { error, timeStamp } from "node:console";
 
-// import gameRoutes from './routes/gameRoutes';
+import gameRoutes from './routes/gameRoutes';
 // import { errorHandler } from './utils/errorHandler';
 // import Logger from './utils/Logger';
 
@@ -25,8 +25,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Routes
-// Later we'll add: app.use('/api/games', gameRoutes);
+app.use('/api/games', gameRoutes);
 
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({

@@ -1,17 +1,16 @@
-// Base interface/type that all roles implement
-// Properties: id, name, team (Villains/Heroes/Joker), description
-// Methods: performAction() → returns a function that executes the role's ability
-
-import { performActionReturn } from "../../types/game.types";
 import { Team } from "../../config/constants";
 
-// Used by: All role classes implement this interface
 export interface Role {
-  id: number; // do I need id ?
+  id: string; // Keep string - used for matching ground cards in Drunk/Joker actions
   name: string;
   team: Team;
   description: string;
+<<<<<<< Updated upstream
   performAction(): performActionReturn;
 }
 
 
+=======
+  performAction(): Function; // Returns a function that takes (game, player, action)
+}
+>>>>>>> Stashed changes
