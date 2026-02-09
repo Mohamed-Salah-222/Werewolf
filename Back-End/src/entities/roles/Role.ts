@@ -5,7 +5,5 @@ export interface Role {
   name: string;
   team: Team;
   description: string;
-
-
   performAction(): Function; // Returns a function that takes (game, player, action)
 }

@@ -46,7 +46,7 @@ export class Seer implements Role {
   public performAction(): Function {
     return function (game: Game, player: Player, action: SeerAction) {
       if (action.type !== SeerActionType.SeePlayerRole && action.type !== SeerActionType.SeeGroundRoles) {
-        throw new Error(`Invalid action for Seer. Expected 'seer_player_role' or 'seer_ground_roles', received '${action}'.`);
+        throw new Error(`Invalid action for Seer. Expected 'seer_player_role' or 'seer_ground_roles', received '${(action as any).type}'.`);
       }
 
       if (action.type === SeerActionType.SeePlayerRole) {

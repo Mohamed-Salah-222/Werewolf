@@ -2,15 +2,11 @@ import { Request, Response } from "express";
 import { Manager } from "../entities/Manager";
 import { VALIDATION, ERROR_MESSAGES } from "../config/constants";
 
-
-// We'll get the manager instance from server.ts
-// For now, we'll create a temporary one (we'll fix this when we wire everything together)
 let manager: Manager;
 
 export const setManager = (managerInstance: Manager) => {
   manager = managerInstance;
 };
-
 
 export const createGame = (req: Request, res: Response): void => {
   try {
@@ -33,13 +29,12 @@ export const createGame = (req: Request, res: Response): void => {
   }
 };
 
-
 export const getGameByCode = (req: Request, res: Response): void => {
   try {
     const { code } = req.params;
 
-    // Validate code format
-    if (!code || code.length !== VALIDATION.GAME_CODE_LENGTH) {
+    // Validate code is a string (TypeScript fix)
+    if (typeof code !== "string" || code.length !== VALIDATION.GAME_CODE_LENGTH) {
       res.status(400).json({
         success: false,
         error: "Invalid game code format",
@@ -47,15 +42,8 @@ export const getGameByCode = (req: Request, res: Response): void => {
       return;
     }
 
-    if (typeof code !== 'string') {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid game code',
-      });
-      return;
-    }
-
-    const game = manager.getGameByCode(code);
+    const lowerCode = code.toLowerCase();
+    const game = manager.getGameByCode(lowerCode);
 
     if (!game) {
       res.status(404).json({
@@ -65,7 +53,6 @@ export const getGameByCode = (req: Request, res: Response): void => {
       return;
     }
 
-    // Return safe game data (don't expose roles during game)
     res.status(200).json({
       success: true,
       data: {
@@ -75,7 +62,6 @@ export const getGameByCode = (req: Request, res: Response): void => {
         players: game.players.map((p) => ({
           id: p.id,
           name: p.name,
-          // Don't send roles unless game is finished
           ...(game.phase === "endGame" && { role: p.getRole().name }),
         })),
         timer: game.timer,
@@ -90,29 +76,22 @@ export const getGameByCode = (req: Request, res: Response): void => {
   }
 };
 
-
 export const checkGameExists = (req: Request, res: Response): void => {
   try {
     const { code } = req.params;
 
-    // Validate code format
-    if (!code || code.length !== VALIDATION.GAME_CODE_LENGTH) {
+    // Validate code is a string (TypeScript fix)
+    if (typeof code !== "string" || code.length !== VALIDATION.GAME_CODE_LENGTH) {
       res.status(400).json({
         success: false,
         error: "Invalid game code format",
       });
       return;
     }
-    if (typeof code !== 'string') {
-      res.status(400).json({
-        success: false,
-        error: 'Invalid game code',
-      });
-      return;
-    }
 
-    const canJoin = manager.canJoinGame(code);
-    const game = manager.getGameByCode(code);
+    const lowerCode = code.toLowerCase();
+    const canJoin = manager.canJoinGame(lowerCode);
+    const game = manager.getGameByCode(lowerCode);
 
     res.status(200).json({
       success: true,
@@ -131,7 +110,6 @@ export const checkGameExists = (req: Request, res: Response): void => {
     });
   }
 };
-
 
 export const getAllGames = (req: Request, res: Response): void => {
   try {
@@ -157,20 +135,21 @@ export const getAllGames = (req: Request, res: Response): void => {
   }
 };
 
-
 export const deleteGame = (req: Request, res: Response): void => {
   try {
     const { code } = req.params;
 
-    if (typeof code !== 'string') {
+    // Validate code is a string (TypeScript fix)
+    if (typeof code !== "string") {
       res.status(400).json({
         success: false,
-        error: 'Invalid game code',
+        error: "Invalid game code format",
       });
       return;
     }
 
-    const game = manager.getGameByCode(code);
+    const lowerCode = code.toLowerCase();
+    const game = manager.getGameByCode(lowerCode);
 
     if (!game) {
       res.status(404).json({
@@ -180,7 +159,6 @@ export const deleteGame = (req: Request, res: Response): void => {
       return;
     }
 
-    // Only allow deletion if game hasn't started
     if (game.phase !== "waiting") {
       res.status(400).json({
         success: false,

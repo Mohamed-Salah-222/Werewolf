@@ -3,10 +3,10 @@ import { Server as SocketIOServer } from "socket.io";
 import app from "./app";
 import dotenv from "dotenv";
 
-// import { Manager } from "./entities/Manager";
+import { Manager } from "./entities/Manager";
 import { setManager } from "./controllers/gameController";
-
-// import { connectDatabase } from './config/database';
+import { initializeSocketHandlers } from "./socket/socketHandlers";
+import { ClientToServerEvents, ServerToClientEvents } from "./types/socket.types";
 
 dotenv.config();
 
@@ -14,31 +14,22 @@ const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
 
-const io = new SocketIOServer(server, {
+const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: {
     origin: "*", // In production, specify your frontend URL
     methods: ["GET", "POST"],
   },
 });
 
-// const manager = new Manager();
+// Create manager instance
+const manager = new Manager();
+manager.setSocketIO(io);
 
-// setManager(manager);
+// Set manager for controllers
+setManager(manager);
 
-// Initialize socket handlers ( uncomment this later)
-// initializeSocketHandlers(io, manager);
-
-// Basic socket connection test
-io.on("connection", (socket) => {
-  console.log(`Client connected: ${socket.id}`);
-
-  socket.on("disconnect", () => {
-    console.log(`Client disconnected: ${socket.id}`);
-  });
-});
-
-// Connect to MongoDB (optional, add this later)
-// connectDatabase();
+// Initialize socket handlers
+initializeSocketHandlers(io, manager);
 
 // Start server
 server.listen(PORT, () => {
