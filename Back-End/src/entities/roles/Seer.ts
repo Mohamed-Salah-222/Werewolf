@@ -36,7 +36,7 @@ export const createSeerAction = {
 export class Seer implements Role {
   public id: string;
   public name: string = "Seer";
-  public team: Team = Team.Villagers;
+  public team: Team = Team.Heroes;
   public description: string = "Looks at one player's role OR two ground cards";
 
   constructor() {
@@ -46,7 +46,7 @@ export class Seer implements Role {
   public performAction(): Function {
     return function (game: Game, player: Player, action: SeerAction) {
       if (action.type !== SeerActionType.SeePlayerRole && action.type !== SeerActionType.SeeGroundRoles) {
-        throw new Error(`Invalid action for Seer. Expected 'seer_player_role' or 'seer_ground_roles', received '${action.type}'.`);
+        throw new Error(`Invalid action for Seer. Expected 'seer_player_role' or 'seer_ground_roles', received '${action}'.`);
       }
 
       if (action.type === SeerActionType.SeePlayerRole) {

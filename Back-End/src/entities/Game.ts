@@ -39,6 +39,8 @@ export class Game extends EventEmitter {
   confirmedPlayerPerformActions: PlayerId[] = [];
   minimumPlayers: number = MIN_PLAYERS;
   maxPlayers: number = MAX_PLAYERS;
+  roleQueue: string[] = [];
+  currentGameRolesMap: Map<string, boolean> = new Map();
   private availableRoles: Role[] = [];
 
   constructor(
@@ -52,6 +54,7 @@ export class Game extends EventEmitter {
     this.numberOfMasons = roleDistribution[ROLE_NAMES.MASON];
 
     this.availableRoles = this.createRoles();
+    this.roleQueue = this.createRoleQueue();
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info('Game created');
@@ -95,19 +98,28 @@ export class Game extends EventEmitter {
   startNight(): void {
     this.phase = Phase.Night;
     this.emit('nightStarted');
+    setTimeout(() => {
+      this.emit('roleActionQueue', this.nextAction());
+    }, 1000);
   }
 
   playerPerformAction(playerId: PlayerId): void {
     this.confirmedPlayerPerformActions.push(playerId);
+    const nextRoleAction = this.nextAction();
+    this.emit('nextAction', nextRoleAction);
     if (this.confirmedPlayerPerformActions.length === this.players.length) {
-      const nextAction = this.nextAction();
-      this.emit('nextAction', nextAction);
+      this.emit('dayStarted');
     }
   }
 
-  get nextAction(): any {
-    const player = this.players.find((p) => p.id === this.confirmedPlayerPerformActions[0]);
-    return player.getOriginalRole().performAction();
+  // get the next role action in the role queue
+  nextAction(): any {
+    const nextRoleAction = this.roleQueue.shift();
+    if (nextRoleAction === undefined) {
+      this.emit('dayStarted');
+    }
+    this.logger.info(`next action: ${nextRoleAction}`);
+    return nextRoleAction;
   }
 
   finish(): void {
@@ -115,7 +127,9 @@ export class Game extends EventEmitter {
     this.phase = Phase.EndGame;
     const votes = this.getVoteResults();
     votes.forEach((value, key) => {
-      this.logger.log(`Voter: ${key} voted: ${value}`);
+      const player1 = this.getPlayerById(key);
+      this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
+
     });
     this.emit('gameEnded', this.calculateResults(votes));
   }
@@ -154,6 +168,7 @@ export class Game extends EventEmitter {
 
   playerVote(player: PlayerId, vote: PlayerId): void {
     this.votes.push({ voter: player, vote: vote });
+    this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for ${this.getPlayerById(vote).name} and his role is ${this.getPlayerById(vote).getRole().name}`);
     if (this.votes.length === this.players.length) {
       this.finish();
     }
@@ -196,11 +211,12 @@ export class Game extends EventEmitter {
     });
     if (check === mapVotes.size) {
       this.winners = Team.Villains;
+
       return this.winners;
     }
 
     let votedPlayerRole = this.getPlayerById(voted).getRole();
-    if (votedPlayerRole.name === 'minion') {
+    if (votedPlayerRole.name === "Minion" || votedPlayerRole.name === "minion") {
       this.winners = Team.Villains;
     }
     if (votedPlayerRole.name === Team.Joker) {
@@ -213,6 +229,7 @@ export class Game extends EventEmitter {
       this.winners = Team.Villains;
     }
     this.emit('winnersCalculated', this.winners);
+    this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
 
@@ -235,6 +252,7 @@ export class Game extends EventEmitter {
       const randomIndex = Math.floor(Math.random() * availableRoles.length);
       const role = availableRoles[randomIndex];
       this.players[i].AddRole(role);
+      this.currentGameRolesMap.set(role.name, true);
       availableRoles.splice(randomIndex, 1);
     }
   }
@@ -252,7 +270,7 @@ export class Game extends EventEmitter {
     return this.code = Math.random().toString(36).substring(2, 8);
   }
 
-  private getPlayerById(id: string): Player {
+  getPlayerById(id: string): Player {
     const player = this.players.find((p) => p.id === id);
     if (player !== undefined) {
       return player;
@@ -262,6 +280,16 @@ export class Game extends EventEmitter {
     throw new Error(`Player with id ${id} not found`);
   }
 
+
+  private createRoleQueue(): string[] {
+    const roleQueue = Object.values(ROLE_NAMES);
+
+    this.logger.info(`role queue: ${roleQueue.join(', ')}`);
+    console.log(`role queue: ${roleQueue.join(', ')}`);
+
+    this.logger.info(`role queue: ${roleQueue.join(', ')}`);
+    return roleQueue;
+  }
   private createRoles() {
     let roles: Role[] = [];
     const roleNames = ['Werewolf', 'Mason', 'Seer', 'Drunk', 'Troublemaker', 'Robber', 'Minion'];

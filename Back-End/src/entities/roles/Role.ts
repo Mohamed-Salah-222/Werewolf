@@ -5,12 +5,7 @@ export interface Role {
   name: string;
   team: Team;
   description: string;
-<<<<<<< Updated upstream
-  performAction(): performActionReturn;
-}
 
 
-=======
   performAction(): Function; // Returns a function that takes (game, player, action)
 }
->>>>>>> Stashed changes

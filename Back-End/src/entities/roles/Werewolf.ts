@@ -14,7 +14,7 @@ export const createWerewolfAction = (): WerewolfAction => ({
 export class Werewolf implements Role {
   public id: string;
   public name: string = "Werewolf";
-  public team: Team = Team.WereWolf;
+  public team: Team = Team.Villains;
   public description: string = "Sees other Werewolves. If alone, sees one ground card";
 
   constructor() {

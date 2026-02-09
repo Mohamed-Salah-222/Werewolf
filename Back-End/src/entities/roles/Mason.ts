@@ -14,7 +14,7 @@ export const createMasonAction = (): MasonAction => ({
 export class Mason implements Role {
   public id: string;
   public name: string = "Mason";
-  public team: Team = Team.Villagers;
+  public team: Team = Team.Heroes;
   public description: string = "Wakes up with other Masons to see each other";
 
   constructor() {

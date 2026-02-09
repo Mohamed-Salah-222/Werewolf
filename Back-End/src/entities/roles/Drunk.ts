@@ -16,7 +16,7 @@ export const createDrunkAction = (targetRoleId: string): DrunkAction => ({
 export class Drunk implements Role {
   public id: string;
   public name: string = "Drunk";
-  public team: Team = Team.Villagers;
+  public team: Team = Team.Heroes;
   public description: string = "Swaps their role with a random ground card without looking at it";
 
   constructor() {

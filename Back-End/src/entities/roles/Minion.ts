@@ -3,16 +3,6 @@ import { Team } from "../../config/constants";
 import { Game } from "../Game";
 import { Player } from "../Player";
 
-<<<<<<< Updated upstream
-export class Minion implements Role {
-  id: number;
-  name: "Minion";
-  team: Team.Villains;
-  description: string;
-  performAction(): () => any {
-    return () => {
-      console.log("Insomniac");
-=======
 export interface MinionAction {
   type: "minion";
 }
@@ -24,7 +14,7 @@ export const createMinionAction = (): MinionAction => ({
 export class Minion implements Role {
   public id: string;
   public name: string = "Minion";
-  public team: Team = Team.WereWolf;
+  public team: Team = Team.Villains;
   public description: string = "Sees who the Werewolves are. Wins if voted out and Werewolves win";
 
   constructor() {
@@ -43,7 +33,6 @@ export class Minion implements Role {
         werewolves: werewolves.map((w) => ({ id: w.id, name: w.name })),
         message: werewolves.length > 0 ? `The Werewolves are: ${werewolves.map((w) => w.name).join(", ")}` : "There are no Werewolves in play",
       };
->>>>>>> Stashed changes
     };
   }
 }

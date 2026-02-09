@@ -47,6 +47,14 @@ export const getGameByCode = (req: Request, res: Response): void => {
       return;
     }
 
+    if (typeof code !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid game code',
+      });
+      return;
+    }
+
     const game = manager.getGameByCode(code);
 
     if (!game) {
@@ -92,6 +100,13 @@ export const checkGameExists = (req: Request, res: Response): void => {
       res.status(400).json({
         success: false,
         error: "Invalid game code format",
+      });
+      return;
+    }
+    if (typeof code !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid game code',
       });
       return;
     }
@@ -146,6 +161,14 @@ export const getAllGames = (req: Request, res: Response): void => {
 export const deleteGame = (req: Request, res: Response): void => {
   try {
     const { code } = req.params;
+
+    if (typeof code !== 'string') {
+      res.status(400).json({
+        success: false,
+        error: 'Invalid game code',
+      });
+      return;
+    }
 
     const game = manager.getGameByCode(code);
 

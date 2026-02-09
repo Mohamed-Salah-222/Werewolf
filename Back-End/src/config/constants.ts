@@ -34,11 +34,11 @@ export enum Team {
 export const ROLE_NAMES = {
   WEREWOLF: "Werewolf",
   MINION: "Minion",
+  CLONE: "Clone",
   SEER: "Seer",
   MASON: "Mason",
   ROBBER: "Robber",
   TROUBLEMAKER: "Troublemaker",
-  CLONE: "Clone",
   DRUNK: "Drunk",
   INSOMNIAC: "Insomniac",
   JOKER: "Joker",

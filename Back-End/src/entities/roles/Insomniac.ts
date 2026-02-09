@@ -14,7 +14,7 @@ export const createInsomniacAction = (): InsomniacAction => ({
 export class Insomniac implements Role {
   public id: string;
   public name: string = "Insomniac";
-  public team: Team = Team.Villagers;
+  public team: Team = Team.Heroes;
   public description: string = "Wakes up at the end of the night to check if their role has changed";
 
   constructor() {

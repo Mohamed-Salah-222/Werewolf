@@ -1,132 +1,120 @@
-import { Game } from "./entities/Game";
-import { Logger } from "./utils/Logger";
+import { Game } from './entities/Game';
+import { Logger } from './utils/Logger';
+import { Phase } from './config/constants';
+import { PlayerId } from './types/game.types';
 
-/* ---------------------------------------------
- * Pretty printing helpers
- * ------------------------------------------- */
+// basic logger
+const logger = new Logger();
 
-const hr = (title?: string) => {
-  console.log("\n" + "─".repeat(60));
-  if (title) console.log(`▶ ${title}`);
-  console.log("─".repeat(60));
-};
-
-const log = (label: string, data?: any) => {
-  console.log(
-    `\x1b[36m${label}\x1b[0m`,
-    data !== undefined ? JSON.stringify(data, null, 2) : ""
-  );
-};
-
-/* ---------------------------------------------
- * Boot game
- * ------------------------------------------- */
-
-const logger = Logger.getInstance();
+// create game
 const game = new Game(logger);
 
-hr("GAME CREATED");
-log("Game code", game.code);
+// ---- EVENT LISTENERS (what socket handlers will later be) ----
 
-/* ---------------------------------------------
- * Event listeners (simulate socket handlers)
- * ------------------------------------------- */
+game.on('playerJoin', (name: string) => {
+  console.log(`[EVENT] player joined: ${name}`);
+});
 
-game.on("playerJoin", (name) => log("EVENT playerJoin", name));
-game.on("gameStarted", () => log("EVENT gameStarted"));
-game.on("playerRoleRevealConfirmed", (id) =>
-  log("EVENT roleRevealConfirmed", id)
-);
-game.on("nightStarted", () => log("EVENT nightStarted"));
-game.on("perfomActionsStarted", () => log("EVENT performActionsStarted"));
-game.on("nextAction", (action) =>
-  log("EVENT nextAction (ignored)", action)
-);
-game.on("votingStarted", () => log("EVENT votingStarted"));
-game.on("winnersCalculated", (winners) =>
-  log("EVENT winnersCalculated", winners)
-);
-game.on("gameEnded", (result) =>
-  log("EVENT gameEnded", result)
-);
-game.on("gameRestarted", () => log("EVENT gameRestarted"));
+game.on('gameStarted', () => {
+  console.log('[EVENT] game started');
+  console.log('Phase:', game.phase);
 
-/* ---------------------------------------------
- * Dummy players (MIN = 6)
- * ------------------------------------------- */
+  // simulate all players confirming role reveal
+  game.players.forEach((p) => {
+    game.confirmPlayerRoleReveal(p.id);
+  });
 
-const PLAYERS = [
-  "Alice",
-  "Bob",
-  "Charlie",
-  "Diana",
-  "Eve",
-  "Frank",
+  // start night after reveal
+  game.startNight();
+});
+
+game.on('playerRoleRevealConfirmed', (playerId: PlayerId) => {
+  const player = game.getPlayerById(playerId);
+  console.log(`[EVENT] role revealed by ${player.name} and role is ${player.getRole().name}`);
+});
+
+game.on('nightStarted', () => {
+  console.log('[EVENT] night started');
+});
+
+game.on('roleActionQueue', (roleName: string) => {
+  console.log(`[EVENT] first role action: ${roleName}`);
+  performRandomActionsForRole(roleName);
+});
+
+
+game.on('dayStarted', () => {
+  console.log('[EVENT] day started');
+  game.startVoting();
+});
+
+game.on('votingStarted', () => {
+  console.log('[EVENT] voting started');
+
+  // everyone votes randomly (except self)
+  game.players.forEach((voter) => {
+    const targets = game.players.filter((p) => p.id !== voter.id);
+    const randomTarget =
+      targets[Math.floor(Math.random() * targets.length)];
+
+    game.playerVote(voter.id, randomTarget.id);
+  });
+});
+
+game.on('winnersCalculated', (winner) => {
+  console.log('[EVENT] winners:', winner);
+});
+
+game.on('gameEnded', (winner) => {
+  console.log('[EVENT] game ended');
+  console.log('Winner:', winner);
+});
+
+// ---- DUMMY ACTION DRIVER ----
+
+game.on('nextAction', (roleName: string) => {
+  console.log(`[EVENT] next role action: ${roleName}`);
+  performRandomActionsForRole(roleName);
+});
+
+function performRandomActionsForRole(roleName: string) {
+  if (roleName === undefined) {
+    return;
+  }
+  const playersWithRole = game.players.filter(
+    (player) => player.getRole().name === roleName
+  );
+
+  console.log(
+    `[ACTION] ${playersWithRole.length} player(s) with role ${roleName}`
+  );
+
+  // If no one has this role, immediately advance
+  if (playersWithRole.length === 0) {
+    const next = game.nextAction();
+    game.emit('nextAction', next);
+    return;
+  }
+
+  playersWithRole.forEach((player) => {
+    console.log(`[ACTION] player ${player.name} (${roleName}) performs action`);
+    game.playerPerformAction(player.id);
+  });
+}
+
+// ---- BOOTSTRAP GAME ----
+
+// minimum is 6 players
+const dummyPlayers = [
+  'Alice',
+  'Bob',
+  'Charlie',
+  'Diana',
+  'Eve',
+  'Frank',
 ];
 
-hr("PLAYERS JOIN");
+dummyPlayers.forEach((name) => game.playerJoin(name));
 
-PLAYERS.forEach((name) => game.playerJoin(name));
-
-/* ---------------------------------------------
- * Start game
- * ------------------------------------------- */
-
-hr("START GAME");
+// start game
 game.start();
-
-/* ---------------------------------------------
- * Role reveal confirmation (dummy)
- * ------------------------------------------- */
-
-hr("ROLE REVEAL CONFIRMATION");
-
-game.players.forEach((p) => {
-  game.confirmPlayerRoleReveal(p.id);
-});
-
-/* ---------------------------------------------
- * Night phase
- * ------------------------------------------- */
-
-hr("NIGHT START");
-game.startNight();
-
-/* ---------------------------------------------
- * Perform actions (DUMMY CONFIRMATIONS ONLY)
- * ------------------------------------------- */
-
-hr("PERFORM ACTIONS");
-
-game.startPerformActions();
-
-/**
- * Randomize order to simulate network timing
- */
-const shuffled = [...game.players].sort(() => Math.random() - 0.5);
-
-shuffled.forEach((player, index) => {
-  setTimeout(() => {
-    log("ACTION CONFIRMED BY", player.name);
-    game.playerPerformAction(player.id);
-  }, index * 300);
-});
-
-/* ---------------------------------------------
- * Voting (after actions settle)
- * ------------------------------------------- */
-
-setTimeout(() => {
-  hr("VOTING");
-
-  game.startVoting();
-
-  const ids = game.players.map((p) => p.id);
-
-  game.players.forEach((p) => {
-    const vote =
-      ids[Math.floor(Math.random() * ids.length)];
-    log("VOTE", { from: p.name, to: vote });
-    game.playerVote(p.id, vote);
-  });
-}, 3000);

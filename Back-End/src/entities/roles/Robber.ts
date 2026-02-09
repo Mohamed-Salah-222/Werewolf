@@ -16,7 +16,7 @@ export const createRobberAction = (targetPlayer: Player): RobberAction => ({
 export class Robber implements Role {
   public id: string;
   public name: string = "Robber";
-  public team: Team = Team.Villagers;
+  public team: Team = Team.Heroes;
   public description: string = "Steals another player's role and looks at their new role";
 
   constructor() {
