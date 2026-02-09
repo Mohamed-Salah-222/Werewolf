@@ -26,6 +26,7 @@ import { Vote } from '../types/game.types';
 export class Game extends EventEmitter {
   players: Player[] = [];
   groundRoles: Role[] = [];
+  prettyVotes: Vote[] = [];
   code: string;
   votes: Vote[] = [];
   winners: Team;
@@ -42,6 +43,7 @@ export class Game extends EventEmitter {
   maxPlayers: number = MAX_PLAYERS;
   roleQueue: string[] = [];
   currentGameRolesMap: Map<string, number> = new Map();
+  currentTimerSec: number;
   private availableRoles: Role[] = [];
 
   constructor(
@@ -78,6 +80,7 @@ export class Game extends EventEmitter {
       throw new Error(`Need at least ${this.minimumPlayers} players to start`);
     }
 
+    this.currentGameRolesMap = new Map<string, number>();
     this.assignRandomRoles();
     this.groundRoles = this.availableRoles.slice(0, this.numberOfGroundRoles);
     this.phase = Phase.Role;
@@ -92,7 +95,7 @@ export class Game extends EventEmitter {
       throw new Error(`Player with id ${playerId} not found`);
     }
     this.confirmedPlayerRoleReveal.push(playerId);
-    // TODO: omit event to the player
+
     this.newEmit('playerRoleRevealConfirmed', playerId);
   }
 
@@ -101,39 +104,46 @@ export class Game extends EventEmitter {
     this.newEmit('nightStarted');
     setTimeout(() => {
       this.newEmit('roleActionQueue', this.nextAction());
-    }, 1000);
+    }, 100);
   }
 
-
-  canAdvanceRoleAction(roleName: string): boolean {
-    const roleAction = this.roleQueue.find((role) => role === roleName);
-    if (roleAction === undefined) {
-      return true;
-    }
-    return this.currentGameRolesMap.get(roleName) < this.numberOfGroundRoles;
-  }
 
   playerPerformAction(playerId: PlayerId): void {
     if (this.confirmedPlayerPerformActions.includes(playerId)) {
       throw new Error(`Player ${playerId} has already confirmed their role`);
     }
-    if (this.canAdvanceRoleAction(this.getPlayerById(playerId).getRole().name) === false) {
+    const player = this.getPlayerById(playerId);
+    const roleName = player.getRole().name;
+    this.confirmedPlayerPerformActions.push(playerId);
+
+    const remaining = this.currentGameRolesMap.get(roleName) - 1;
+    this.currentGameRolesMap.set(roleName, remaining);
+
+    if (!this.isAllRolePlayersDone(roleName)) {
+      this.logger.info(`Cannot advance role action because not all players have performed their actions`);
       return;
     }
 
-    this.confirmedPlayerPerformActions.push(playerId);
     const nextRoleAction = this.nextAction();
-    this.newEmit('nextAction', nextRoleAction);
-    if (this.confirmedPlayerPerformActions.length === this.players.length) {
-      this.newEmit('dayStarted');
+
+    if (nextRoleAction === undefined) {
+      throw new Error("Next role action is undefined in playerPerformAction");
     }
+
+
+    if (this.confirmedPlayerPerformActions.length === this.players.length) {
+      this.startDay()
+      return;
+    }
+
+    this.newEmit('nextAction', nextRoleAction);
   }
 
   // get the next role action in the role queue
   nextAction(): any {
     const nextRoleAction = this.roleQueue.shift();
     if (nextRoleAction === undefined) {
-      this.newEmit('dayStarted');
+      return;
     }
     this.logger.info(`next action: ${nextRoleAction}`);
     return nextRoleAction;
@@ -163,25 +173,25 @@ export class Game extends EventEmitter {
     totalSeconds = 3;
     this.newEmit('dayStarted');
     // find a good soultion for syncing the timer
-    return new Promise(null);
-    // return new Promise((resolve) => {
-    //   const interval = setInterval(() => {
-    //     this.newEmit('timerTick', totalSeconds);
-    //     if (totalSeconds <= 0) {
-    //       this.currentTimerSec = 0;
-    //       this.newEmit('timerFinished');
-    //       clearInterval(interval);
-    //       resolve();
-    //     }
-    //     totalSeconds--;
-    //   }, 1000);
-    // });
+    // return new Promise(null);
+    return new Promise((resolve) => {
+      const interval = setInterval(() => {
+        if (totalSeconds <= 0) {
+          this.currentTimerSec = 0;
+          this.newEmit('timerFinished');
+          this.startVoting()
+          clearInterval(interval);
+          resolve();
+        }
+        totalSeconds--;
+      }, 1000);
+    });
   }
 
   startVoting(): void {
     this.phase = Phase.Vote;
-    this.newEmit('votingStarted');
     this.logger.log('Game state is now voting');
+    this.newEmit('votingStarted');
   }
 
   playerVote(player: PlayerId, vote: PlayerId): void {
@@ -203,11 +213,9 @@ export class Game extends EventEmitter {
       } else {
         mapVotes.set(vote.vote, 1);
       }
-      vote.voter = this.getPlayerById(vote.voter).name;
-      vote.vote = this.getPlayerById(vote.vote).name;
     }
 
-    this.votes = votes;
+    this.prettyVotes = votes;
     return mapVotes;
   }
 
@@ -216,7 +224,7 @@ export class Game extends EventEmitter {
     let voted = '';
     // need to check for draw
     let check = 0;
-    // what does this even do ?
+
     mapVotes.forEach((value, key) => {
       if (prev === value) {
         prev = value;
@@ -228,7 +236,7 @@ export class Game extends EventEmitter {
         voted = key;
       }
     });
-    // why do i do this ? 
+
     if (check === mapVotes.size) {
       this.winners = Team.Villains;
 
@@ -236,6 +244,13 @@ export class Game extends EventEmitter {
     }
 
     let votedPlayerRole = this.getPlayerById(voted).getRole();
+
+    if (votedPlayerRole.team === Team.Villains) {
+      this.winners = Team.Heroes;
+    } else {
+      this.winners = Team.Villains;
+    }
+
     if (votedPlayerRole.name === "Minion" || votedPlayerRole.name === "minion") {
       this.winners = Team.Villains;
     }
@@ -243,12 +258,8 @@ export class Game extends EventEmitter {
       this.winners = Team.Joker;
     }
 
-    if (votedPlayerRole.team === Team.Villains) {
-      this.winners = Team.Heroes;
-    } else {
-      this.winners = Team.Villains;
-    }
-    this.newEmit('winnersCalculated', this.winners);
+
+
     this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
@@ -259,6 +270,16 @@ export class Game extends EventEmitter {
     this.phase = Phase.Waiting;
   }
 
+  getPlayerById(id: string): Player {
+    const player = this.players.find((p) => p.id === id);
+    if (player !== undefined) {
+      return player;
+    }
+
+    this.logger.log(`Player with id ${id} not found`);
+    throw new Error(`Player with id ${id} not found`);
+  }
+
   private assignRandomRoles(): void {
     let availableRoles = this.availableRoles;
 
@@ -266,16 +287,21 @@ export class Game extends EventEmitter {
 
     if (availableRoles.length < this.players.length + this.numberOfGroundRoles) {
       this.addRoles();
+      this.logger.warn("added roles");
     }
 
     for (let i = 0; i < this.players.length; i++) {
       const randomIndex = Math.floor(Math.random() * availableRoles.length);
       const role = availableRoles[randomIndex];
       this.players[i].AddRole(role);
+
       const current = this.currentGameRolesMap.get(role.name) ?? 0;
       this.currentGameRolesMap.set(role.name, current + 1);
       availableRoles.splice(randomIndex, 1);
     }
+    this.currentGameRolesMap.forEach((value, key) => {
+      this.logger.info(`key: ${key}, value: ${value}`);
+    });
   }
 
   private addRoles() {
@@ -291,15 +317,6 @@ export class Game extends EventEmitter {
     return this.code = Math.random().toString(36).substring(2, 8);
   }
 
-  getPlayerById(id: string): Player {
-    const player = this.players.find((p) => p.id === id);
-    if (player !== undefined) {
-      return player;
-    }
-
-    this.logger.log(`Player with id ${id} not found`);
-    throw new Error(`Player with id ${id} not found`);
-  }
 
 
   private createRoleQueue(): string[] {
@@ -311,6 +328,13 @@ export class Game extends EventEmitter {
     this.logger.info(`role queue: ${roleQueue.join(', ')}`);
     return roleQueue;
   }
+
+  private isAllRolePlayersDone(roleName: string): boolean {
+    const remaining = this.currentGameRolesMap.get(roleName);
+    this.logger.debug(`remaining: ${remaining}`);
+    return remaining <= 0;
+  }
+
   private createRoles() {
     let roles: Role[] = [];
     const roleNames = ['Werewolf', 'Mason', 'Seer', 'Drunk', 'Troublemaker', 'Robber', 'Minion'];
@@ -334,6 +358,7 @@ export class Game extends EventEmitter {
       roles.push(role);
     }
     return roles;
+
   }
 
   newEmit(event: string, data?: any) {

@@ -45,7 +45,6 @@ game.on('roleActionQueue', (roleName: string) => {
 
 game.on('dayStarted', () => {
   console.log('[EVENT] day started');
-  game.startVoting();
 });
 
 game.on('votingStarted', () => {
@@ -55,19 +54,47 @@ game.on('votingStarted', () => {
   game.players.forEach((voter) => {
     const targets = game.players.filter((p) => p.id !== voter.id);
     const randomTarget =
-      targets[Math.floor(Math.random() * targets.length)];
-
-    game.playerVote(voter.id, randomTarget.id);
+      targets[Math.floor(Math.random() * targets.length)]; game.playerVote(voter.id, randomTarget.id);
   });
 });
 
 game.on('winnersCalculated', (winner) => {
   console.log('[EVENT] winners:', winner);
 });
+function prettyPrintVotes() {
+  game.votes.forEach((vote) => {
+    console.log(`Voter: ${game.getPlayerById(vote.voter).name} has voted for ${game.getPlayerById(vote.vote).name} and his role is ${game.getPlayerById(vote.vote).getRole().name}`);
+  });
+  const mostVotedPlayer = getMostVotedPlayer();
+  console.log(`Most voted player: is ${game.getPlayerById(mostVotedPlayer).name} and his role is ${game.getPlayerById(mostVotedPlayer).getRole().name}`);
+}
+function getMostVotedPlayer() {
+  const voteCounts = new Map();
+
+  // Count votes for each player
+  game.votes.forEach((vote) => {
+    const currentCount = voteCounts.get(vote.vote) || 0;
+    voteCounts.set(vote.vote, currentCount + 1);
+  });
+
+  // Find player with most votes
+  let mostVotedPlayer = null;
+  let maxVotes = 0;
+
+  voteCounts.forEach((count, playerId) => {
+    if (count > maxVotes) {
+      maxVotes = count;
+      mostVotedPlayer = playerId;
+    }
+  });
+
+  return mostVotedPlayer;
+}
 
 game.on('gameEnded', (winner) => {
   console.log('[EVENT] game ended');
   console.log('Winner:', winner);
+  prettyPrintVotes();
 });
 
 // ---- DUMMY ACTION DRIVER ----
@@ -81,6 +108,7 @@ function performRandomActionsForRole(roleName: string) {
   if (roleName === undefined) {
     return;
   }
+
   const playersWithRole = game.players.filter(
     (player) => player.getRole().name === roleName
   );
