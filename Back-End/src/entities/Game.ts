@@ -35,12 +35,13 @@ export class Game extends EventEmitter {
   numberOfWerewolf: number;
   numberOfMasons: number;
   player: Player[] = [];
+  numberOfEvents: number = 0;
   confirmedPlayerRoleReveal: PlayerId[] = [];
   confirmedPlayerPerformActions: PlayerId[] = [];
   minimumPlayers: number = MIN_PLAYERS;
   maxPlayers: number = MAX_PLAYERS;
   roleQueue: string[] = [];
-  currentGameRolesMap: Map<string, boolean> = new Map();
+  currentGameRolesMap: Map<string, number> = new Map();
   private availableRoles: Role[] = [];
 
   constructor(
@@ -69,7 +70,7 @@ export class Game extends EventEmitter {
       throw new Error(`Game is full, max players is ${this.maxPlayers}`);
     }
     this.players.push(new Player(name));
-    this.emit('playerJoin', name);
+    this.newEmit('playerJoin', name);
   }
 
   start(): void {
@@ -80,7 +81,7 @@ export class Game extends EventEmitter {
     this.assignRandomRoles();
     this.groundRoles = this.availableRoles.slice(0, this.numberOfGroundRoles);
     this.phase = Phase.Role;
-    this.emit('gameStarted');
+    this.newEmit('gameStarted');
   }
 
   confirmPlayerRoleReveal(playerId: PlayerId): void {
@@ -92,23 +93,39 @@ export class Game extends EventEmitter {
     }
     this.confirmedPlayerRoleReveal.push(playerId);
     // TODO: omit event to the player
-    this.emit('playerRoleRevealConfirmed', playerId);
+    this.newEmit('playerRoleRevealConfirmed', playerId);
   }
 
   startNight(): void {
     this.phase = Phase.Night;
-    this.emit('nightStarted');
+    this.newEmit('nightStarted');
     setTimeout(() => {
-      this.emit('roleActionQueue', this.nextAction());
+      this.newEmit('roleActionQueue', this.nextAction());
     }, 1000);
   }
 
+
+  canAdvanceRoleAction(roleName: string): boolean {
+    const roleAction = this.roleQueue.find((role) => role === roleName);
+    if (roleAction === undefined) {
+      return true;
+    }
+    return this.currentGameRolesMap.get(roleName) < this.numberOfGroundRoles;
+  }
+
   playerPerformAction(playerId: PlayerId): void {
+    if (this.confirmedPlayerPerformActions.includes(playerId)) {
+      throw new Error(`Player ${playerId} has already confirmed their role`);
+    }
+    if (this.canAdvanceRoleAction(this.getPlayerById(playerId).getRole().name) === false) {
+      return;
+    }
+
     this.confirmedPlayerPerformActions.push(playerId);
     const nextRoleAction = this.nextAction();
-    this.emit('nextAction', nextRoleAction);
+    this.newEmit('nextAction', nextRoleAction);
     if (this.confirmedPlayerPerformActions.length === this.players.length) {
-      this.emit('dayStarted');
+      this.newEmit('dayStarted');
     }
   }
 
@@ -116,7 +133,7 @@ export class Game extends EventEmitter {
   nextAction(): any {
     const nextRoleAction = this.roleQueue.shift();
     if (nextRoleAction === undefined) {
-      this.emit('dayStarted');
+      this.newEmit('dayStarted');
     }
     this.logger.info(`next action: ${nextRoleAction}`);
     return nextRoleAction;
@@ -131,27 +148,28 @@ export class Game extends EventEmitter {
       this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
 
     });
-    this.emit('gameEnded', this.calculateResults(votes));
+    this.newEmit('gameEnded', this.calculateResults(votes));
+    this.logger.info(`number of events: ${this.numberOfEvents}`);
   }
 
   startPerformActions(): void {
     this.phase = Phase.Night;
-    this.emit('perfomActionsStarted');
+    this.newEmit('perfomActionsStarted');
   }
 
   startDay(): Promise<void> {
     this.phase = Phase.Discussion;
     let totalSeconds = this.timer * 60;
     totalSeconds = 3;
-    this.emit('dayStarted');
+    this.newEmit('dayStarted');
     // find a good soultion for syncing the timer
     return new Promise(null);
     // return new Promise((resolve) => {
     //   const interval = setInterval(() => {
-    //     this.emit('timerTick', totalSeconds);
+    //     this.newEmit('timerTick', totalSeconds);
     //     if (totalSeconds <= 0) {
     //       this.currentTimerSec = 0;
-    //       this.emit('timerFinished');
+    //       this.newEmit('timerFinished');
     //       clearInterval(interval);
     //       resolve();
     //     }
@@ -162,7 +180,7 @@ export class Game extends EventEmitter {
 
   startVoting(): void {
     this.phase = Phase.Vote;
-    this.emit('votingStarted');
+    this.newEmit('votingStarted');
     this.logger.log('Game state is now voting');
   }
 
@@ -198,6 +216,7 @@ export class Game extends EventEmitter {
     let voted = '';
     // need to check for draw
     let check = 0;
+    // what does this even do ?
     mapVotes.forEach((value, key) => {
       if (prev === value) {
         prev = value;
@@ -209,6 +228,7 @@ export class Game extends EventEmitter {
         voted = key;
       }
     });
+    // why do i do this ? 
     if (check === mapVotes.size) {
       this.winners = Team.Villains;
 
@@ -228,13 +248,13 @@ export class Game extends EventEmitter {
     } else {
       this.winners = Team.Villains;
     }
-    this.emit('winnersCalculated', this.winners);
+    this.newEmit('winnersCalculated', this.winners);
     this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
 
   restart(): void {
-    this.emit('gameRestarted');
+    this.newEmit('gameRestarted');
     this.logger.info('Game restarted');
     this.phase = Phase.Waiting;
   }
@@ -252,7 +272,8 @@ export class Game extends EventEmitter {
       const randomIndex = Math.floor(Math.random() * availableRoles.length);
       const role = availableRoles[randomIndex];
       this.players[i].AddRole(role);
-      this.currentGameRolesMap.set(role.name, true);
+      const current = this.currentGameRolesMap.get(role.name) ?? 0;
+      this.currentGameRolesMap.set(role.name, current + 1);
       availableRoles.splice(randomIndex, 1);
     }
   }
@@ -313,5 +334,10 @@ export class Game extends EventEmitter {
       roles.push(role);
     }
     return roles;
+  }
+
+  newEmit(event: string, data?: any) {
+    this.numberOfEvents++;
+    this.emit(event, data);
   }
 }
