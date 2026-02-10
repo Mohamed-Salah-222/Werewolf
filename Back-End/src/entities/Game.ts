@@ -134,7 +134,7 @@ export class Game extends EventEmitter {
       throw new Error(`Player ${playerId} has already confirmed their role`);
     }
     const player = this.getPlayerById(playerId);
-    const roleName = player.getRole().name;
+    const roleName = player.getOriginalRole().name;
     this.confirmedPlayerPerformActions.push(playerId);
 
     const remaining = this.currentGameRolesMap.get(roleName) - 1;
@@ -184,7 +184,7 @@ export class Game extends EventEmitter {
   startDay(): Promise<void> {
     this.phase = Phase.Discussion;
     let totalSeconds = this.timer * 60;
-    // totalSeconds = 3; Leave it there for quick testing 
+    // totalSeconds = 3; Leave it there for quick testing
     this.newEmit("dayStarted");
     // find a good soultion for syncing the timer
     // return new Promise(null);
