@@ -1,7 +1,7 @@
 // Main game class - THE BRAIN
 // Extends EventEmitter (so it can emit events like 'gameStarted', 'votingStarted')
 // Properties: players[], groundRoles[], phase, code, votes[], timer, winners
-// Methods: 
+// Methods:
 //   - playerJoin(name)
 //   - start() → assigns roles, moves to RoleReveal phase
 //   - startNight() → moves to Night phase, triggers role actions
@@ -13,15 +13,15 @@
 // Used by: Manager, socketHandlers
 // Emits events that socketHandlers listens to
 
-import { Phase, Team, TimerOption, getRoleDistribution, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from '../config/constants';
+import { Phase, Team, TimerOption, getRoleDistribution, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from "../config/constants";
 // import { Result, RequestType } from '../types/result.types';
 
-import { Role, RoleClasses } from './roles';
-import { Player } from './Player';
-import { EventEmitter } from 'events';
-import { Logger } from '../utils/Logger';
-import { PlayerId } from '../types/game.types';
-import { Vote } from '../types/game.types';
+import { Role, RoleClasses } from "./roles";
+import { Player } from "./Player";
+import { EventEmitter } from "events";
+import { Logger } from "../utils/Logger";
+import { PlayerId } from "../types/game.types";
+import { Vote } from "../types/game.types";
 
 export class Game extends EventEmitter {
   players: Player[] = [];
@@ -46,9 +46,7 @@ export class Game extends EventEmitter {
   currentTimerSec: number;
   private availableRoles: Role[] = [];
 
-  constructor(
-    private logger: Logger
-  ) {
+  constructor(private logger: Logger) {
     super();
     this.code = this.generateCode();
 
@@ -60,7 +58,7 @@ export class Game extends EventEmitter {
     this.roleQueue = this.createRoleQueue();
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
-    this.logger.info('Game created');
+    this.logger.info("Game created");
   }
 
   playerJoin(name: string): void {
@@ -72,7 +70,7 @@ export class Game extends EventEmitter {
       throw new Error(`Game is full, max players is ${this.maxPlayers}`);
     }
     this.players.push(new Player(name));
-    this.newEmit('playerJoin', name);
+    this.newEmit("playerJoin", name);
   }
 
   start(): void {
@@ -84,7 +82,7 @@ export class Game extends EventEmitter {
     this.assignRandomRoles();
     this.groundRoles = this.availableRoles.slice(0, this.numberOfGroundRoles);
     this.phase = Phase.Role;
-    this.newEmit('gameStarted');
+    this.newEmit("gameStarted");
   }
 
   confirmPlayerRoleReveal(playerId: PlayerId): void {
@@ -96,17 +94,40 @@ export class Game extends EventEmitter {
     }
     this.confirmedPlayerRoleReveal.push(playerId);
 
-    this.newEmit('playerRoleRevealConfirmed', playerId);
+    this.newEmit("playerRoleRevealConfirmed", playerId);
   }
 
   startNight(): void {
     this.phase = Phase.Night;
-    this.newEmit('nightStarted');
+    this.newEmit("nightStarted");
+
+    console.log("🌙 Night phase started");
+
     setTimeout(() => {
-      this.newEmit('roleActionQueue', this.nextAction());
+      this.skipToNextRoleWithPlayers();
     }, 100);
   }
 
+  private skipToNextRoleWithPlayers(): void {
+    let nextRole = this.nextAction();
+
+    while (nextRole) {
+      const playersWithRole = this.players.filter((p) => p.getRole().name.toLowerCase() === nextRole.toLowerCase());
+
+      if (playersWithRole.length > 0) {
+        console.log(`📢 Emitting role action for ${nextRole} (${playersWithRole.length} players)`);
+        this.newEmit("roleActionQueue", nextRole);
+        return;
+      } else {
+        console.log(`⏭️ Skipping ${nextRole} - no players have this role`);
+        nextRole = this.nextAction();
+      }
+    }
+
+    // If no more roles, start day
+    console.log("✅ All roles completed, starting day phase");
+    this.startDay();
+  }
 
   playerPerformAction(playerId: PlayerId): void {
     if (this.confirmedPlayerPerformActions.includes(playerId)) {
@@ -124,19 +145,13 @@ export class Game extends EventEmitter {
       return;
     }
 
-    const nextRoleAction = this.nextAction();
-
-    if (nextRoleAction === undefined) {
-      throw new Error("Next role action is undefined in playerPerformAction");
-    }
-
-
     if (this.confirmedPlayerPerformActions.length === this.players.length) {
-      this.startDay()
+      this.startDay();
       return;
     }
 
-    this.newEmit('nextAction', nextRoleAction);
+    // Skip to next role with players
+    this.skipToNextRoleWithPlayers();
   }
 
   // get the next role action in the role queue
@@ -150,36 +165,35 @@ export class Game extends EventEmitter {
   }
 
   finish(): void {
-    this.logger.info('Game Ended');
+    this.logger.info("Game Ended");
     this.phase = Phase.EndGame;
     const votes = this.getVoteResults();
     votes.forEach((value, key) => {
       const player1 = this.getPlayerById(key);
       this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
-
     });
-    this.newEmit('gameEnded', this.calculateResults(votes));
+    this.newEmit("gameEnded", this.calculateResults(votes));
     this.logger.info(`number of events: ${this.numberOfEvents}`);
   }
 
   startPerformActions(): void {
     this.phase = Phase.Night;
-    this.newEmit('perfomActionsStarted');
+    this.newEmit("perfomActionsStarted");
   }
 
   startDay(): Promise<void> {
     this.phase = Phase.Discussion;
     let totalSeconds = this.timer * 60;
     totalSeconds = 3;
-    this.newEmit('dayStarted');
+    this.newEmit("dayStarted");
     // find a good soultion for syncing the timer
     // return new Promise(null);
     return new Promise((resolve) => {
       const interval = setInterval(() => {
         if (totalSeconds <= 0) {
           this.currentTimerSec = 0;
-          this.newEmit('timerFinished');
-          this.startVoting()
+          this.newEmit("timerFinished");
+          this.startVoting();
           clearInterval(interval);
           resolve();
         }
@@ -190,8 +204,8 @@ export class Game extends EventEmitter {
 
   startVoting(): void {
     this.phase = Phase.Vote;
-    this.logger.log('Game state is now voting');
-    this.newEmit('votingStarted');
+    this.logger.log("Game state is now voting");
+    this.newEmit("votingStarted");
   }
 
   playerVote(player: PlayerId, vote: PlayerId): void {
@@ -221,7 +235,7 @@ export class Game extends EventEmitter {
 
   calculateResults(mapVotes: Map<string, number>): string {
     let prev = 0;
-    let voted = '';
+    let voted = "";
     // need to check for draw
     let check = 0;
 
@@ -258,15 +272,13 @@ export class Game extends EventEmitter {
       this.winners = Team.Joker;
     }
 
-
-
     this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
 
   restart(): void {
-    this.newEmit('gameRestarted');
-    this.logger.info('Game restarted');
+    this.newEmit("gameRestarted");
+    this.logger.info("Game restarted");
     this.phase = Phase.Waiting;
   }
 
@@ -305,7 +317,7 @@ export class Game extends EventEmitter {
   }
 
   private addRoles() {
-    const roleNames = ['Clone', 'Insomniac', "Werewolf", 'Joker'];
+    const roleNames = ["Clone", "Insomniac", "Werewolf", "Joker"];
     for (let i = 0; i < this.players.length; i++) {
       const randomIndex = Math.floor(Math.random() * roleNames.length + 8);
       const role = new RoleClasses[roleNames[randomIndex].toLowerCase()]();
@@ -314,18 +326,16 @@ export class Game extends EventEmitter {
   }
 
   private generateCode(): string {
-    return this.code = Math.random().toString(36).substring(2, 8);
+    return (this.code = Math.random().toString(36).substring(2, 8));
   }
-
-
 
   private createRoleQueue(): string[] {
     const roleQueue = Object.values(ROLE_NAMES);
 
-    this.logger.info(`role queue: ${roleQueue.join(', ')}`);
-    console.log(`role queue: ${roleQueue.join(', ')}`);
+    this.logger.info(`role queue: ${roleQueue.join(", ")}`);
+    console.log(`role queue: ${roleQueue.join(", ")}`);
 
-    this.logger.info(`role queue: ${roleQueue.join(', ')}`);
+    this.logger.info(`role queue: ${roleQueue.join(", ")}`);
     return roleQueue;
   }
 
@@ -337,13 +347,13 @@ export class Game extends EventEmitter {
 
   private createRoles() {
     let roles: Role[] = [];
-    const roleNames = ['Werewolf', 'Mason', 'Seer', 'Drunk', 'Troublemaker', 'Robber', 'Minion'];
+    const roleNames = ["Werewolf", "Mason", "Seer", "Drunk", "Troublemaker", "Robber", "Minion"];
     for (let i = 0; i < roleNames.length; i++) {
       let role: Role;
-      if (roleNames[i] === 'Mason') {
+      if (roleNames[i] === "Mason") {
         continue;
       }
-      if (roleNames[i] === 'Werewolf') {
+      if (roleNames[i] === "Werewolf") {
         for (let j = 0; j < this.numberOfWerewolf; j++) {
           role = new RoleClasses[roleNames[0].toLowerCase()]();
           roles.push(role);
@@ -358,7 +368,6 @@ export class Game extends EventEmitter {
       roles.push(role);
     }
     return roles;
-
   }
 
   newEmit(event: string, data?: any) {

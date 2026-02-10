@@ -5,9 +5,27 @@ import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.type
 export function attachGameEventListeners(game: Game, io: Server<ClientToServerEvents, ServerToClientEvents>): void {
   const gameCode = game.code;
 
-  // When night starts
   game.on("nightStarted", () => {
     io.to(gameCode).emit("nightStarted");
+
+    // Send ground role IDs (not names) to all players
+    const groundCardIds = game.groundRoles.map((r, index) => ({
+      id: r.id,
+      label: `Ground Card ${index + 1}`,
+    }));
+    io.to(gameCode).emit("groundCards" as any, { cards: groundCardIds });
+  });
+
+  // Listen for role action queue
+  game.on("roleActionQueue", (roleName: string) => {
+    console.log(`📢 Emitting roleActionQueue to ${gameCode}:`, roleName);
+    io.to(gameCode).emit("roleActionQueue", roleName); // Send STRING directly
+  });
+
+  // Listen for next action
+  game.on("nextAction", (roleName: string) => {
+    console.log(`📢 Emitting nextAction to ${gameCode}:`, roleName);
+    io.to(gameCode).emit("nextAction", roleName); // Send STRING directly
   });
 
   // When discussion starts

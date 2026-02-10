@@ -69,6 +69,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Store game and player info
         currentGameCode = gameCode;
         currentPlayerId = player.id;
+        (socket as any).playerId = player.id;
 
         // Join socket room for this game
         socket.join(gameCode);
@@ -162,29 +163,53 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Start the game
         game.start();
 
-        // Notify all players
+        // Notify all players game started
         io.to(gameCode).emit("gameStarted", {
           phase: game.phase,
         });
 
-        // Send role reveals to each player individually
-        game.players.forEach((player) => {
-          const role = player.getRole();
-          io.to(gameCode).emit("roleReveal", {
-            playerId: player.id,
-            roleName: role.name,
-            roleTeam: role.team,
-            roleDescription: role.description,
-          });
-        });
+        console.log(`Game ${gameCode} started - sending role reveals`);
 
-        console.log(`Game ${gameCode} started`);
+        // Send each player ONLY their own role via their individual socket
+        setTimeout(() => {
+          const sockets = io.sockets.sockets;
+
+          game.players.forEach((player) => {
+            const role = player.getRole();
+
+            // Find the socket that belongs to this player
+            let playerSocket: Socket<ClientToServerEvents, ServerToClientEvents> | null = null;
+
+            for (const [, s] of sockets) {
+              // Check all sockets in this game room
+              if (s.rooms.has(gameCode)) {
+                // Match by checking the stored playerId on the socket data
+                const sData = s as any;
+                if (sData.playerId === player.id) {
+                  playerSocket = s;
+                  break;
+                }
+              }
+            }
+
+            if (playerSocket) {
+              console.log(`Sending role reveal to player ${player.name} (${player.id}): ${role.name}`);
+              playerSocket.emit("roleReveal", {
+                playerId: player.id,
+                roleName: role.name,
+                roleTeam: role.team,
+                roleDescription: role.description,
+              });
+            } else {
+              console.warn(`Could not find socket for player ${player.name} (${player.id})`);
+            }
+          });
+        }, 500);
       } catch (error: any) {
         console.error("Error in startGame:", error);
         socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
       }
     });
-
     // CONFIRM ROLE REVEAL
     socket.on("confirmRoleReveal", ({ gameCode, playerId }) => {
       try {
@@ -210,18 +235,37 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         const game = manager.getGameByCode(gameCode);
         if (!game) return;
 
-        game.playerPerformAction(playerId);
+        const player = game.getPlayerById(playerId);
 
-        // Notify player their action was confirmed
+        console.log(`Player ${player.name} (${player.getRole().name}) performing action`);
+
+        // Execute the actual role logic
+        let actionResult;
+        try {
+          actionResult = player.performAction(game, action);
+          console.log("Action result:", actionResult);
+        } catch (error: any) {
+          console.error("Error executing role action:", error);
+          actionResult = { error: error.message };
+        }
+
+        // Send result back to THIS player only
         socket.emit("actionResult", {
           success: true,
           message: "Action performed",
+          data: actionResult,
         });
+
+        // Mark player as done (advances to next role)
+        game.playerPerformAction(playerId);
       } catch (error) {
         console.error("Error in performAction:", error);
+        socket.emit("actionResult", {
+          success: false,
+          message: "Action failed",
+        });
       }
     });
-
     // VOTE
     socket.on("vote", ({ gameCode, playerId, votedPlayerId }) => {
       try {

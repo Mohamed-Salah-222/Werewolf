@@ -19,6 +19,8 @@ export interface ServerToClientEvents {
   gameStarted: (data: GameStartedData) => void;
   roleReveal: (data: RoleRevealData) => void;
   nightStarted: () => void;
+  roleActionQueue: (roleName: string) => void;
+  nextAction: (roleName: string) => void;
   yourTurn: (data: YourTurnData) => void;
   waitForTurn: () => void;
   actionResult: (data: ActionResultData) => void;
@@ -28,6 +30,7 @@ export interface ServerToClientEvents {
   voteConfirmed: (data: { playerId: PlayerId }) => void;
   gameEnded: (data: GameEndedData) => void;
   error: (data: { message: string }) => void;
+  groundCards: (data: { cards: Array<{ id: string; label: string }> }) => void;
 }
 
 // Data structures

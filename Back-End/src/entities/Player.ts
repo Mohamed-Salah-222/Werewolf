@@ -1,6 +1,6 @@
 import { Role } from "./roles";
 
-import { Game } from './Game';
+import { Game } from "./Game";
 import { Phase } from "../config/constants";
 
 export class Player {
@@ -29,11 +29,11 @@ export class Player {
     this.role = role;
   }
   // wtv
-  public performAction(game: Game) {
-    if (game.phase !== Phase.Role) {
-      throw new Error('Game is not in perfom actions phase');
+  public performAction(game: Game, action?: any) {
+    if (game.phase !== Phase.Role && game.phase !== Phase.Night) {
+      throw new Error("Cannot perform action in this phase");
     }
-    return this.role.performAction()(game, this);
+    return this.role.performAction()(game, this, action);
   }
   public toString(): string {
     return this.name;
