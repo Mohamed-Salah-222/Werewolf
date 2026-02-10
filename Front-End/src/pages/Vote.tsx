@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
+import { API_URL } from "../config";
 
 interface LocationState {
   playerName: string;
@@ -32,7 +33,7 @@ function Vote() {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/games/${gameCode}`);
+        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
         if (data.success && data.data.players) {
           setPlayers(data.data.players);
