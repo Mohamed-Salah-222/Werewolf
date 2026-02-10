@@ -2,7 +2,7 @@ import { useState } from "react";
 import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 
-const API_URL = "http://localhost:3000";
+import { API_URL } from "../config";
 
 function HomePage() {
   const navigate = useNavigate();
