@@ -4,6 +4,7 @@ import { Phase } from "../config/constants";
 import { Logger } from "../utils/Logger";
 import { attachGameEventListeners } from "../socket/gameEventListeners";
 import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.types";
+import { PlayerId } from "../types/game.types";
 
 export class Manager {
   public games: Game[];
@@ -69,9 +70,6 @@ export class Manager {
     }
   }
 
-  public restartGame(game: Game): void {
-    game.restart();
-  }
 
   public deleteGame(game: Game): void {
     this.games = this.games.filter((g) => g !== game);

@@ -250,11 +250,15 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     });
 
     // START GAME
-    socket.on("startGame", ({ gameCode }) => {
+    socket.on("startGame", ({ gameCode, playerId }) => {
       try {
         const game = manager.getGameByCode(gameCode);
         if (!game) {
           socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
+          return;
+        }
+        if (playerId !== game.host) {
+          socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
           return;
         }
 
@@ -385,10 +389,15 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     });
 
     // RESTART GAME
-    socket.on("restartGame", ({ gameCode }) => {
+    socket.on("restartGame", ({ gameCode, playerId }) => {
       try {
         const game = manager.getGameByCode(gameCode);
         if (!game) return;
+
+        if (playerId !== game.host) {
+          socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
+          return;
+        }
 
         game.restart();
 

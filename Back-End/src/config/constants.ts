@@ -125,6 +125,7 @@ export const SOCKET_EVENTS = {
 export const ERROR_MESSAGES = {
   GAME_NOT_FOUND: "Game not found",
   GAME_ALREADY_STARTED: "Game has already started",
+  HOST_ONLY: "Only the host can perform this action",
   GAME_FULL: "Game is full",
   INVALID_PLAYER_NAME: "Invalid player name",
   PLAYER_NOT_FOUND: "Player not found",

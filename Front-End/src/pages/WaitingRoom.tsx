@@ -139,7 +139,7 @@ function WaitingRoom() {
       return;
     }
 
-    socket.emit("startGame", { gameCode });
+    socket.emit("startGame", { gameCode, playerId });
   };
 
   const handleLeave = () => {

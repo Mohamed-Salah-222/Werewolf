@@ -17,6 +17,7 @@ function Results() {
   const state = location.state as LocationState | null;
 
   const playerId = state?.playerId || "";
+  const isHost = state?.isHost || false;
   const winners = state?.winners || "";
   const votes = state?.votes || [];
   const playerRoles = state?.playerRoles || [];
@@ -100,6 +101,12 @@ function Results() {
     return "#4ade80";
   };
 
+  const handleRestartGame = () => {
+    // Navigate back to lobby or setup page with host privileges
+    // You can customize this to match your game flow
+    navigate("/lobby", { state: { isHost: true } });
+  };
+
   return (
     <div style={styles.container}>
       {/* Winner banner */}
@@ -155,10 +162,21 @@ function Results() {
         )}
       </div>
 
-      {/* Play again */}
-      <button style={styles.playAgainButton} onClick={() => navigate("/")}>
-        Back to Home
-      </button>
+      {/* Action buttons */}
+      {isHost ? (
+        <div style={styles.buttonContainer}>
+          <button style={styles.restartButton} onClick={handleRestartGame}>
+            🔄 Restart Game
+          </button>
+          <button style={styles.homeButton} onClick={() => navigate("/")}>
+            Back to Home
+          </button>
+        </div>
+      ) : (
+        <button style={styles.playAgainButton} onClick={() => navigate("/")}>
+          Back to Home
+        </button>
+      )}
     </div>
   );
 }
@@ -292,6 +310,35 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: "bold",
     flex: 1,
     textAlign: "right" as const,
+  },
+  buttonContainer: {
+    width: "100%",
+    display: "flex",
+    flexDirection: "column",
+    gap: "12px",
+    marginTop: "8px",
+  },
+  restartButton: {
+    width: "100%",
+    padding: "16px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    backgroundColor: "#4ade80",
+    color: "#111",
+    border: "none",
+    borderRadius: "8px",
+    cursor: "pointer",
+  },
+  homeButton: {
+    width: "100%",
+    padding: "16px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    backgroundColor: "transparent",
+    color: "#888",
+    border: "1px solid #333",
+    borderRadius: "8px",
+    cursor: "pointer",
   },
   playAgainButton: {
     width: "100%",
