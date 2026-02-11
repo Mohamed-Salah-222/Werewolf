@@ -296,8 +296,6 @@ export class Game extends EventEmitter {
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");
-    this.newEmit("gameRestarted");
-
   }
 
   getPlayerById(id: string): Player {

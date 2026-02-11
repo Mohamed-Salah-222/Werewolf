@@ -31,6 +31,7 @@ export interface ServerToClientEvents {
   gameEnded: (data: GameEndedData) => void;
   error: (data: { message: string }) => void;
   groundCards: (data: { cards: Array<{ id: string; label: string }> }) => void;
+  gameRestarted: () => void;
 }
 
 // Data structures

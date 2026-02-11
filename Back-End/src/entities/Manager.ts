@@ -69,6 +69,10 @@ export class Manager {
     }
   }
 
+  public restartGame(game: Game): void {
+    game.restart();
+  }
+
   public deleteGame(game: Game): void {
     this.games = this.games.filter((g) => g !== game);
   }

@@ -283,6 +283,22 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
+    // RESTART GAME
+    socket.on("restartGame", ({ gameCode }) => {
+      try {
+        const game = manager.getGameByCode(gameCode);
+        if (!game) return;
+
+        game.restart();
+
+        // Notify all that this player voted
+        io.to(gameCode).emit("gameRestarted");
+
+        console.log(`Game ${gameCode} restarted`);
+      } catch (error) {
+        console.error("Error in restartGame:", error);
+      }
+    });
     // DISCONNECT
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
