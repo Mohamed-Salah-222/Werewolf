@@ -35,7 +35,6 @@ export class Game extends EventEmitter {
   numberOfGroundRoles: number = NUMBER_OF_GROUND_ROLES;
   numberOfWerewolf: number;
   numberOfMasons: number;
-  player: Player[] = [];
   numberOfEvents: number = 0;
   confirmedPlayerRoleReveal: PlayerId[] = [];
   confirmedPlayerPerformActions: PlayerId[] = [];
@@ -277,10 +276,28 @@ export class Game extends EventEmitter {
     return this.winners;
   }
 
+
   restart(): void {
-    this.newEmit("gameRestarted");
-    this.logger.info("Game restarted");
+    for (const player of this.players) {
+      player.reset();
+    }
+
+    this.groundRoles = [];
+    this.prettyVotes = [];
+    this.votes = [];
+    this.winners = null;
     this.phase = Phase.Waiting;
+    this.confirmedPlayerRoleReveal = [];
+    this.confirmedPlayerPerformActions = [];
+    this.currentTimerSec = 0;
+
+    this.availableRoles = this.createRoles();
+    this.roleQueue = this.createRoleQueue();
+
+    this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
+    this.logger.info("Game restarted");
+    this.newEmit("gameRestarted");
+
   }
 
   getPlayerById(id: string): Player {
