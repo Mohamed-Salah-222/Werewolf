@@ -233,7 +233,7 @@ export class Game extends EventEmitter {
 
   getVoteResults(): Map<string, number> {
     let votes = this.votes;
-    let mapVotes = new Map();
+    let mapVotes = new Map<string, number>();
 
     for (let i = 0; i < votes.length; i++) {
       let vote = votes[i];
@@ -269,6 +269,17 @@ export class Game extends EventEmitter {
     if (check === mapVotes.size) {
       this.winners = Team.Villains;
 
+      return this.winners;
+    }
+
+    if (voted === "noWerewolf") {
+      for (const player of this.players) {
+        if (player.getRole().name === "Werewolf") {
+          this.winners = Team.Villains;
+          return this.winners;
+        }
+      }
+      this.winners = Team.Heroes;
       return this.winners;
     }
 
