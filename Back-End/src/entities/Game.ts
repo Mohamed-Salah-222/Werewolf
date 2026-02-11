@@ -204,19 +204,19 @@ export class Game extends EventEmitter {
       switch (roleName) {
         case "werewolf":
           action = { type: "werewolf" };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         case "minion":
           action = { type: "minion" };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         case "mason":
           action = { type: "mason" };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         case "insomniac":
           action = { type: "insomniac" };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         case "seer": {
           // Random: see a player or two ground cards
@@ -228,37 +228,37 @@ export class Game extends EventEmitter {
           } else {
             action = { type: "seer_player_role", targetPlayer: { id: otherPlayers[0].id } };
           }
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         case "robber": {
           const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
           action = { type: "robber", targetPlayer: { id: target.id } };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         case "troublemaker": {
           const shuffled = otherPlayers.sort(() => Math.random() - 0.5);
           action = { type: "troublemaker", player1: { id: shuffled[0].id }, player2: { id: shuffled[1].id } };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         case "clone": {
           const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
           action = { type: "clone", targetPlayer: { id: target.id } };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         case "drunk": {
           const groundIndex = Math.floor(Math.random() * this.groundRoles.length);
           action = { type: "drunk", targetRoleId: this.groundRoles[groundIndex].id };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         case "joker": {
           const groundIndex = Math.floor(Math.random() * this.groundRoles.length);
           action = { type: "joker", targetRoleId: this.groundRoles[groundIndex].id };
-          result = player.performAction(this, action);
+          result = player.performOriginalAction(this, action);
           break;
         }
         default:
@@ -393,8 +393,12 @@ export class Game extends EventEmitter {
     this.phase = Phase.EndGame;
     const votes = this.getVoteResults();
     votes.forEach((value, key) => {
-      const player1 = this.getPlayerById(key);
-      this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
+      if (key === "noWerewolf") {
+        this.logger.log(`No Werewolf has been voted: ${value} times`);
+      } else {
+        const player1 = this.getPlayerById(key);
+        this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
+      }
     });
     this.endedAt = Date.now();
     this.newEmit("gameEnded", this.calculateResults(votes));
@@ -436,7 +440,11 @@ export class Game extends EventEmitter {
 
   playerVote(player: PlayerId, vote: PlayerId): void {
     this.votes.push({ voter: player, vote: vote });
-    this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for ${this.getPlayerById(vote).name} and his role is ${this.getPlayerById(vote).getRole().name}`);
+    if (vote === "noWerewolf") {
+      this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for No Werewolf`);
+    } else {
+      this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for ${this.getPlayerById(vote).name} and his role is ${this.getPlayerById(vote).getRole().name}`);
+    }
     if (this.votes.length === this.players.length) {
       this.finish();
     }

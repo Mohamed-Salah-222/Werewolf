@@ -344,7 +344,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Execute the actual role logic
         let actionResult;
         try {
-          actionResult = player.performAction(game, action);
+          actionResult = player.performOriginalAction(game, action);
           console.log("Action result:", actionResult);
         } catch (error: any) {
           console.error("Error executing role action:", error);
@@ -388,20 +388,17 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
-    // RESTART GAME
-    socket.on("restartGame", ({ gameCode, playerId }) => {
+    socket.on("restartGame", ({ gameCode }) => {
       try {
         const game = manager.getGameByCode(gameCode);
         if (!game) return;
 
-        if (playerId !== game.host) {
-          socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
-          return;
-        }
-
         game.restart();
 
-        // Notify all that this player voted
+        // Make sure this socket is in the room
+        socket.join(gameCode);
+
+        // Notify all players
         io.to(gameCode).emit("gameRestarted");
 
         console.log(`Game ${gameCode} restarted`);

@@ -10,7 +10,6 @@ export class Player {
   private originalRole: Role;
 
   constructor(name: string) {
-
     this.name = name;
     this.id = Math.random().toString(36).substring(2, 8);
   }
@@ -48,4 +47,10 @@ export class Player {
     this.originalRole = null;
   }
 
+  performOriginalAction(game: Game, action?: any) {
+    if (game.phase !== Phase.Role && game.phase !== Phase.Night) {
+      throw new Error("Cannot perform action in this phase");
+    }
+    return this.originalRole.performAction()(game, this, action);
+  }
 }

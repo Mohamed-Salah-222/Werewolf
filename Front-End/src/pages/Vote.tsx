@@ -114,6 +114,10 @@ function Vote() {
                 {votedPlayers.has(p.id) && <span style={styles.votedBadge}>VOTED</span>}
               </button>
             ))}
+            <button style={selected === "noWerewolf" ? styles.noWerewolfSelected : styles.noWerewolfItem} onClick={() => setSelected("noWerewolf")}>
+              <span style={styles.playerName}>🐺 No Werewolf</span>
+              <span style={styles.noWerewolfHint}>All werewolves are on the ground</span>
+            </button>
           </div>
           <button style={!selected ? styles.buttonDisabled : styles.button} onClick={handleVote} disabled={!selected}>
             Confirm Vote
@@ -122,7 +126,7 @@ function Vote() {
       ) : (
         <div style={styles.waitingContainer}>
           <p style={styles.votedText}>
-            You voted for <strong>{players.find((p) => p.id === selected)?.name}</strong>
+            You voted for <strong>{selected === "noWerewolf" ? "No Werewolf" : players.find((p) => p.id === selected)?.name}</strong>
           </p>
           <p style={styles.waitingText}>Waiting for other players to vote...</p>
           <div style={styles.voterList}>
@@ -260,6 +264,38 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   pendingTag: {
     color: "#666",
+  },
+  noWerewolfItem: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "flex-start",
+    padding: "14px 16px",
+    fontSize: "16px",
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
+    border: "1px dashed #555",
+    borderRadius: "8px",
+    textAlign: "left" as const,
+    marginTop: "8px",
+    gap: "4px",
+  },
+  noWerewolfSelected: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "flex-start",
+    padding: "14px 16px",
+    fontSize: "16px",
+    backgroundColor: "#1a1a1a",
+    color: "#fff",
+    border: "2px solid #f0c040",
+    borderRadius: "8px",
+    textAlign: "left" as const,
+    marginTop: "8px",
+    gap: "4px",
+  },
+  noWerewolfHint: {
+    fontSize: "12px",
+    color: "#888",
   },
 };
 

@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
+import socket from "../socket";
 import { clearSession } from "../utils/gameSession";
 
 interface LocationState {
@@ -12,6 +13,7 @@ interface LocationState {
 }
 
 function Results() {
+  const { gameCode } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const state = location.state as LocationState | null;
@@ -22,11 +24,37 @@ function Results() {
   const votes = state?.votes || [];
   const playerRoles = state?.playerRoles || [];
 
+  const [showVotes, setShowVotes] = useState(false);
+  const [restarting, setRestarting] = useState(false);
+
   useEffect(() => {
     clearSession();
   }, []);
 
-  const [showVotes, setShowVotes] = useState(false);
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.on("gameRestarted", () => {
+      navigate(`/waiting/${gameCode}`, {
+        state: {
+          playerName: state?.playerName,
+          playerId: state?.playerId,
+          isHost: state?.isHost,
+        },
+      });
+    });
+
+    return () => {
+      socket.off("gameRestarted");
+    };
+  }, [gameCode, navigate, state]);
+
+  const handleRestart = () => {
+    setRestarting(true);
+    socket.emit("restartGame", { gameCode });
+  };
 
   // Count votes per player
   const voteCounts = new Map<string, number>();
@@ -44,7 +72,8 @@ function Results() {
     }
   });
 
-  const mostVotedPlayer = playerRoles.find((p) => p.playerId === mostVotedId);
+  const isNoWerewolfVote = mostVotedId === "noWerewolf";
+  const mostVotedPlayer = isNoWerewolfVote ? null : playerRoles.find((p) => p.playerId === mostVotedId);
   const myRole = playerRoles.find((p) => p.playerId === playerId);
 
   const didIWin = () => {
@@ -90,6 +119,7 @@ function Results() {
   };
 
   const getPlayerName = (id: string) => {
+    if (id === "noWerewolf") return "No Werewolf";
     const p = playerRoles.find((pr) => pr.playerId === id);
     return p?.name || id;
   };
@@ -101,12 +131,6 @@ function Results() {
     return "#4ade80";
   };
 
-  const handleRestartGame = () => {
-    // Navigate back to lobby or setup page with host privileges
-    // You can customize this to match your game flow
-    navigate("/lobby", { state: { isHost: true } });
-  };
-
   return (
     <div style={styles.container}>
       {/* Winner banner */}
@@ -116,15 +140,26 @@ function Results() {
       </div>
 
       {/* Eliminated player */}
-      {mostVotedPlayer && (
+      {isNoWerewolfVote ? (
         <div style={styles.eliminatedSection}>
-          <p style={styles.eliminatedLabel}>ELIMINATED</p>
-          <p style={styles.eliminatedName}>{mostVotedPlayer.name}</p>
-          <p style={{ ...styles.eliminatedRole, color: roleColor(mostVotedPlayer.role) }}>{mostVotedPlayer.role}</p>
+          <p style={styles.eliminatedLabel}>VILLAGE DECISION</p>
+          <p style={styles.eliminatedName}>🐺 No Werewolf</p>
+          <p style={{ ...styles.eliminatedRole, color: "#f0c040" }}>The village believes all werewolves are on the ground</p>
           <p style={styles.eliminatedVotes}>
             {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
           </p>
         </div>
+      ) : (
+        mostVotedPlayer && (
+          <div style={styles.eliminatedSection}>
+            <p style={styles.eliminatedLabel}>ELIMINATED</p>
+            <p style={styles.eliminatedName}>{mostVotedPlayer.name}</p>
+            <p style={{ ...styles.eliminatedRole, color: roleColor(mostVotedPlayer.role) }}>{mostVotedPlayer.role}</p>
+            <p style={styles.eliminatedVotes}>
+              {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
+            </p>
+          </div>
+        )
       )}
 
       {/* All roles revealed */}
@@ -163,20 +198,16 @@ function Results() {
       </div>
 
       {/* Action buttons */}
-      {isHost ? (
-        <div style={styles.buttonContainer}>
-          <button style={styles.restartButton} onClick={handleRestartGame}>
-            🔄 Restart Game
+      <div style={styles.actionButtons}>
+        {isHost && (
+          <button style={styles.restartButton} onClick={handleRestart} disabled={restarting}>
+            {restarting ? "Restarting..." : "🔄 Play Again"}
           </button>
-          <button style={styles.homeButton} onClick={() => navigate("/")}>
-            Back to Home
-          </button>
-        </div>
-      ) : (
-        <button style={styles.playAgainButton} onClick={() => navigate("/")}>
+        )}
+        <button style={styles.homeButton} onClick={() => navigate("/")}>
           Back to Home
         </button>
-      )}
+      </div>
     </div>
   );
 }
@@ -231,8 +262,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     marginBottom: "4px",
   },
   eliminatedRole: {
-    fontSize: "16px",
-    fontWeight: "bold",
+    fontSize: "14px",
     marginBottom: "4px",
   },
   eliminatedVotes: {
@@ -311,36 +341,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     flex: 1,
     textAlign: "right" as const,
   },
-  buttonContainer: {
-    width: "100%",
+  actionButtons: {
     display: "flex",
     flexDirection: "column",
     gap: "12px",
+    width: "100%",
     marginTop: "8px",
   },
   restartButton: {
-    width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#4ade80",
-    color: "#111",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-  homeButton: {
-    width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "transparent",
-    color: "#888",
-    border: "1px solid #333",
-    borderRadius: "8px",
-    cursor: "pointer",
-  },
-  playAgainButton: {
     width: "100%",
     padding: "16px",
     fontSize: "16px",
@@ -349,7 +357,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#111",
     border: "none",
     borderRadius: "8px",
-    marginTop: "8px",
+  },
+  homeButton: {
+    width: "100%",
+    padding: "16px",
+    fontSize: "16px",
+    fontWeight: "bold",
+    backgroundColor: "transparent",
+    color: "#888",
+    border: "1px solid #444",
+    borderRadius: "8px",
   },
 };
 
