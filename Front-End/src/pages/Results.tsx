@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { clearSession } from "../utils/gameSession";
 
 interface LocationState {
   playerName: string;
@@ -19,6 +20,10 @@ function Results() {
   const winners = state?.winners || "";
   const votes = state?.votes || [];
   const playerRoles = state?.playerRoles || [];
+
+  useEffect(() => {
+    clearSession();
+  }, []);
 
   const [showVotes, setShowVotes] = useState(false);
 

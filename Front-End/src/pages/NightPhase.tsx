@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
 import WaitingForTurn from "../components/roles/WaitingForTurn";
 import ActionComplete from "../components/roles/ActionComplete";
@@ -23,8 +24,9 @@ interface LocationState {
   roleName?: string;
   initialActiveRole?: string;
   initialGroundCards?: Array<{ id: string; label: string }>;
+  hasPerformedAction?: boolean;
+  lastActionResult?: { message?: string } | null;
 }
-
 function NightPhase() {
   const { gameCode } = useParams();
   const location = useLocation();
@@ -36,17 +38,22 @@ function NightPhase() {
   const isHost = state?.isHost || false;
 
   const [myRole] = useState<string>(state?.roleName || "");
+  const hasAlreadyActed = state?.hasPerformedAction || false;
+
   const [isMyTurn, setIsMyTurn] = useState(() => {
+    if (hasAlreadyActed) return false;
     const initialRole = state?.initialActiveRole;
     if (initialRole && state?.roleName) {
       return initialRole.toLowerCase() === state.roleName.toLowerCase();
     }
     return false;
   });
-  const [actionDone, setActionDone] = useState(false);
-  const [actionResult, setActionResult] = useState<{ message?: string } | null>(null);
+  const [actionDone, setActionDone] = useState(hasAlreadyActed);
+  const [actionResult, setActionResult] = useState<{ message?: string } | null>(hasAlreadyActed ? state?.lastActionResult || { message: "Action was performed" } : null);
   const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
+
+  useLeaveWarning(true);
 
   // Check initial active role on mount
 

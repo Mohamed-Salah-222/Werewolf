@@ -1,19 +1,166 @@
 import { useState } from "react";
 import socket from "../socket";
 import { useNavigate } from "react-router-dom";
-
 import { API_URL } from "../config";
+import { getSession, clearSession, saveSession } from "../utils/gameSession";
+
+interface RejoinResponse {
+  success: boolean;
+  playerId?: string;
+  playerName?: string;
+  phase?: string;
+  roleInfo?: {
+    roleName: string;
+    roleTeam: string;
+    roleDescription: string;
+    currentRoleName: string;
+  } | null;
+  groundCardsInfo?: Array<{ id: string; label: string }> | null;
+  hasPerformedAction?: boolean;
+  hasConfirmedRole?: boolean;
+  hasVoted?: boolean;
+  players?: Array<{ id: string; name: string }>;
+  timerSeconds?: number;
+  error?: string;
+  currentActiveRole?: string;
+  lastActionResult?: { message?: string } | null;
+}
 
 function HomePage() {
   const navigate = useNavigate();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showRejoinModal, setShowRejoinModal] = useState(() => {
+    return getSession() !== null;
+  });
 
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [rejoinLoading, setRejoinLoading] = useState(false);
+
+  const handleRejoin = async () => {
+    const session = getSession();
+    if (!session) return;
+
+    setRejoinLoading(true);
+
+    try {
+      // First check if the game still exists
+      const res = await fetch(`${API_URL}/api/games/${session.gameCode}`);
+      const data = await res.json();
+
+      if (!data.success) {
+        clearSession();
+        setShowRejoinModal(false);
+        setRejoinLoading(false);
+        return;
+      }
+
+      if (!socket.connected) {
+        socket.connect();
+      }
+
+      // Wait for connection
+      await new Promise<void>((resolve) => {
+        if (socket.connected) {
+          resolve();
+        } else {
+          socket.once("connect", () => resolve());
+        }
+      });
+
+      socket.emit(
+        "rejoinGame",
+        {
+          gameCode: session.gameCode,
+          playerId: session.playerId,
+          playerName: session.playerName,
+        },
+        (response: RejoinResponse) => {
+          setRejoinLoading(false);
+
+          if (!response.success) {
+            clearSession();
+            setShowRejoinModal(false);
+            return;
+          }
+
+          // Update session with confirmed player ID
+          saveSession({
+            gameCode: session.gameCode,
+            playerId: response.playerId || session.playerId,
+            playerName: response.playerName || session.playerName,
+            isHost: session.isHost,
+          });
+
+          const baseState = {
+            playerName: response.playerName || session.playerName,
+            playerId: response.playerId || session.playerId,
+            isHost: session.isHost,
+          };
+
+          // Navigate to the correct page based on phase
+          switch (response.phase) {
+            case "waiting":
+              navigate(`/waiting/${session.gameCode}`, { state: baseState });
+              break;
+            case "role":
+              navigate(`/role-reveal/${session.gameCode}`, {
+                state: {
+                  ...baseState,
+                  rejoinRoleInfo: response.roleInfo,
+                  hasConfirmedRole: response.hasConfirmedRole,
+                },
+              });
+              break;
+            case "night":
+              navigate(`/night/${session.gameCode}`, {
+                state: {
+                  ...baseState,
+                  roleName: response.roleInfo?.roleName,
+                  initialGroundCards: response.groundCardsInfo,
+                  hasPerformedAction: response.hasPerformedAction,
+                  initialActiveRole: response.currentActiveRole,
+                  lastActionResult: response.lastActionResult,
+                },
+              });
+              break;
+            case "discussion":
+              navigate(`/discussion/${session.gameCode}`, {
+                state: {
+                  ...baseState,
+                  timerSeconds: response.timerSeconds || 360,
+                },
+              });
+              break;
+            case "vote":
+              navigate(`/vote/${session.gameCode}`, {
+                state: {
+                  ...baseState,
+                  hasVoted: response.hasVoted,
+                },
+              });
+              break;
+            default:
+              clearSession();
+              setShowRejoinModal(false);
+          }
+        },
+      );
+    } catch {
+      clearSession();
+      setShowRejoinModal(false);
+      setRejoinLoading(false);
+    }
+  };
+
+  const handleDeclineRejoin = () => {
+    clearSession();
+    setShowRejoinModal(false);
+  };
 
   const handleCreateGame = async () => {
     if (playerName.trim().length < 2) {
@@ -46,6 +193,12 @@ function HomePage() {
       socket.emit("joinGame", { gameCode: code, playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
         setLoading(false);
         if (response.success) {
+          saveSession({
+            gameCode: code,
+            playerId: response.playerId || "",
+            playerName: response.playerName || "",
+            isHost: true,
+          });
           setShowCreateModal(false);
           navigate(`/waiting/${code}`, {
             state: {
@@ -60,6 +213,7 @@ function HomePage() {
       });
     } catch {
       setError("Could not connect to server");
+      setLoading(false);
     }
   };
 
@@ -83,6 +237,12 @@ function HomePage() {
     socket.emit("joinGame", { gameCode: gameCode.trim().toLowerCase(), playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
       setLoading(false);
       if (response.success) {
+        saveSession({
+          gameCode: gameCode.trim().toLowerCase(),
+          playerId: response.playerId || "",
+          playerName: response.playerName || "",
+          isHost: false,
+        });
         setShowJoinModal(false);
         navigate(`/waiting/${gameCode.trim().toLowerCase()}`, {
           state: {
@@ -168,6 +328,23 @@ function HomePage() {
               </button>
               <button style={styles.confirmButton} onClick={handleJoinGame} disabled={loading}>
                 {loading ? "Joining..." : "Join"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRejoinModal && (
+        <div style={styles.overlay}>
+          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h2 style={styles.modalTitle}>Rejoin Game?</h2>
+            <p style={styles.rejoinText}>You were in a game. Would you like to rejoin?</p>
+            <div style={styles.modalButtons}>
+              <button style={styles.cancelButton} onClick={handleDeclineRejoin}>
+                No, start fresh
+              </button>
+              <button style={styles.confirmButton} onClick={handleRejoin} disabled={rejoinLoading}>
+                {rejoinLoading ? "Rejoining..." : "Rejoin"}
               </button>
             </div>
           </div>
@@ -260,6 +437,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#ff4444",
     fontSize: "14px",
     marginBottom: "12px",
+  },
+  rejoinText: {
+    color: "#aaa",
+    fontSize: "14px",
+    marginBottom: "20px",
+    textAlign: "center" as const,
   },
   modalButtons: {
     display: "flex",

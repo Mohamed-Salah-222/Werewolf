@@ -1,11 +1,18 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
 interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
+  rejoinRoleInfo?: {
+    roleName: string;
+    roleTeam: string;
+    roleDescription: string;
+  } | null;
+  hasConfirmedRole?: boolean;
 }
 
 interface RoleInfo {
@@ -23,10 +30,23 @@ function RoleReveal() {
   const playerName = state?.playerName || "Unknown";
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
-
-  const [role, setRole] = useState<RoleInfo | null>(null);
   const [revealed, setRevealed] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
+
+  const [role, setRole] = useState<RoleInfo | null>(() => {
+    const rejoinInfo = state?.rejoinRoleInfo;
+    if (rejoinInfo) {
+      return {
+        roleName: rejoinInfo.roleName,
+        roleTeam: rejoinInfo.roleTeam,
+        roleDescription: rejoinInfo.roleDescription,
+      };
+    }
+    return null;
+  });
+
+  const [confirmed, setConfirmed] = useState(state?.hasConfirmedRole || false);
+
+  useLeaveWarning(true);
 
   useEffect(() => {
     if (!socket.connected) {

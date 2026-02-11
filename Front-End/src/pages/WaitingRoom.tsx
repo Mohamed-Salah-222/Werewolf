@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import { clearSession } from "../utils/gameSession";
 
 interface PlayerInfo {
   id: string;
@@ -29,6 +31,8 @@ function WaitingRoom() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+
+  useLeaveWarning(true);
 
   useEffect(() => {
     if (!socket.connected) {
@@ -140,6 +144,7 @@ function WaitingRoom() {
 
   const handleLeave = () => {
     socket.emit("leaveGame", { gameCode, playerId });
+    clearSession();
     navigate("/");
   };
 

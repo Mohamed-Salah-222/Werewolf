@@ -44,6 +44,7 @@ export class Game extends EventEmitter {
   currentGameRolesMap: Map<string, number> = new Map();
   currentTimerSec: number;
   private availableRoles: Role[] = [];
+  currentActiveRole: string = "";
 
   constructor(private logger: Logger) {
     super();
@@ -115,6 +116,7 @@ export class Game extends EventEmitter {
 
       if (playersWithRole.length > 0) {
         console.log(`📢 Emitting role action for ${nextRole} (${playersWithRole.length} players)`);
+        this.currentActiveRole = nextRole;
         this.newEmit("roleActionQueue", nextRole);
         return;
       } else {
@@ -123,8 +125,8 @@ export class Game extends EventEmitter {
       }
     }
 
-    // If no more roles, start day
     console.log("✅ All roles completed, starting day phase");
+    this.currentActiveRole = "";
     this.startDay();
   }
 

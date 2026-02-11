@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
 interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
+  hasVoted?: boolean;
 }
 
 interface PlayerInfo {
@@ -26,8 +28,10 @@ function Vote() {
 
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [hasVoted, setHasVoted] = useState(false);
+  const [hasVoted, setHasVoted] = useState(state?.hasVoted || false);
   const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
+
+  useLeaveWarning(true);
 
   // Fetch player list on mount
   useEffect(() => {

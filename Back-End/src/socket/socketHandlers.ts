@@ -1,7 +1,7 @@
 import { Server, Socket } from "socket.io";
 import { Manager } from "../entities/Manager";
 import { Game } from "../entities/Game";
-import { SOCKET_EVENTS, ERROR_MESSAGES, VALIDATION } from "../config/constants";
+import { SOCKET_EVENTS, ERROR_MESSAGES, VALIDATION, Phase } from "../config/constants";
 import { ClientToServerEvents, ServerToClientEvents, JoinGameData, JoinGameResponse } from "../types/socket.types";
 import { PlayerId } from "../types/game.types";
 
@@ -109,6 +109,104 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           success: false,
           error: error.message || ERROR_MESSAGES.UNKNOWN_ERROR,
         });
+      }
+    });
+
+    // REJOIN GAME
+    socket.on("rejoinGame" as any, (data: { gameCode: string; playerId: string; playerName: string }, callback: (response: any) => void) => {
+      try {
+        const { gameCode, playerId, playerName } = data;
+
+        const game = manager.getGameByCode(gameCode);
+        if (!game) {
+          callback({ success: false, error: "Game not found" });
+          return;
+        }
+
+        // Find the player by ID first, then by name
+        let player = game.players.find((p) => p.id === playerId);
+        if (!player) {
+          player = game.players.find((p) => p.name === playerName);
+        }
+
+        if (!player) {
+          // Player was never in this game
+          if (game.phase === "waiting") {
+            callback({ success: false, error: "Player not found. Try joining normally." });
+          } else {
+            callback({ success: false, error: "Game has already started" });
+          }
+          return;
+        }
+
+        // Player found — rejoin them
+        currentGameCode = gameCode;
+        currentPlayerId = player.id;
+        (socket as any).playerId = player.id;
+
+        // Join socket room
+        socket.join(gameCode);
+
+        // Build role info if game has started
+        let roleInfo = null;
+        if (game.phase !== "waiting") {
+          try {
+            const role = player.getRole();
+            const originalRole = player.getOriginalRole();
+            roleInfo = {
+              roleName: originalRole.name,
+              roleTeam: originalRole.team,
+              roleDescription: originalRole.description,
+              currentRoleName: role.name,
+            };
+          } catch (e) {
+            // Role might not be assigned yet
+          }
+        }
+
+        // Build ground cards info if in night phase or later
+        let groundCardsInfo = null;
+        if (game.phase !== "waiting" && game.phase !== "role") {
+          groundCardsInfo = game.groundRoles.map((r, index) => ({
+            id: r.id,
+            label: `Ground Card ${index + 1}`,
+          }));
+        }
+
+        // Check if this player already performed their action
+        const hasPerformedAction = game.confirmedPlayerPerformActions.includes(player.id);
+
+        let lastActionResult = null;
+        if (hasPerformedAction) {
+          lastActionResult = (player as any).lastActionResult || null;
+        }
+
+        // Check if this player already confirmed role reveal
+        const hasConfirmedRole = game.confirmedPlayerRoleReveal.includes(player.id);
+
+        // Check if this player already voted
+        const hasVoted = game.votes.some((v) => v.voter === player.id);
+
+        callback({
+          success: true,
+          playerId: player.id,
+          playerName: player.name,
+          phase: game.phase,
+          roleInfo,
+          groundCardsInfo,
+          hasPerformedAction,
+          hasConfirmedRole,
+          hasVoted,
+          players: game.players.map((p) => ({ id: p.id, name: p.name })),
+          timerSeconds: game.timer * 60,
+          currentActiveRole: game.currentActiveRole || "",
+          lastActionResult,
+        });
+
+        console.log(`🔄 Player ${player.name} (${player.id}) rejoined game ${gameCode} in phase ${game.phase}`);
+      } catch (error: any) {
+        console.error("Error in rejoinGame:", error);
+        callback({ success: false, error: error.message || "Failed to rejoin" });
       }
     });
 
@@ -249,6 +347,9 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           actionResult = { error: error.message };
         }
 
+        // Store result for potential rejoin
+        (player as any).lastActionResult = actionResult;
+
         // Send result back to THIS player only
         socket.emit("actionResult", {
           success: true,
@@ -303,26 +404,31 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
 
-      // If player was in a game, remove them
       if (currentGameCode && currentPlayerId) {
         const game = manager.getGameByCode(currentGameCode);
         if (game) {
           const player = game.players.find((p) => p.id === currentPlayerId);
           if (player) {
-            game.players = game.players.filter((p) => p.id !== currentPlayerId);
+            // Only remove player if game hasn't started yet
+            if (game.phase === Phase.Waiting) {
+              game.players = game.players.filter((p) => p.id !== currentPlayerId);
 
-            io.to(currentGameCode).emit("playerLeft", {
-              playerId: currentPlayerId,
-              playerName: player.name,
-              playerCount: game.players.length,
-            });
+              io.to(currentGameCode).emit("playerLeft", {
+                playerId: currentPlayerId,
+                playerName: player.name,
+                playerCount: game.players.length,
+              });
 
-            io.to(currentGameCode).emit("playerListUpdate", {
-              players: game.players.map((p) => ({
-                id: p.id,
-                name: p.name,
-              })),
-            });
+              io.to(currentGameCode).emit("playerListUpdate", {
+                players: game.players.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                })),
+              });
+            } else {
+              // Game already started — keep player in game, just log disconnect
+              console.log(`⚠️ Player ${player.name} disconnected from active game ${currentGameCode} (phase: ${game.phase})`);
+            }
           }
         }
       }
