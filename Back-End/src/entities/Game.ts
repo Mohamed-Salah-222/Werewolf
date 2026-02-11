@@ -184,6 +184,7 @@ export class Game extends EventEmitter {
   startDay(): Promise<void> {
     this.phase = Phase.Discussion;
     let totalSeconds = this.timer * 60;
+    totalSeconds = 3;
     // totalSeconds = 3; Leave it there for quick testing
     this.newEmit("dayStarted");
     // find a good soultion for syncing the timer
