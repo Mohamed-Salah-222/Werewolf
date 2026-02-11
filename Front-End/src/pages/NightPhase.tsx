@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { API_URL } from "../config";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
 import WaitingForTurn from "../components/roles/WaitingForTurn";
@@ -16,6 +15,7 @@ import TroublemakerAction from "../components/roles/TroublemakerAction";
 import DrunkAction from "../components/roles/DrunkAction";
 import InsomniacAction from "../components/roles/InsomniacAction";
 import JokerAction from "../components/roles/JokerAction";
+import { API_URL } from "../config";
 
 interface LocationState {
   playerName: string;
@@ -27,6 +27,7 @@ interface LocationState {
   hasPerformedAction?: boolean;
   lastActionResult?: { message?: string } | null;
 }
+
 function NightPhase() {
   const { gameCode } = useParams();
   const location = useLocation();
@@ -36,10 +37,9 @@ function NightPhase() {
   const playerName = state?.playerName || "Unknown";
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
-
-  const [myRole] = useState<string>(state?.roleName || "");
   const hasAlreadyActed = state?.hasPerformedAction || false;
 
+  const [myRole] = useState<string>(state?.roleName || "");
   const [isMyTurn, setIsMyTurn] = useState(() => {
     if (hasAlreadyActed) return false;
     const initialRole = state?.initialActiveRole;
@@ -52,10 +52,17 @@ function NightPhase() {
   const [actionResult, setActionResult] = useState<{ message?: string } | null>(hasAlreadyActed ? state?.lastActionResult || { message: "Action was performed" } : null);
   const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
+  const [roleTimer, setRoleTimer] = useState<number>(0);
+
+  const pendingNavigationRef = useRef<{ timerSeconds: number } | null>(null);
+  const actionResultRef = useRef<{ message?: string } | null>(actionResult);
+  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useLeaveWarning(true);
 
-  // Check initial active role on mount
+  useEffect(() => {
+    actionResultRef.current = actionResult;
+  }, [actionResult]);
 
   // Fetch player list on mount
   useEffect(() => {
@@ -78,15 +85,12 @@ function NightPhase() {
       socket.connect();
     }
 
-    // Receive ground card IDs
     socket.on("groundCards", (data: { cards: Array<{ id: string; label: string }> }) => {
       setGroundCards(data.cards);
     });
 
-    // A role's turn has started
     socket.on("roleActionQueue", (roleName: string) => {
       console.log(`Role turn: ${roleName}, my role: ${myRole}`);
-
       if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDone) {
         setIsMyTurn(true);
       } else {
@@ -94,40 +98,81 @@ function NightPhase() {
       }
     });
 
-    // Also listen for nextAction (same purpose)
-    socket.on("nextAction", (roleName: string) => {
-      console.log(`Next role: ${roleName}, my role: ${myRole}`);
-
-      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDone) {
-        setIsMyTurn(true);
-      } else {
-        setIsMyTurn(false);
+    socket.on("roleTimer", (data: { roleName: string; seconds: number }) => {
+      // Only show timer if it's my turn
+      if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDone) {
+        setRoleTimer(data.seconds);
+        // Start countdown
+        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        let remaining = data.seconds;
+        timerIntervalRef.current = setInterval(() => {
+          remaining--;
+          setRoleTimer(remaining);
+          if (remaining <= 0) {
+            if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          }
+        }, 1000);
       }
     });
 
-    // Action result from server
     socket.on("actionResult", (data: { success: boolean; message: string; data?: { message?: string } }) => {
       console.log("Action result:", data);
-      setActionResult(data.data || { message: data.message });
+      const result = data.data || { message: data.message };
+      setActionResult(result);
+      actionResultRef.current = result;
       setActionDone(true);
       setIsMyTurn(false);
+      setRoleTimer(0);
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+      if (pendingNavigationRef.current) {
+        const navData = pendingNavigationRef.current;
+        pendingNavigationRef.current = null;
+        setTimeout(() => {
+          navigate(`/discussion/${gameCode}`, {
+            state: {
+              playerName,
+              playerId,
+              isHost,
+              timerSeconds: navData.timerSeconds,
+              roleName: myRole,
+              actionResult: actionResultRef.current,
+            },
+          });
+        }, 100);
+      }
     });
 
-    // Discussion phase started — night is over
     socket.on("discussionStarted", (data: { timerSeconds: number }) => {
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+
+      if (!actionResultRef.current && !hasAlreadyActed) {
+        console.log("Discussion started but waiting for action result...");
+        pendingNavigationRef.current = data;
+        return;
+      }
+
       navigate(`/discussion/${gameCode}`, {
-        state: { playerName, playerId, isHost, timerSeconds: data.timerSeconds },
+        state: {
+          playerName,
+          playerId,
+          isHost,
+          timerSeconds: data.timerSeconds,
+          roleName: myRole,
+          actionResult: actionResultRef.current,
+        },
       });
     });
 
     return () => {
       socket.off("groundCards");
       socket.off("roleActionQueue");
-      socket.off("nextAction");
+      socket.off("roleTimer");
       socket.off("actionResult");
       socket.off("discussionStarted");
+      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
-  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost]);
+  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed]);
 
   const handleAction = (action: Record<string, unknown>) => {
     socket.emit("performAction", {
@@ -172,7 +217,27 @@ function NightPhase() {
         <span style={styles.phase}>🌙 Night Phase</span>
       </div>
 
-      {actionDone ? <ActionComplete result={actionResult} /> : isMyTurn ? renderActionComponent() : <WaitingForTurn />}
+      {actionDone ? (
+        <ActionComplete result={actionResult} />
+      ) : isMyTurn ? (
+        <div>
+          {roleTimer > 0 && (
+            <div style={styles.timerBar}>
+              <span
+                style={{
+                  ...styles.timerText,
+                  color: roleTimer <= 5 ? "#ff4444" : "#fff",
+                }}
+              >
+                {roleTimer}s
+              </span>
+            </div>
+          )}
+          {renderActionComponent()}
+        </div>
+      ) : (
+        <WaitingForTurn />
+      )}
     </div>
   );
 }
@@ -193,6 +258,15 @@ const styles: { [key: string]: React.CSSProperties } = {
   phase: {
     fontSize: "18px",
     fontWeight: "bold",
+  },
+  timerBar: {
+    textAlign: "center" as const,
+    marginBottom: "16px",
+  },
+  timerText: {
+    fontSize: "24px",
+    fontWeight: "bold",
+    fontVariantNumeric: "tabular-nums",
   },
 };
 

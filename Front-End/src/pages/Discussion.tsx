@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
 interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
   timerSeconds: number;
+  roleName?: string;
+  actionResult?: { message?: string } | null;
 }
 
 function Discussion() {
@@ -19,9 +22,14 @@ function Discussion() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
   const totalSeconds = state?.timerSeconds || 360;
+  const roleName = state?.roleName || "";
+  const actionResult = state?.actionResult || null;
 
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
+  const [showResult, setShowResult] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useLeaveWarning(true);
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -63,6 +71,13 @@ function Discussion() {
 
   const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
 
+  const roleColor = (role: string) => {
+    const villains = ["werewolf", "minion"];
+    if (villains.includes(role.toLowerCase())) return "#ff4444";
+    if (role.toLowerCase() === "joker") return "#f0c040";
+    return "#4ade80";
+  };
+
   return (
     <div style={styles.container}>
       <h1 style={styles.title}>☀️ Discussion</h1>
@@ -88,6 +103,30 @@ function Discussion() {
         </div>
       </div>
 
+      {/* Night recap card */}
+      {roleName && (
+        <div style={styles.recapCard}>
+          <button style={styles.recapToggle} onClick={() => setShowResult(!showResult)}>
+            {showResult ? "Hide" : "Show"} Night Recap
+          </button>
+
+          {showResult && (
+            <div style={styles.recapContent}>
+              <div style={styles.recapRole}>
+                <span style={styles.recapLabel}>YOUR ROLE</span>
+                <span style={{ ...styles.recapRoleName, color: roleColor(roleName) }}>{roleName}</span>
+              </div>
+              {actionResult?.message && (
+                <div style={styles.recapResult}>
+                  <span style={styles.recapLabel}>WHAT HAPPENED</span>
+                  <p style={styles.recapMessage}>{actionResult.message}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {secondsLeft === 0 && <p style={styles.timesUp}>Time's up! Moving to vote...</p>}
 
       {isHost && secondsLeft > 0 && (
@@ -96,9 +135,7 @@ function Discussion() {
           onClick={() => {
             if (intervalRef.current) clearInterval(intervalRef.current);
             setSecondsLeft(0);
-            // The backend timer will handle the transition to voting
-            // But since backend timer is 3s for testing, it might already be done
-            // This just visually ends it on the host side
+            socket.emit("skipToVote", { gameCode });
           }}
         >
           Skip to Vote (Host)
@@ -113,7 +150,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    justifyContent: "center",
     minHeight: "100vh",
     padding: "20px",
     maxWidth: "480px",
@@ -127,7 +163,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   subtitle: {
     color: "#888",
     fontSize: "16px",
-    marginBottom: "48px",
+    marginBottom: "32px",
   },
   timerContainer: {
     width: "100%",
@@ -153,13 +189,56 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderRadius: "3px",
     transition: "width 1s linear",
   },
+  recapCard: {
+    width: "100%",
+    backgroundColor: "#1a1a1a",
+    border: "1px solid #333",
+    borderRadius: "12px",
+    overflow: "hidden",
+    marginBottom: "24px",
+  },
+  recapToggle: {
+    width: "100%",
+    padding: "14px 16px",
+    fontSize: "14px",
+    backgroundColor: "transparent",
+    color: "#aaa",
+    border: "none",
+    borderBottom: "1px solid #333",
+    textAlign: "left" as const,
+  },
+  recapContent: {
+    padding: "16px",
+  },
+  recapRole: {
+    marginBottom: "16px",
+  },
+  recapLabel: {
+    display: "block",
+    fontSize: "11px",
+    color: "#666",
+    letterSpacing: "2px",
+    marginBottom: "4px",
+  },
+  recapRoleName: {
+    fontSize: "20px",
+    fontWeight: "bold",
+  },
+  recapResult: {},
+  recapMessage: {
+    fontSize: "15px",
+    color: "#ccc",
+    lineHeight: "1.5",
+    marginTop: "4px",
+  },
   timesUp: {
     color: "#ff4444",
     fontSize: "16px",
     fontWeight: "bold",
+    marginBottom: "16px",
   },
   skipButton: {
-    marginTop: "32px",
+    marginTop: "16px",
     padding: "12px 32px",
     fontSize: "14px",
     backgroundColor: "transparent",

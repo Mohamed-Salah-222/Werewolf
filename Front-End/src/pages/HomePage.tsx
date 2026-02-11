@@ -133,6 +133,8 @@ function HomePage() {
                 state: {
                   ...baseState,
                   timerSeconds: response.timerSeconds || 360,
+                  roleName: response.roleInfo?.roleName,
+                  actionResult: response.lastActionResult,
                 },
               });
               break;

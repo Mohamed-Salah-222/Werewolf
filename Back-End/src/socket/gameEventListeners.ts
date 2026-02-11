@@ -53,5 +53,25 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
     });
   });
 
+  // Role timer info
+  game.on("roleTimer", (data: { roleName: string; seconds: number }) => {
+    io.to(gameCode).emit("roleTimer" as any, data);
+  });
+
+  // Auto action result — send to specific player
+  game.on("autoActionResult", (data: { playerId: string; result: any }) => {
+    const sockets = io.sockets.sockets;
+    for (const [, s] of sockets) {
+      if (s.rooms.has(gameCode) && (s as any).playerId === data.playerId) {
+        s.emit("actionResult", {
+          success: true,
+          message: "Action auto-performed",
+          data: data.result,
+        });
+        break;
+      }
+    }
+  });
+
   console.log(`Game event listeners attached for game ${gameCode}`);
 }
