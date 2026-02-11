@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { Manager } from "../entities/Manager";
-import { VALIDATION, ERROR_MESSAGES } from "../config/constants";
+import { VALIDATION, ERROR_MESSAGES, Phase } from "../config/constants";
 
 let manager: Manager;
 
@@ -159,7 +159,7 @@ export const deleteGame = (req: Request, res: Response): void => {
       return;
     }
 
-    if (game.phase !== "waiting") {
+    if (game.phase !== Phase.Waiting) {
       res.status(400).json({
         success: false,
         error: "Cannot delete a game that has already started",

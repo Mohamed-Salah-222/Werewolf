@@ -66,6 +66,9 @@ export class Game extends EventEmitter {
   }
 
   playerJoin(name: string): void {
+    if (this.phase !== Phase.Waiting) {
+      throw new Error("Cannot join a game that has already started");
+    }
     this.logger.info(`playerJoin ${name}`);
     if (this.players.find((p) => p.name === name)) {
       throw new Error(`A player with this name (${name}) already joined please chose another name`);
@@ -73,10 +76,11 @@ export class Game extends EventEmitter {
     if (this.players.length >= this.maxPlayers) {
       throw new Error(`Game is full, max players is ${this.maxPlayers}`);
     }
-    if (this.players.length === 0) {
+    this.players.push(new Player(name));
+
+    if (this.players.length === 1) {
       this.host = this.players[0].id;
     }
-    this.players.push(new Player(name));
     this.newEmit("playerJoin", name);
   }
 
@@ -135,7 +139,6 @@ export class Game extends EventEmitter {
 
     console.log("✅ All roles completed, starting day phase");
     this.currentActiveRole = "";
-    this.startDay();
 
     setTimeout(() => {
       this.startDay();

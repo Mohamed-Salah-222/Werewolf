@@ -44,7 +44,8 @@ export class Player {
     return game.votes.push({ voter: this.id, vote: vote });
   }
   reset() {
-    this.role, this.originalRole = null, null;
+    this.role = null;
+    this.originalRole = null;
   }
 
 }
