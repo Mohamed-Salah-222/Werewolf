@@ -318,8 +318,9 @@ export class Game extends EventEmitter {
 
   private addRoles() {
     const roleNames = ["Clone", "Insomniac", "Werewolf", "Joker"];
-    for (let i = 0; i < this.players.length; i++) {
-      const randomIndex = Math.floor(Math.random() * roleNames.length + 8);
+    const needed = this.players.length + this.numberOfGroundRoles - this.availableRoles.length;
+    for (let i = 0; i < needed; i++) {
+      const randomIndex = Math.floor(Math.random() * roleNames.length);
       const role = new RoleClasses[roleNames[randomIndex].toLowerCase()]();
       this.availableRoles.push(role);
     }
