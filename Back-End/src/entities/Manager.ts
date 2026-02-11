@@ -10,6 +10,7 @@ export class Manager {
   public games: Game[];
   public logger: Logger;
   private io: Server<ClientToServerEvents, ServerToClientEvents> | null = null;
+  private cleanupRunning = false;
 
   public constructor() {
     this.games = [];
@@ -70,9 +71,26 @@ export class Manager {
     }
   }
 
+  startCleanupJob(): void {
+    setInterval(async () => {
+      if (this.cleanupRunning) return;
+      this.cleanupRunning = true;
+
+      try {
+        this.deleteFinishedGames();
+      } finally {
+        this.cleanupRunning = false;
+      }
+    }, 120_000);
+  }
+
 
   public deleteGame(game: Game): void {
+
     this.games = this.games.filter((g) => g !== game);
+    // delete the game obj
+    game.destroy();
+
   }
 
   public log(...args: any[]): void {
@@ -84,7 +102,16 @@ export class Manager {
   }
 
   private deleteFinishedGames(): void {
-    let finished = this.games.filter((g) => g.phase === Phase.EndGame);
-    finished.forEach((game) => this.deleteGame(game));
+    const now = Date.now();
+    const ttl = 5 * 60 * 1000; // 5 minutes
+
+    const expired = this.games.filter(
+      (game) =>
+        game.phase === Phase.EndGame &&
+        game.endedAt &&
+        now - game.endedAt > ttl
+    );
+
+    expired.forEach((game) => this.deleteGame(game));
   }
 }

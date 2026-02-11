@@ -23,6 +23,7 @@ const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(server
 
 // Create manager instance
 const manager = new Manager();
+manager.startCleanupJob();
 manager.setSocketIO(io);
 
 // Set manager for controllers

@@ -44,8 +44,10 @@ export class Game extends EventEmitter {
   currentGameRolesMap: Map<string, number> = new Map();
   currentTimerSec: number;
   host: PlayerId;
-  private availableRoles: Role[] = [];
   currentActiveRole: string = "";
+  endedAt: number | null = null;
+  private availableRoles: Role[] = [];
+
 
   constructor(private logger: Logger) {
     super();
@@ -182,6 +184,7 @@ export class Game extends EventEmitter {
       const player1 = this.getPlayerById(key);
       this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
     });
+    this.endedAt = Date.now();
     this.newEmit("gameEnded", this.calculateResults(votes));
     this.logger.info(`number of events: ${this.numberOfEvents}`);
   }
@@ -317,6 +320,12 @@ export class Game extends EventEmitter {
 
     this.logger.log(`Player with id ${id} not found`);
     throw new Error(`Player with id ${id} not found`);
+  }
+
+  destroy(): void {
+    clearInterval(this.timer);
+    this.removeAllListeners?.();
+    this.players = [];
   }
 
   private assignRandomRoles(): void {
