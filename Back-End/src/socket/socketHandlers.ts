@@ -50,7 +50,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         if (!game) {
           callback({
             success: false,
-            error: ERROR_MESSAGES.GAME_ALREADY_STARTED,
+            error: ERROR_MESSAGES.INVALID_PLAYER_NAME,
           });
           return;
         }
