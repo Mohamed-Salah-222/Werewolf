@@ -31,6 +31,7 @@ export class Game extends EventEmitter {
   votes: Vote[] = [];
   winners: Team;
   timer: TimerOption = DEFAULT_TIMER;
+  timerInterval: NodeJS.Timeout;
   phase: Phase = Phase.Waiting;
   numberOfGroundRoles: number = NUMBER_OF_GROUND_ROLES;
   numberOfWerewolf: number;
@@ -203,12 +204,12 @@ export class Game extends EventEmitter {
     // find a good soultion for syncing the timer
     // return new Promise(null);
     return new Promise((resolve) => {
-      const interval = setInterval(() => {
+      this.timerInterval = setInterval(() => {
         if (totalSeconds <= 0) {
           this.currentTimerSec = 0;
           this.newEmit("timerFinished");
           this.startVoting();
-          clearInterval(interval);
+          clearInterval(this.timerInterval);
           resolve();
         }
         totalSeconds--;
@@ -323,7 +324,7 @@ export class Game extends EventEmitter {
   }
 
   destroy(): void {
-    clearInterval(this.timer);
+    clearInterval(this.timerInterval);
     this.removeAllListeners?.();
     this.players = [];
   }
