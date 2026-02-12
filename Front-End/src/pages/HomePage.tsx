@@ -3,6 +3,7 @@ import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
 import { getSession, clearSession, saveSession } from "../utils/gameSession";
+import "./HomePage.css";
 
 // Import character images
 import werewolfSquare from "../assets/werewolf_sqaure.png";
@@ -26,9 +27,6 @@ import clone2d from "../assets/clone_2d.png";
 import jokerSquare from "../assets/joker_square.png";
 import joker2d from "../assets/joker_2d.png";
 
-// ============================================================
-// CHARACTER DATA - Add more characters here as you create them
-// ============================================================
 interface CharacterData {
   id: string;
   name: string;
@@ -76,7 +74,7 @@ const characters: CharacterData[] = [
     name: "Robber",
     team: "village",
     title: "The Night Thief",
-    description: "Takes what isn't his — including identities. By morning, even he doesn't know who he truly is.",
+    description: "Takes what isn't his including identities. By morning, even he doesn't know who he truly is.",
     ability: "Steal another player's role and see what you become.",
     square: robberSquare,
     fullBody: robber2d,
@@ -96,7 +94,7 @@ const characters: CharacterData[] = [
     name: "Mason",
     team: "village",
     title: "The Sworn Brother",
-    description: "Bound by oath, Masons know their own. Their trust is unbreakable — a rare gift in a village of lies.",
+    description: "Bound by oath, Masons know their own. Their trust is unbreakable a rare gift in a village of lies.",
     ability: "Wake up and see who the other Mason is.",
     square: masonSquare,
     fullBody: mason2d,
@@ -143,9 +141,6 @@ const characters: CharacterData[] = [
   },
 ];
 
-// ============================================================
-// REJOIN RESPONSE TYPE
-// ============================================================
 interface RejoinResponse {
   success: boolean;
   playerId?: string;
@@ -168,9 +163,6 @@ interface RejoinResponse {
   error?: string;
 }
 
-// ============================================================
-// COMPONENT
-// ============================================================
 function HomePage() {
   const navigate = useNavigate();
 
@@ -186,7 +178,20 @@ function HomePage() {
   const [loading, setLoading] = useState(false);
   const [rejoinLoading, setRejoinLoading] = useState(false);
 
-  // ---- REJOIN LOGIC ----
+  // Preload all character images
+  useState(() => {
+    characters.forEach((char) => {
+      if (char.fullBody) {
+        const img = new Image();
+        img.src = char.fullBody;
+      }
+      if (char.square) {
+        const img = new Image();
+        img.src = char.square;
+      }
+    });
+  });
+
   const handleRejoin = async () => {
     const session = getSession();
     if (!session) return;
@@ -277,7 +282,6 @@ function HomePage() {
     setRejoinDismissed(true);
   };
 
-  // ---- CREATE / JOIN ----
   const handleCreateGame = async () => {
     if (playerName.trim().length < 2) {
       setError("Name must be at least 2 characters");
@@ -356,17 +360,55 @@ function HomePage() {
   };
 
   return (
-    <div style={styles.page}>
-      {/* Background vignette overlay */}
+    <div style={styles.page} className="home-page-override">
       <div style={styles.vignette} />
 
+      <style>{`
+        .action-btn {
+          padding: 14px 36px;
+          font-size: 16px;
+          font-weight: 400;
+          letter-spacing: 3px;
+          font-family: 'Creepster', cursive;
+          background-color: transparent;
+          color: #c9a84c;
+          border: 1px solid #3d2e1a;
+          cursor: pointer;
+          text-transform: uppercase;
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s ease;
+        }
+        .action-btn::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(201,168,76,0.1), transparent);
+          transition: left 0.5s ease;
+        }
+        .action-btn:hover {
+          border-color: #c9a84c;
+          color: #e8dcc8;
+          box-shadow: 0 0 20px rgba(201,168,76,0.2), inset 0 0 20px rgba(201,168,76,0.05);
+          text-shadow: 0 0 10px rgba(201,168,76,0.3);
+        }
+        .action-btn:hover::before {
+          left: 100%;
+        }
+        .action-btn:active {
+          transform: scale(0.97);
+        }
+      `}</style>
+
       {/* ===== TOP: TITLE + BUTTONS ===== */}
-      <div style={styles.topBar}>
+      <div style={styles.topBar} className="topbar-override">
         <h1 style={styles.title}>WEREWOLF</h1>
-        <p style={styles.subtitle}>ONE NIGHT IN THE VILLAGE</p>
         <div style={styles.buttonRow}>
           <button
-            style={styles.actionBtn}
+            className="action-btn"
             onClick={() => {
               closeModals();
               setShowCreateModal(true);
@@ -375,7 +417,7 @@ function HomePage() {
             CREATE GAME
           </button>
           <button
-            style={styles.actionBtn}
+            className="action-btn"
             onClick={() => {
               closeModals();
               setShowJoinModal(true);
@@ -387,9 +429,8 @@ function HomePage() {
       </div>
 
       {/* ===== MIDDLE: CHARACTER SHOWCASE ===== */}
-      <div style={styles.showcase}>
-        {/* Left: Full body */}
-        <div style={styles.characterDisplay}>
+      <div style={styles.showcase} className="showcase-override">
+        <div style={styles.characterDisplay} className="char-display-override">
           {selectedChar.fullBody ? (
             <img src={selectedChar.fullBody} alt={selectedChar.name} style={styles.fullBodyImg} key={selectedChar.id} />
           ) : (
@@ -400,8 +441,7 @@ function HomePage() {
           )}
         </div>
 
-        {/* Right: Info panel */}
-        <div style={styles.infoPanel}>
+        <div style={styles.infoPanel} className="info-panel-override">
           <div style={{ ...styles.teamBadge, backgroundColor: teamColor(selectedChar.team) }}>{teamLabel(selectedChar.team)}</div>
           <h2 style={styles.charName}>{selectedChar.name.toUpperCase()}</h2>
           <p style={styles.charTitle}>{selectedChar.title}</p>
@@ -415,8 +455,8 @@ function HomePage() {
       </div>
 
       {/* ===== BOTTOM: CHARACTER SELECT GRID ===== */}
-      <div style={styles.selectBar}>
-        <div style={styles.selectGrid}>
+      <div style={styles.selectBar} className="selectbar-override">
+        <div style={styles.selectGrid} className="selectgrid-override">
           {characters.map((char) => (
             <button
               key={char.id}
@@ -505,9 +545,6 @@ function HomePage() {
   );
 }
 
-// ============================================================
-// STYLES
-// ============================================================
 const styles: { [key: string]: React.CSSProperties } = {
   page: {
     position: "relative",
@@ -517,7 +554,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "flex",
     flexDirection: "column",
     background: "radial-gradient(ellipse at 30% 50%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
-    fontFamily: "'Cinzel', 'Palatino Linotype', 'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
     color: "#e8dcc8",
   },
   vignette: {
@@ -528,7 +565,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     zIndex: 1,
   },
 
-  // TOP BAR
   topBar: {
     position: "relative",
     zIndex: 10,
@@ -539,11 +575,11 @@ const styles: { [key: string]: React.CSSProperties } = {
     borderBottom: "1px solid #1a1510",
   },
   title: {
-    fontSize: "52px",
-    fontWeight: 900,
-    letterSpacing: "14px",
+    fontSize: "72px",
+    fontWeight: 400,
+    letterSpacing: "10px",
     margin: 0,
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
     background: "linear-gradient(180deg, #e8c84a 0%, #c9a84c 40%, #8a6d2e 100%)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
@@ -551,34 +587,12 @@ const styles: { [key: string]: React.CSSProperties } = {
     textShadow: "none",
     filter: "drop-shadow(0 0 40px rgba(201,168,76,0.25))",
   },
-  subtitle: {
-    fontSize: "11px",
-    letterSpacing: "8px",
-    color: "#5a4a30",
-    margin: "6px 0 20px 0",
-    fontFamily: "'Cinzel', serif",
-  },
   buttonRow: {
     display: "flex",
     gap: "20px",
-  },
-  actionBtn: {
-    padding: "14px 36px",
-    fontSize: "12px",
-    fontWeight: 700,
-    letterSpacing: "4px",
-    fontFamily: "'Cinzel', serif",
-    backgroundColor: "transparent",
-    color: "#c9a84c",
-    border: "1px solid #3d2e1a",
-    cursor: "pointer",
-    transition: "all 0.3s ease",
-    textTransform: "uppercase" as const,
-    position: "relative" as const,
-    overflow: "hidden",
+    marginTop: "16px",
   },
 
-  // SHOWCASE
   showcase: {
     position: "relative",
     zIndex: 10,
@@ -591,7 +605,8 @@ const styles: { [key: string]: React.CSSProperties } = {
     minHeight: 0,
   },
   characterDisplay: {
-    flex: "0 0 auto",
+    flex: "0 0 300px",
+    width: "300px",
     display: "flex",
     alignItems: "flex-end",
     justifyContent: "center",
@@ -619,7 +634,7 @@ const styles: { [key: string]: React.CSSProperties } = {
   placeholderIcon: {
     fontSize: "64px",
     color: "#2a2019",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
   },
   placeholderText: {
     fontSize: "12px",
@@ -627,7 +642,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#2a2019",
   },
 
-  // INFO PANEL
   infoPanel: {
     flex: "0 0 340px",
     maxWidth: "340px",
@@ -635,27 +649,28 @@ const styles: { [key: string]: React.CSSProperties } = {
   teamBadge: {
     display: "inline-block",
     padding: "4px 14px",
-    fontSize: "10px",
-    fontWeight: 700,
+    fontSize: "11px",
+    fontWeight: 400,
     letterSpacing: "3px",
     color: "#fff",
     borderRadius: "2px",
     marginBottom: "12px",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
   charName: {
-    fontSize: "32px",
-    fontWeight: 700,
+    fontSize: "36px",
+    fontWeight: 400,
     letterSpacing: "4px",
     color: "#e8dcc8",
     margin: "0 0 4px 0",
+    fontFamily: "'Creepster', cursive",
   },
   charTitle: {
     fontSize: "14px",
     fontStyle: "italic",
     color: "#8a7a60",
     margin: "0 0 16px 0",
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
   divider: {
     width: "60px",
@@ -668,7 +683,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     lineHeight: "1.7",
     color: "#9a8a70",
     margin: "0 0 20px 0",
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
   abilityBox: {
     padding: "16px",
@@ -678,22 +693,21 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   abilityLabel: {
     display: "block",
-    fontSize: "10px",
-    fontWeight: 700,
+    fontSize: "12px",
+    fontWeight: 400,
     letterSpacing: "4px",
     color: "#c9a84c",
     marginBottom: "8px",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
   },
   abilityText: {
     fontSize: "13px",
     lineHeight: "1.6",
     color: "#b0a080",
     margin: 0,
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
 
-  // SELECT BAR
   selectBar: {
     position: "relative",
     zIndex: 10,
@@ -739,19 +753,18 @@ const styles: { [key: string]: React.CSSProperties } = {
   gridPlaceholderText: {
     fontSize: "24px",
     color: "#2a2019",
-    fontFamily: "'Cinzel', serif",
-    fontWeight: 700,
+    fontFamily: "'Creepster', cursive",
+    fontWeight: 400,
   },
   gridLabel: {
-    fontSize: "9px",
-    fontWeight: 700,
+    fontSize: "10px",
+    fontWeight: 400,
     letterSpacing: "1px",
     textTransform: "uppercase" as const,
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
     textAlign: "center" as const,
   },
 
-  // MODALS
   overlay: {
     position: "fixed" as const,
     top: 0,
@@ -772,13 +785,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     width: "340px",
   },
   modalTitle: {
-    fontSize: "18px",
-    fontWeight: 700,
+    fontSize: "24px",
+    fontWeight: 400,
     letterSpacing: "4px",
     textAlign: "center" as const,
     marginBottom: "24px",
     color: "#c9a84c",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
   },
   input: {
     width: "100%",
@@ -789,7 +802,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: "1px solid #2a2019",
     borderRadius: "4px",
     marginBottom: "12px",
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
     outline: "none",
     boxSizing: "border-box" as const,
   },
@@ -797,14 +810,14 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#c41e1e",
     fontSize: "13px",
     marginBottom: "12px",
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
   rejoinText: {
     color: "#8a7a60",
     fontSize: "14px",
     marginBottom: "20px",
     textAlign: "center" as const,
-    fontFamily: "'Georgia', serif",
+    fontFamily: "'Trade Winds', cursive",
   },
   modalButtons: {
     display: "flex",
@@ -814,28 +827,28 @@ const styles: { [key: string]: React.CSSProperties } = {
   cancelBtn: {
     flex: 1,
     padding: "12px",
-    fontSize: "11px",
-    fontWeight: 700,
+    fontSize: "14px",
+    fontWeight: 400,
     letterSpacing: "2px",
     backgroundColor: "transparent",
     color: "#6b5a3a",
     border: "1px solid #2a2019",
     borderRadius: "4px",
     cursor: "pointer",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
   },
   confirmBtn: {
     flex: 1,
     padding: "12px",
-    fontSize: "11px",
-    fontWeight: 700,
+    fontSize: "14px",
+    fontWeight: 400,
     letterSpacing: "2px",
     backgroundColor: "#c9a84c",
     color: "#0a0a0a",
     border: "none",
     borderRadius: "4px",
     cursor: "pointer",
-    fontFamily: "'Cinzel', serif",
+    fontFamily: "'Creepster', cursive",
   },
 };
 

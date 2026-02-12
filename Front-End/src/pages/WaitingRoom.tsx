@@ -2,18 +2,56 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { clearSession } from "../utils/gameSession";
+import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
-interface PlayerInfo {
-  id: string;
-  name: string;
-}
+// Card imports
+import backCard from "../assets/back_card.jpg";
+import werewolfCard from "../assets/werewolf_card.jpg";
+import minionCard from "../assets/minion_card.jpg";
+import seerCard from "../assets/seer_card.jpg";
+import robberCard from "../assets/robber_card.jpg";
+import troublemakerCard from "../assets/troublemaker_card.jpg";
+import masonCard from "../assets/mason_card.jpg";
+import drunkCard from "../assets/drunk_card.jpg";
+import insomniacCard from "../assets/insomaniac_card.jpg";
+import cloneCard from "../assets/clone_card.jpg";
+import jokerCard from "../assets/joker_card.jpg";
+
+// Small card imports for grid
+import werewolfCardSmall from "../assets/werewolf_card_small.jpg";
+import minionCardSmall from "../assets/minion_card_small.jpg";
+import seerCardSmall from "../assets/Seer_card_small.jpg";
+import robberCardSmall from "../assets/robber_card_small.jpg";
+import troublemakerCardSmall from "../assets/troublemaker_card_small.jpg";
+import masonCardSmall from "../assets/mason_card_small.jpg";
+import drunkCardSmall from "../assets/drunk_card_small.jpg";
+import insomniacCardSmall from "../assets/insomaniac_card_small.jpg";
+import cloneCardSmall from "../assets/clone_card_small.jpg";
+import jokerCardSmall from "../assets/joker_card_small.jpg";
+
+const allCards = [
+  { id: "werewolf", name: "Werewolf", image: werewolfCard, small: werewolfCardSmall },
+  { id: "minion", name: "Minion", image: minionCard, small: minionCardSmall },
+  { id: "seer", name: "Seer", image: seerCard, small: seerCardSmall },
+  { id: "robber", name: "Robber", image: robberCard, small: robberCardSmall },
+  { id: "troublemaker", name: "Troublemaker", image: troublemakerCard, small: troublemakerCardSmall },
+  { id: "mason", name: "Mason", image: masonCard, small: masonCardSmall },
+  { id: "drunk", name: "Drunk", image: drunkCard, small: drunkCardSmall },
+  { id: "insomniac", name: "Insomniac", image: insomniacCard, small: insomniacCardSmall },
+  { id: "clone", name: "Clone", image: cloneCard, small: cloneCardSmall },
+  { id: "joker", name: "Joker", image: jokerCard, small: jokerCardSmall },
+];
 
 interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
+}
+
+interface GridCard {
+  id: number;
+  cardIndex: number;
 }
 
 function WaitingRoom() {
@@ -26,65 +64,35 @@ function WaitingRoom() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
 
-  const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [readyPlayers, setReadyPlayers] = useState<Set<string>>(new Set());
-  const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState("");
+  const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [copied, setCopied] = useState(false);
+  const [revealedCard, setRevealedCard] = useState<number | null>(null);
+  const [selectedPileCard, setSelectedPileCard] = useState<number | null>(null);
+  // const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
 
   useLeaveWarning(true);
 
-  useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
+  const [gridCards] = useState<GridCard[]>(() => {
+    const cards: GridCard[] = [];
+    const shuffledIndices: number[] = [];
+    for (let i = 0; i < 42; i++) {
+      shuffledIndices.push(i % allCards.length);
     }
-
-    // Listen for player list updates
-    socket.on("playerListUpdate", (data: { players: PlayerInfo[] }) => {
-      setPlayers(data.players);
-    });
-
-    // Listen for player joined
-    socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
-      console.log(`${data.playerName} joined (${data.playerCount} players)`);
-    });
-
-    // Listen for player left
-    socket.on("playerLeft", (data: { playerId: string; playerName: string; playerCount: number }) => {
-      console.log(`${data.playerName} left (${data.playerCount} players)`);
-      // Remove from ready set if they were ready
-      setReadyPlayers((prev) => {
-        const next = new Set(prev);
-        next.delete(data.playerId);
-        return next;
+    for (let i = shuffledIndices.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
+    }
+    for (let i = 0; i < 42; i++) {
+      cards.push({
+        id: i,
+        cardIndex: shuffledIndices[i],
       });
-    });
+    }
+    return cards;
+  });
 
-    // Listen for ready broadcasts (frontend-only system)
-    socket.on("playerReady", (data: { playerId: string; ready: boolean }) => {
-      setReadyPlayers((prev) => {
-        const next = new Set(prev);
-        if (data.ready) {
-          next.add(data.playerId);
-        } else {
-          next.delete(data.playerId);
-        }
-        return next;
-      });
-    });
-
-    // Listen for game started
-    socket.on("gameStarted", () => {
-      navigate(`/role-reveal/${gameCode}`, {
-        state: { playerName, playerId, isHost },
-      });
-    });
-
-    socket.on("error", (data: { message: string }) => {
-      setError(data.message);
-    });
-
-    // Fetch current player list on mount
+  // Fetch players on mount
+  useEffect(() => {
     const fetchPlayers = async () => {
       try {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
@@ -93,52 +101,72 @@ function WaitingRoom() {
           setPlayers(data.data.players);
         }
       } catch {
-        console.error("Failed to fetch player list");
+        console.error("Failed to fetch players");
       }
     };
-
     fetchPlayers();
+  }, [gameCode]);
+
+  // Socket listeners
+  useEffect(() => {
+    if (!socket.connected) socket.connect();
+
+    if (gameCode && playerId) {
+      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+    }
+
+    socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
+      setPlayers((prev) => {
+        if (prev.find((p) => p.id === data.playerId)) return prev;
+        return [...prev, { id: data.playerId, name: data.playerName }];
+      });
+    });
+
+    socket.on("playerLeft", (data: { playerId: string }) => {
+      setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
+    });
+
+    socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
+      setPlayers(data.players);
+    });
+
+    socket.on("gameStarted", () => {
+      navigate(`/role-reveal/${gameCode}`, {
+        state: { playerName, playerId, isHost },
+      });
+    });
+
+    socket.on("roleReveal", (data: { playerId: string; roleName: string; roleTeam: string; roleDescription: string }) => {
+      navigate(`/role-reveal/${gameCode}`, {
+        state: {
+          playerName,
+          playerId,
+          isHost,
+          rejoinRoleInfo: {
+            roleName: data.roleName,
+            roleTeam: data.roleTeam,
+            roleDescription: data.roleDescription,
+          },
+        },
+      });
+    });
 
     return () => {
-      socket.off("playerListUpdate");
       socket.off("playerJoined");
       socket.off("playerLeft");
-      socket.off("playerReady");
+      socket.off("playerListUpdate");
       socket.off("gameStarted");
-      socket.off("error");
+      socket.off("roleReveal");
     };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
-  const handleReady = () => {
-    const newReady = !isReady;
-    setIsReady(newReady);
-
-    // Broadcast to room (frontend-only, no backend handler needed)
-    // We emit to server but it won't process it — we rely on the fact
-    // that we're faking this. Instead, let's use a workaround:
-    // We'll emit a custom event. Since backend ignores unknown events, it's harmless.
-    socket.emit("playerReady", { gameCode, playerId, ready: newReady });
-
-    // Also update local state immediately
-    setReadyPlayers((prev) => {
-      const next = new Set(prev);
-      if (newReady) {
-        next.add(playerId);
-      } else {
-        next.delete(playerId);
-      }
-      return next;
-    });
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(gameCode || "");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleStart = () => {
-    setError("");
-
-    if (players.length < 6) {
-      setError(`Need at least 6 players (currently ${players.length})`);
-      return;
-    }
-
+  const handleStartGame = () => {
     socket.emit("startGame", { gameCode, playerId });
   };
 
@@ -148,68 +176,133 @@ function WaitingRoom() {
     navigate("/");
   };
 
-  const copyCode = () => {
-    if (gameCode) {
-      navigator.clipboard.writeText(gameCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleCardClick = (cardId: number, cardIndex: number) => {
+    if (selectedPileCard === cardId) {
+      setSelectedPileCard(null);
+      setRevealedCard(null);
+    } else {
+      setSelectedPileCard(cardId);
+      setRevealedCard(cardIndex);
     }
   };
 
-  const canStart = isHost && players.length >= 6;
-
   return (
-    <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <button style={styles.leaveButton} onClick={handleLeave}>
-          ← Leave
-        </button>
+    <div style={styles.page}>
+      <div style={styles.vignette} />
+
+      <style>{`
+        .flip-card {
+          width: 90px;
+          height: 126px;
+          perspective: 600px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .flip-card-inner {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          transition: transform 0.35s ease, box-shadow 0.3s ease;
+          transform-style: preserve-3d;
+          border-radius: 4px;
+          border: 1px solid #1a1510;
+        }
+        .flip-card:hover .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+        .flip-card.flipped .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+        .flip-card.selected .flip-card-inner {
+          box-shadow: 0 0 16px rgba(201,168,76,0.6);
+          border: 2px solid #c9a84c;
+        }
+        .flip-card-front, .flip-card-back {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          backface-visibility: hidden;
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .flip-card-back {
+          transform: rotateY(180deg);
+        }
+        .flip-card-front img, .flip-card-back img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+      `}</style>
+
+      {/* ===== LEFT: CARD GRID ===== */}
+      <div style={styles.cardPile}>
+        <div style={styles.cardGrid}>
+          {gridCards.map((card) => (
+            <div key={card.id} className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`} onClick={() => handleCardClick(card.id, card.cardIndex)}>
+              <div className="flip-card-inner">
+                <div className="flip-card-front">
+                  <img src={backCard} alt="Card back" />
+                </div>
+                <div className="flip-card-back">
+                  <img src={allCards[card.cardIndex].small} alt={allCards[card.cardIndex].name} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== MIDDLE: WAITING ROOM ===== */}
+      <div style={styles.centerPanel}>
+        <h1 style={styles.title}>WAITING ROOM</h1>
+
         <div style={styles.codeSection}>
           <span style={styles.codeLabel}>GAME CODE</span>
-          <button style={styles.codeButton} onClick={copyCode}>
-            {gameCode?.toUpperCase()}
-            <span style={styles.copyHint}>{copied ? " ✓" : " (copy)"}</span>
+          <button style={styles.codeButton} onClick={handleCopyCode}>
+            <span style={styles.codeText}>{gameCode?.toUpperCase()}</span>
+            <span style={styles.copyHint}>{copied ? "COPIED!" : "TAP TO COPY"}</span>
+          </button>
+        </div>
+
+        <div style={styles.playerSection}>
+          <span style={styles.playerCount}>PLAYERS {players.length}/10</span>
+          <div style={styles.playerList}>
+            {players.map((p) => (
+              <div key={p.id} style={styles.playerRow}>
+                <span style={styles.playerName}>{p.name}</span>
+                {p.id === playerId && isHost && <span style={styles.hostBadge}>HOST</span>}
+                {p.id === playerId && !isHost && <span style={styles.youBadge}>YOU</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div style={styles.actions}>
+          {isHost && (
+            <button style={players.length >= 6 ? styles.startBtn : styles.startBtnDisabled} onClick={handleStartGame} disabled={players.length < 6}>
+              {players.length < 6 ? `NEED ${6 - players.length} MORE` : "START GAME"}
+            </button>
+          )}
+          {!isHost && <p style={styles.waitingText}>Waiting for host to start...</p>}
+          <button style={styles.leaveBtn} onClick={handleLeave}>
+            LEAVE
           </button>
         </div>
       </div>
 
-      {/* Player count */}
-      <p style={styles.playerCount}>{players.length} / 10 players</p>
-      {players.length < 6 && <p style={styles.minWarning}>Need at least 6 players to start</p>}
-
-      {/* Player list */}
-      <div style={styles.playerList}>
-        {players.map((p) => {
-          const isMe = p.id === playerId;
-          const isPlayerReady = readyPlayers.has(p.id);
-
-          return (
-            <div key={p.id} style={styles.playerRow}>
-              <div style={styles.playerLeft}>
-                <span style={styles.playerName}>
-                  {p.name}
-                  {isMe && <span style={styles.youTag}> (You)</span>}
-                </span>
-              </div>
-              <div style={styles.playerRight}>{isHost && p.id === playerId ? <span style={styles.hostBadge}>HOST</span> : isPlayerReady ? <span style={styles.readyBadge}>READY</span> : <span style={styles.waitingBadge}>WAITING</span>}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Bottom actions */}
-      <div style={styles.actions}>
-        {error && <p style={styles.error}>{error}</p>}
-
-        {isHost ? (
-          <button style={canStart ? styles.startButton : styles.startButtonDisabled} onClick={handleStart} disabled={!canStart}>
-            Start Game
-          </button>
+      {/* ===== RIGHT: REVEALED CARD ===== */}
+      <div style={styles.revealPanel}>
+        {revealedCard !== null ? (
+          <div style={styles.revealedCardWrapper}>
+            <img src={allCards[revealedCard].image} alt={allCards[revealedCard].name} style={styles.revealedCardImg} />
+          </div>
         ) : (
-          <button style={isReady ? styles.readyButtonActive : styles.readyButton} onClick={handleReady}>
-            {isReady ? "✓ Ready" : "Ready Up"}
-          </button>
+          <div style={styles.revealPlaceholder}>
+            <span style={styles.revealPlaceholderText}>SELECT A CARD</span>
+            <span style={styles.revealPlaceholderSub}>from the pile to reveal</span>
+          </div>
         )}
       </div>
     </div>
@@ -217,157 +310,243 @@ function WaitingRoom() {
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
+  page: {
+    position: "relative",
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
     display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-    padding: "20px",
-    maxWidth: "480px",
-    margin: "0 auto",
+    background: "radial-gradient(ellipse at 50% 50%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
+    fontFamily: "'Cinzel', 'Palatino Linotype', 'Georgia', serif",
+    color: "#e8dcc8",
   },
-  header: {
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
+    zIndex: 1,
+  },
+  cardPile: {
+    position: "relative",
+    zIndex: 10,
+    flex: "0 0 35%",
+    padding: "12px",
+    overflow: "auto",
     display: "flex",
-    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  cardGrid: {
+    display: "flex",
+    flexWrap: "wrap" as const,
+    gap: "4px",
+    justifyContent: "center",
+    alignContent: "flex-start",
+  },
+  centerPanel: {
+    position: "relative",
+    zIndex: 10,
+    flex: "0 0 30%",
+    display: "flex",
+    flexDirection: "column" as const,
     alignItems: "center",
-    marginBottom: "30px",
+    padding: "32px 20px",
+    borderLeft: "1px solid #1a1510",
+    borderRight: "1px solid #1a1510",
+    overflow: "auto",
   },
-  leaveButton: {
-    background: "transparent",
-    color: "#888",
-    border: "none",
-    fontSize: "14px",
-    padding: "8px 0",
+  title: {
+    fontSize: "22px",
+    fontWeight: 700,
+    letterSpacing: "6px",
+    color: "#c9a84c",
+    margin: "0 0 24px 0",
+    textAlign: "center" as const,
+    textShadow: "0 0 30px rgba(201,168,76,0.2)",
   },
   codeSection: {
-    textAlign: "right" as const,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    marginBottom: "28px",
+    width: "100%",
   },
   codeLabel: {
-    display: "block",
     fontSize: "10px",
-    color: "#666",
-    letterSpacing: "2px",
-    marginBottom: "2px",
+    letterSpacing: "4px",
+    color: "#5a4a30",
+    marginBottom: "8px",
   },
   codeButton: {
-    background: "transparent",
-    color: "#fff",
-    border: "none",
-    fontSize: "24px",
-    fontWeight: "bold",
-    letterSpacing: "3px",
-    padding: 0,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: "4px",
+    padding: "12px 24px",
+    backgroundColor: "rgba(201,168,76,0.05)",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+    cursor: "pointer",
+    width: "100%",
+  },
+  codeText: {
+    fontSize: "28px",
+    fontWeight: 700,
+    letterSpacing: "8px",
+    color: "#c9a84c",
+    fontFamily: "'Cinzel', serif",
   },
   copyHint: {
-    fontSize: "11px",
-    color: "#666",
-    letterSpacing: "0px",
+    fontSize: "9px",
+    letterSpacing: "3px",
+    color: "#5a4a30",
+    fontFamily: "'Cinzel', serif",
+  },
+  playerSection: {
+    width: "100%",
+    flex: 1,
+    marginBottom: "20px",
   },
   playerCount: {
-    fontSize: "14px",
-    color: "#888",
-    marginBottom: "4px",
-  },
-  minWarning: {
-    fontSize: "12px",
-    color: "#ff4444",
-    marginBottom: "16px",
+    display: "block",
+    fontSize: "10px",
+    letterSpacing: "4px",
+    color: "#5a4a30",
+    marginBottom: "12px",
+    textAlign: "center" as const,
   },
   playerList: {
-    flex: 1,
     display: "flex",
-    flexDirection: "column",
-    gap: "8px",
-    marginTop: "16px",
+    flexDirection: "column" as const,
+    gap: "6px",
   },
   playerRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "14px 16px",
-    backgroundColor: "#1a1a1a",
-    borderRadius: "8px",
-    border: "1px solid #2a2a2a",
-  },
-  playerLeft: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
+    padding: "10px 14px",
+    backgroundColor: "rgba(201,168,76,0.03)",
+    border: "1px solid #1a1510",
+    borderRadius: "4px",
   },
   playerName: {
-    fontSize: "16px",
+    fontSize: "14px",
+    color: "#c9b896",
+    fontFamily: "'Georgia', serif",
   },
-  youTag: {
-    fontSize: "12px",
-    color: "#666",
-  },
-  playerRight: {},
   hostBadge: {
-    fontSize: "12px",
-    color: "#f0c040",
-    fontWeight: "bold",
-    letterSpacing: "1px",
+    fontSize: "9px",
+    fontWeight: 700,
+    letterSpacing: "2px",
+    color: "#c9a84c",
+    padding: "2px 8px",
+    border: "1px solid #3d2e1a",
+    borderRadius: "2px",
+    fontFamily: "'Cinzel', serif",
   },
-  readyBadge: {
-    fontSize: "12px",
-    color: "#4ade80",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-  },
-  waitingBadge: {
-    fontSize: "12px",
-    color: "#666",
-    letterSpacing: "1px",
+  youBadge: {
+    fontSize: "9px",
+    fontWeight: 700,
+    letterSpacing: "2px",
+    color: "#6b5a3a",
+    padding: "2px 8px",
+    border: "1px solid #2a2019",
+    borderRadius: "2px",
+    fontFamily: "'Cinzel', serif",
   },
   actions: {
-    marginTop: "24px",
-    paddingBottom: "20px",
-  },
-  error: {
-    color: "#ff4444",
-    fontSize: "14px",
-    marginBottom: "12px",
-    textAlign: "center" as const,
-  },
-  startButton: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "10px",
     width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#fff",
-    color: "#111",
+  },
+  startBtn: {
+    width: "100%",
+    padding: "14px",
+    fontSize: "13px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    backgroundColor: "#c9a84c",
+    color: "#0a0a0a",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
   },
-  startButtonDisabled: {
+  startBtnDisabled: {
     width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#333",
-    color: "#666",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "not-allowed",
-  },
-  readyButton: {
-    width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
+    padding: "14px",
+    fontSize: "12px",
+    fontWeight: 700,
+    letterSpacing: "3px",
     backgroundColor: "transparent",
-    color: "#fff",
-    border: "2px solid #fff",
-    borderRadius: "8px",
+    color: "#3d2e1a",
+    border: "1px solid #1a1510",
+    borderRadius: "4px",
+    cursor: "not-allowed",
+    fontFamily: "'Cinzel', serif",
   },
-  readyButtonActive: {
+  waitingText: {
+    fontSize: "13px",
+    color: "#5a4a30",
+    textAlign: "center" as const,
+    fontFamily: "'Georgia', serif",
+    fontStyle: "italic",
+  },
+  leaveBtn: {
     width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#4ade80",
-    color: "#111",
-    border: "2px solid #4ade80",
+    padding: "10px",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "3px",
+    backgroundColor: "transparent",
+    color: "#5a3a2a",
+    border: "1px solid #2a1510",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
+  },
+  revealPanel: {
+    position: "relative",
+    zIndex: 10,
+    flex: "0 0 35%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+  },
+  revealedCardWrapper: {
+    maxHeight: "90%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  revealedCardImg: {
+    maxHeight: "80vh",
+    maxWidth: "100%",
+    objectFit: "contain" as const,
     borderRadius: "8px",
+    boxShadow: "0 0 60px rgba(201,168,76,0.2), 0 10px 40px rgba(0,0,0,0.8)",
+  },
+  revealPlaceholder: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    opacity: 0.3,
+  },
+  revealPlaceholderText: {
+    fontSize: "14px",
+    letterSpacing: "4px",
+    color: "#5a4a30",
+    fontFamily: "'Cinzel', serif",
+  },
+  revealPlaceholderSub: {
+    fontSize: "12px",
+    color: "#3d2e1a",
+    fontFamily: "'Georgia', serif",
+    fontStyle: "italic",
   },
 };
 

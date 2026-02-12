@@ -3,6 +3,32 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 
+// Card imports
+import backCard from "../assets/back_card.jpg";
+import werewolfCard from "../assets/werewolf_card.jpg";
+import minionCard from "../assets/minion_card.jpg";
+import seerCard from "../assets/seer_card.jpg";
+import robberCard from "../assets/robber_card.jpg";
+import troublemakerCard from "../assets/troublemaker_card.jpg";
+import masonCard from "../assets/mason_card.jpg";
+import drunkCard from "../assets/drunk_card.jpg";
+import insomniacCard from "../assets/insomaniac_card.jpg";
+import cloneCard from "../assets/clone_card.jpg";
+import jokerCard from "../assets/joker_card.jpg";
+
+const cardMap: { [key: string]: string } = {
+  werewolf: werewolfCard,
+  minion: minionCard,
+  seer: seerCard,
+  robber: robberCard,
+  troublemaker: troublemakerCard,
+  mason: masonCard,
+  drunk: drunkCard,
+  insomniac: insomniacCard,
+  clone: cloneCard,
+  joker: jokerCard,
+};
+
 interface LocationState {
   playerName: string;
   playerId: string;
@@ -30,7 +56,9 @@ function RoleReveal() {
   const playerName = state?.playerName || "Unknown";
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
-  const [revealed, setRevealed] = useState(false);
+
+  const [flipped, setFlipped] = useState(false);
+  const [confirmed, setConfirmed] = useState(state?.hasConfirmedRole || false);
 
   const [role, setRole] = useState<RoleInfo | null>(() => {
     const rejoinInfo = state?.rejoinRoleInfo;
@@ -43,8 +71,6 @@ function RoleReveal() {
     }
     return null;
   });
-
-  const [confirmed, setConfirmed] = useState(state?.hasConfirmedRole || false);
 
   useLeaveWarning(true);
 
@@ -66,7 +92,6 @@ function RoleReveal() {
       }
     });
 
-    // Capture these early — they may fire before NightPhase mounts
     socket.on("roleActionQueue", (roleName: string) => {
       pendingActiveRole = roleName;
     });
@@ -76,7 +101,6 @@ function RoleReveal() {
     });
 
     socket.on("nightStarted", () => {
-      // Small delay to let roleActionQueue and groundCards arrive first
       setTimeout(() => {
         navigate(`/night/${gameCode}`, {
           state: {
@@ -99,8 +123,8 @@ function RoleReveal() {
     };
   }, [gameCode, playerId, navigate, playerName, isHost, role]);
 
-  const handleReveal = () => {
-    setRevealed(true);
+  const handleFlip = () => {
+    setFlipped(true);
   };
 
   const handleConfirm = () => {
@@ -108,172 +132,233 @@ function RoleReveal() {
     socket.emit("confirmRoleReveal", { gameCode, playerId });
   };
 
-  const teamColor = (team: string) => {
-    switch (team) {
-      case "werewolves":
-        return "#ff4444";
-      case "villagers":
-        return "#4ade80";
-      case "joker":
-        return "#f0c040";
-      default:
-        return "#fff";
-    }
+  const getCardImage = (roleName: string): string => {
+    return cardMap[roleName.toLowerCase()] || backCard;
   };
 
-  const teamLabel = (team: string) => {
-    switch (team) {
-      case "werewolves":
-        return "WEREWOLF TEAM";
-      case "villagers":
-        return "VILLAGE TEAM";
-      case "joker":
-        return "JOKER";
-      default:
-        return team.toUpperCase();
-    }
-  };
-
-  // Waiting for role data from server
+  // Waiting for role data
   if (!role) {
     return (
-      <div style={styles.container}>
-        <h1 style={styles.title}>Role Reveal</h1>
-        <p style={styles.waiting}>Assigning roles...</p>
+      <div style={styles.page}>
+        <div style={styles.vignette} />
+        <div style={styles.center}>
+          <h1 style={styles.loadingTitle}>ASSIGNING ROLES</h1>
+          <p style={styles.loadingText}>The fates are being decided...</p>
+        </div>
       </div>
     );
   }
 
-  // Role received but not yet revealed
-  if (!revealed) {
-    return (
-      <div style={styles.container}>
-        <h1 style={styles.title}>Role Reveal</h1>
-        <p style={styles.instruction}>Your role has been assigned.</p>
-        <p style={styles.instruction}>Tap below when you're ready to see it.</p>
-        <p style={styles.warning}>Make sure no one is looking at your screen!</p>
-        <button style={styles.revealButton} onClick={handleReveal}>
-          Reveal My Role
-        </button>
-      </div>
-    );
-  }
-
-  // Role revealed
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Your Role</h1>
+    <div style={styles.page}>
+      <div style={styles.vignette} />
 
-      <div
-        style={{
-          ...styles.roleCard,
-          borderColor: teamColor(role.roleTeam),
-        }}
-      >
-        <span
-          style={{
-            ...styles.teamBadge,
-            color: teamColor(role.roleTeam),
-          }}
-        >
-          {teamLabel(role.roleTeam)}
-        </span>
-        <h2 style={styles.roleName}>{role.roleName}</h2>
-        {role.roleDescription && <p style={styles.roleDescription}>{role.roleDescription}</p>}
+      <div style={styles.content}>
+        {/* Title */}
+        {!flipped && (
+          <div style={styles.topSection}>
+            <p style={styles.warningText}>MAKE SURE NO ONE IS LOOKING</p>
+            <h1 style={styles.heading}>YOUR FATE AWAITS</h1>
+            <p style={styles.subText}>Tap the card to reveal your role</p>
+          </div>
+        )}
+
+        {flipped && !confirmed && (
+          <div style={styles.topSection}>
+            <h1 style={styles.heading}>YOUR ROLE</h1>
+          </div>
+        )}
+
+        {flipped && confirmed && (
+          <div style={styles.topSection}>
+            <h1 style={styles.heading}>YOUR ROLE</h1>
+            <p style={styles.waitingText}>Waiting for other players...</p>
+          </div>
+        )}
+
+        {/* Card */}
+        <div style={styles.cardContainer} onClick={!flipped ? handleFlip : undefined}>
+          <div
+            style={{
+              ...styles.cardInner,
+              transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+              cursor: !flipped ? "pointer" : "default",
+            }}
+          >
+            {/* Front = back of card */}
+            <div style={styles.cardFace}>
+              <img src={backCard} alt="Card back" style={styles.cardImg} />
+              {!flipped && <div style={styles.tapOverlay}>TAP TO REVEAL</div>}
+            </div>
+
+            {/* Back = role card */}
+            <div style={styles.cardFaceBack}>
+              <img src={getCardImage(role.roleName)} alt={role.roleName} style={styles.cardImg} />
+            </div>
+          </div>
+        </div>
+
+        {/* Confirm button */}
+        {flipped && !confirmed && (
+          <button style={styles.confirmBtn} onClick={handleConfirm}>
+            I'M READY
+          </button>
+        )}
       </div>
-
-      {!confirmed ? (
-        <button style={styles.confirmButton} onClick={handleConfirm}>
-          Got it — I'm Ready
-        </button>
-      ) : (
-        <p style={styles.confirmedText}>Waiting for other players...</p>
-      )}
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
+  page: {
+    position: "relative",
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
     display: "flex",
-    flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: "100vh",
-    padding: "20px",
-    maxWidth: "480px",
-    margin: "0 auto",
+    background: "radial-gradient(ellipse at 50% 40%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
+    fontFamily: "'Cinzel', 'Palatino Linotype', 'Georgia', serif",
+    color: "#e8dcc8",
   },
-  title: {
-    fontSize: "32px",
-    fontWeight: "bold",
-    marginBottom: "24px",
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
+    zIndex: 1,
   },
-  waiting: {
-    color: "#888",
-    fontSize: "16px",
-  },
-  instruction: {
-    color: "#ccc",
-    fontSize: "16px",
-    marginBottom: "8px",
+  center: {
+    position: "relative",
+    zIndex: 10,
     textAlign: "center" as const,
   },
-  warning: {
-    color: "#ff4444",
+  loadingTitle: {
+    fontSize: "24px",
+    fontWeight: 700,
+    letterSpacing: "8px",
+    color: "#c9a84c",
+    textShadow: "0 0 30px rgba(201,168,76,0.2)",
+    marginBottom: "12px",
+  },
+  loadingText: {
     fontSize: "14px",
-    marginTop: "16px",
-    marginBottom: "32px",
+    color: "#5a4a30",
+    fontFamily: "'Georgia', serif",
+    fontStyle: "italic",
   },
-  revealButton: {
-    padding: "16px 48px",
-    fontSize: "18px",
-    fontWeight: "bold",
-    backgroundColor: "#fff",
-    color: "#111",
-    border: "none",
-    borderRadius: "8px",
+
+  content: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: "24px",
   },
-  roleCard: {
-    backgroundColor: "#1a1a1a",
-    border: "2px solid #333",
-    borderRadius: "16px",
-    padding: "32px",
-    width: "100%",
+
+  topSection: {
     textAlign: "center" as const,
-    marginBottom: "32px",
   },
-  teamBadge: {
-    fontSize: "12px",
-    fontWeight: "bold",
-    letterSpacing: "2px",
+  warningText: {
+    fontSize: "11px",
+    letterSpacing: "4px",
+    color: "#c41e1e",
     marginBottom: "8px",
+  },
+  heading: {
+    fontSize: "28px",
+    fontWeight: 700,
+    letterSpacing: "8px",
+    color: "#c9a84c",
+    margin: 0,
+    textShadow: "0 0 30px rgba(201,168,76,0.2)",
+  },
+  subText: {
+    fontSize: "13px",
+    color: "#5a4a30",
+    fontFamily: "'Georgia', serif",
+    fontStyle: "italic",
+    marginTop: "8px",
+  },
+  waitingText: {
+    fontSize: "13px",
+    color: "#4a8a4a",
+    fontFamily: "'Georgia', serif",
+    fontStyle: "italic",
+    marginTop: "8px",
+  },
+
+  // Card flip
+  cardContainer: {
+    width: "280px",
+    height: "420px",
+    perspective: "1200px",
+  },
+  cardInner: {
+    position: "relative" as const,
+    width: "100%",
+    height: "100%",
+    transition: "transform 0.8s ease",
+    transformStyle: "preserve-3d" as const,
+  },
+  cardFace: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backfaceVisibility: "hidden" as const,
+    borderRadius: "8px",
+    overflow: "hidden",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.1)",
+  },
+  cardFaceBack: {
+    position: "absolute" as const,
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backfaceVisibility: "hidden" as const,
+    transform: "rotateY(180deg)",
+    borderRadius: "8px",
+    overflow: "hidden",
+    boxShadow: "0 10px 40px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.15)",
+  },
+  cardImg: {
+    width: "100%",
+    height: "100%",
+    objectFit: "cover" as const,
     display: "block",
   },
-  roleName: {
-    fontSize: "36px",
-    fontWeight: "bold",
-    marginTop: "8px",
-    marginBottom: "16px",
+  tapOverlay: {
+    position: "absolute" as const,
+    bottom: "20px",
+    left: 0,
+    right: 0,
+    textAlign: "center" as const,
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    color: "#c9a84c",
+    fontFamily: "'Cinzel', serif",
+    textShadow: "0 0 10px rgba(0,0,0,0.8)",
+    animation: "pulse 2s ease-in-out infinite",
   },
-  roleDescription: {
-    fontSize: "14px",
-    color: "#aaa",
-    lineHeight: "1.5",
-  },
-  confirmButton: {
-    padding: "16px 48px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#4ade80",
-    color: "#111",
+
+  confirmBtn: {
+    padding: "14px 48px",
+    fontSize: "13px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    backgroundColor: "#c9a84c",
+    color: "#0a0a0a",
     border: "none",
-    borderRadius: "8px",
-    width: "100%",
-  },
-  confirmedText: {
-    color: "#4ade80",
-    fontSize: "16px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
+    marginTop: "8px",
   },
 };
 

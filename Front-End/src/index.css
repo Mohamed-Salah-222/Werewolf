@@ -30,3 +30,19 @@ input {
     transform: translateY(-8px);
   }
 }
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ===== MOBILE RESPONSIVE - HOME PAGE ===== */
+@media (max-width: 768px) {
+  body {
+    overflow-y: auto;
+  }
+}

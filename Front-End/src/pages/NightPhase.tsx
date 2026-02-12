@@ -58,13 +58,14 @@ function NightPhase() {
   const actionResultRef = useRef<{ message?: string } | null>(actionResult);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const timerMaxRef = useRef<number>(0);
+
   useLeaveWarning(true);
 
   useEffect(() => {
     actionResultRef.current = actionResult;
   }, [actionResult]);
 
-  // Fetch player list on mount
   useEffect(() => {
     const fetchGameData = async () => {
       try {
@@ -99,10 +100,9 @@ function NightPhase() {
     });
 
     socket.on("roleTimer", (data: { roleName: string; seconds: number }) => {
-      // Only show timer if it's my turn
       if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDone) {
+        timerMaxRef.current = data.seconds;
         setRoleTimer(data.seconds);
-        // Start countdown
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         let remaining = data.seconds;
         timerIntervalRef.current = setInterval(() => {
@@ -211,62 +211,188 @@ function NightPhase() {
     }
   };
 
+  const timerMax = timerMaxRef.current || roleTimer;
+  const timerFraction = timerMax > 0 ? roleTimer / timerMax : 0;
+
   return (
-    <div style={styles.container}>
+    <div style={styles.page}>
+      <div style={styles.vignette} />
+
+      <style>{`
+        @keyframes moonPulse {
+          0%, 100% { text-shadow: 0 0 20px rgba(201,168,76,0.3), 0 0 60px rgba(201,168,76,0.1); }
+          50% { text-shadow: 0 0 30px rgba(201,168,76,0.5), 0 0 80px rgba(201,168,76,0.2); }
+        }
+        @keyframes timerPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes barShrink {
+          from { transform: scaleX(1); }
+          to { transform: scaleX(0); }
+        }
+      `}</style>
+
+      {/* ===== HEADER ===== */}
       <div style={styles.header}>
-        <span style={styles.phase}>🌙 Night Phase</span>
+        <div style={styles.headerInner}>
+          <div style={styles.moonIcon}>☽</div>
+          <h1 style={styles.phaseTitle}>NIGHT PHASE</h1>
+          <div style={styles.headerDivider} />
+          <p style={styles.roleLabel}>{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>
+        </div>
       </div>
 
-      {actionDone ? (
-        <ActionComplete result={actionResult} />
-      ) : isMyTurn ? (
-        <div>
-          {roleTimer > 0 && (
-            <div style={styles.timerBar}>
-              <span
-                style={{
-                  ...styles.timerText,
-                  color: roleTimer <= 5 ? "#ff4444" : "#fff",
-                }}
-              >
-                {roleTimer}s
-              </span>
-            </div>
-          )}
-          {renderActionComponent()}
+      {/* ===== TIMER ===== */}
+      {isMyTurn && roleTimer > 0 && (
+        <div style={styles.timerSection}>
+          <div style={styles.timerTrack}>
+            <div
+              style={{
+                ...styles.timerFill,
+                transform: `scaleX(${timerFraction})`,
+                backgroundColor: roleTimer <= 5 ? "#c41e1e" : "#c9a84c",
+                boxShadow: roleTimer <= 5 ? "0 0 12px rgba(196,30,30,0.6)" : "0 0 12px rgba(201,168,76,0.4)",
+              }}
+            />
+          </div>
+          <span
+            style={{
+              ...styles.timerText,
+              color: roleTimer <= 5 ? "#c41e1e" : "#c9a84c",
+              animation: roleTimer <= 5 ? "timerPulse 0.6s ease-in-out infinite" : "none",
+            }}
+          >
+            {roleTimer}s
+          </span>
         </div>
-      ) : (
-        <WaitingForTurn />
       )}
+
+      {/* ===== CONTENT ===== */}
+      <div style={styles.contentArea}>
+        <div style={styles.contentInner}>{actionDone ? <ActionComplete result={actionResult} /> : isMyTurn ? <div style={{ animation: "fadeSlideIn 0.4s ease-out" }}>{renderActionComponent()}</div> : <WaitingForTurn />}</div>
+      </div>
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    minHeight: "100vh",
-    maxWidth: "480px",
-    margin: "0 auto",
-    padding: "20px",
-  },
-  header: {
+  page: {
+    position: "relative",
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
     display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "20px",
+    flexDirection: "column",
+    background: "radial-gradient(ellipse at 30% 20%, #0f0a1a 0%, #0a0a0a 40%, #000 100%)",
+    fontFamily: "'Trade Winds', cursive",
+    color: "#e8dcc8",
   },
-  phase: {
-    fontSize: "18px",
-    fontWeight: "bold",
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.8) 100%)",
+    zIndex: 1,
   },
-  timerBar: {
+
+  /* Header */
+  header: {
+    position: "relative",
+    zIndex: 10,
+    padding: "28px 40px 20px",
+    borderBottom: "1px solid #1a1510",
     textAlign: "center" as const,
-    marginBottom: "16px",
+  },
+  headerInner: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: "4px",
+  },
+  moonIcon: {
+    fontSize: "36px",
+    color: "#c9a84c",
+    lineHeight: 1,
+    filter: "drop-shadow(0 0 20px rgba(201,168,76,0.4))",
+    animation: "moonPulse 4s ease-in-out infinite",
+  },
+  phaseTitle: {
+    fontSize: "36px",
+    fontWeight: 400,
+    letterSpacing: "8px",
+    margin: 0,
+    fontFamily: "'Creepster', cursive",
+    background: "linear-gradient(180deg, #e8c84a 0%, #c9a84c 40%, #8a6d2e 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    filter: "drop-shadow(0 0 30px rgba(201,168,76,0.2))",
+  },
+  headerDivider: {
+    width: "60px",
+    height: "1px",
+    backgroundColor: "#3d2e1a",
+    margin: "8px 0",
+  },
+  roleLabel: {
+    fontSize: "12px",
+    letterSpacing: "4px",
+    color: "#8a7a60",
+    margin: 0,
+    fontFamily: "'Trade Winds', cursive",
+  },
+
+  /* Timer */
+  timerSection: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    padding: "16px 40px 12px",
+  },
+  timerTrack: {
+    flex: 1,
+    height: "3px",
+    backgroundColor: "#1a1510",
+    borderRadius: "2px",
+    overflow: "hidden",
+  },
+  timerFill: {
+    height: "100%",
+    transformOrigin: "left",
+    transition: "transform 1s linear, background-color 0.3s ease",
+    borderRadius: "2px",
   },
   timerText: {
-    fontSize: "24px",
-    fontWeight: "bold",
+    fontSize: "18px",
+    fontWeight: 400,
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
     fontVariantNumeric: "tabular-nums",
+    minWidth: "40px",
+    textAlign: "right" as const,
+  },
+
+  /* Content */
+  contentArea: {
+    position: "relative",
+    zIndex: 10,
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px 40px",
+    overflow: "auto",
+  },
+  contentInner: {
+    width: "100%",
+    maxWidth: "480px",
   },
 };
 
