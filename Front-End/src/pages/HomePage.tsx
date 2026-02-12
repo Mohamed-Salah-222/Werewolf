@@ -4,6 +4,148 @@ import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
 import { getSession, clearSession, saveSession } from "../utils/gameSession";
 
+// Import character images
+import werewolfSquare from "../assets/werewolf_sqaure.png";
+import werewolf2d from "../assets/werewolf_2d.png";
+import minionSquare from "../assets/minion_square.png";
+import minion2d from "../assets/minion_2d.png";
+import seerSquare from "../assets/seer_square.png";
+import seer2d from "../assets/seer_2d.png";
+import robberSquare from "../assets/robber_square.png";
+import robber2d from "../assets/robber_2d.png";
+import troublemakerSquare from "../assets/troublemaker_square.png";
+import troublemaker2d from "../assets/troublemaker_2d.png";
+import masonSquare from "../assets/mason_square.png";
+import mason2d from "../assets/mason_2d.png";
+import drunkSquare from "../assets/drunk_square.png";
+import drunk2d from "../assets/drunk_2d.png";
+import insomniacSquare from "../assets/insomaniac_square.png";
+import insomniac2d from "../assets/insomaniac_2d.png";
+import cloneSquare from "../assets/clone_square.png";
+import clone2d from "../assets/clone_2d.png";
+import jokerSquare from "../assets/joker_square.png";
+import joker2d from "../assets/joker_2d.png";
+
+// ============================================================
+// CHARACTER DATA - Add more characters here as you create them
+// ============================================================
+interface CharacterData {
+  id: string;
+  name: string;
+  team: "villain" | "village" | "neutral";
+  title: string;
+  description: string;
+  ability: string;
+  square: string | null;
+  fullBody: string | null;
+}
+
+const characters: CharacterData[] = [
+  {
+    id: "werewolf",
+    name: "Werewolf",
+    team: "villain",
+    title: "The Beast Among Us",
+    description: "A creature of the night hiding in plain sight. When darkness falls, the werewolf reveals its true nature — hunting alongside its pack to devour the innocent.",
+    ability: "During the night, all Werewolves open their eyes and identify each other. If you are the only Werewolf, you may peek at one ground card.",
+    square: werewolfSquare,
+    fullBody: werewolf2d,
+  },
+  {
+    id: "minion",
+    name: "Minion",
+    team: "villain",
+    title: "The Shadow Servant",
+    description: "A loyal servant who would die for the wolves. Knows who they are, yet remains invisible to them.",
+    ability: "You see who the Werewolves are, but they don't know you exist. If you die, the Werewolves win.",
+    square: minionSquare,
+    fullBody: minion2d,
+  },
+  {
+    id: "seer",
+    name: "Seer",
+    team: "village",
+    title: "The All-Seeing Eye",
+    description: "Gifted with visions beyond mortal sight. The Seer peers into the souls of others to uncover the truth.",
+    ability: "Look at one player's role, or two of the ground cards.",
+    square: seerSquare,
+    fullBody: seer2d,
+  },
+  {
+    id: "robber",
+    name: "Robber",
+    team: "village",
+    title: "The Night Thief",
+    description: "Takes what isn't his — including identities. By morning, even he doesn't know who he truly is.",
+    ability: "Steal another player's role and see what you become.",
+    square: robberSquare,
+    fullBody: robber2d,
+  },
+  {
+    id: "troublemaker",
+    name: "Troublemaker",
+    team: "village",
+    title: "The Chaos Weaver",
+    description: "Sows confusion by swapping others' fates. Nobody is safe from her meddling hands.",
+    ability: "Swap the roles of two other players without looking.",
+    square: troublemakerSquare,
+    fullBody: troublemaker2d,
+  },
+  {
+    id: "mason",
+    name: "Mason",
+    team: "village",
+    title: "The Sworn Brother",
+    description: "Bound by oath, Masons know their own. Their trust is unbreakable — a rare gift in a village of lies.",
+    ability: "Wake up and see who the other Mason is.",
+    square: masonSquare,
+    fullBody: mason2d,
+  },
+  {
+    id: "drunk",
+    name: "Drunk",
+    team: "village",
+    title: "The Lost Soul",
+    description: "Too deep in the bottle to remember who they are. Stumbles through the night, swapping fates unknowingly.",
+    ability: "Swap your role with a ground card — but you don't get to see it.",
+    square: drunkSquare,
+    fullBody: drunk2d,
+  },
+  {
+    id: "insomniac",
+    name: "Insomniac",
+    team: "village",
+    title: "The Sleepless Watcher",
+    description: "Can never quite fall asleep. While others scheme in darkness, the Insomniac watches and waits.",
+    ability: "Wake up last and check if your role has changed.",
+    square: insomniacSquare,
+    fullBody: insomniac2d,
+  },
+  {
+    id: "clone",
+    name: "Clone",
+    team: "village",
+    title: "The Mimic",
+    description: "Becomes whoever it chooses to copy. A blank slate that takes on the identity of another.",
+    ability: "Copy another player's role and become that role.",
+    square: cloneSquare,
+    fullBody: clone2d,
+  },
+  {
+    id: "joker",
+    name: "Joker",
+    team: "neutral",
+    title: "The Wild Card",
+    description: "Chaos incarnate. Wants nothing more than to be eliminated. A madman who wins by losing.",
+    ability: "You win if the village votes to eliminate you. You are on your own team.",
+    square: jokerSquare,
+    fullBody: joker2d,
+  },
+];
+
+// ============================================================
+// REJOIN RESPONSE TYPE
+// ============================================================
 interface RejoinResponse {
   success: boolean;
   playerId?: string;
@@ -21,19 +163,22 @@ interface RejoinResponse {
   hasVoted?: boolean;
   players?: Array<{ id: string; name: string }>;
   timerSeconds?: number;
-  error?: string;
   currentActiveRole?: string;
   lastActionResult?: { message?: string } | null;
+  error?: string;
 }
 
+// ============================================================
+// COMPONENT
+// ============================================================
 function HomePage() {
   const navigate = useNavigate();
 
+  const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [showRejoinModal, setShowRejoinModal] = useState(() => {
-    return getSession() !== null;
-  });
+  const [showRejoinModal] = useState(() => getSession() !== null);
+  const [rejoinDismissed, setRejoinDismissed] = useState(false);
 
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
@@ -41,174 +186,121 @@ function HomePage() {
   const [loading, setLoading] = useState(false);
   const [rejoinLoading, setRejoinLoading] = useState(false);
 
+  // ---- REJOIN LOGIC ----
   const handleRejoin = async () => {
     const session = getSession();
     if (!session) return;
-
     setRejoinLoading(true);
 
     try {
-      // First check if the game still exists
       const res = await fetch(`${API_URL}/api/games/${session.gameCode}`);
       const data = await res.json();
-
       if (!data.success) {
         clearSession();
-        setShowRejoinModal(false);
+        setRejoinDismissed(true);
         setRejoinLoading(false);
         return;
       }
 
-      if (!socket.connected) {
-        socket.connect();
-      }
-
-      // Wait for connection
+      if (!socket.connected) socket.connect();
       await new Promise<void>((resolve) => {
-        if (socket.connected) {
-          resolve();
-        } else {
-          socket.once("connect", () => resolve());
-        }
+        if (socket.connected) resolve();
+        else socket.once("connect", () => resolve());
       });
 
-      socket.emit(
-        "rejoinGame",
-        {
+      socket.emit("rejoinGame", { gameCode: session.gameCode, playerId: session.playerId, playerName: session.playerName }, (response: RejoinResponse) => {
+        setRejoinLoading(false);
+        if (!response.success) {
+          clearSession();
+          setRejoinDismissed(true);
+          return;
+        }
+        saveSession({
           gameCode: session.gameCode,
-          playerId: session.playerId,
-          playerName: session.playerName,
-        },
-        (response: RejoinResponse) => {
-          setRejoinLoading(false);
-
-          if (!response.success) {
+          playerId: response.playerId || session.playerId,
+          playerName: response.playerName || session.playerName,
+          isHost: session.isHost,
+        });
+        const baseState = {
+          playerName: response.playerName || session.playerName,
+          playerId: response.playerId || session.playerId,
+          isHost: session.isHost,
+        };
+        switch (response.phase) {
+          case "waiting":
+            navigate(`/waiting/${session.gameCode}`, { state: baseState });
+            break;
+          case "role":
+            navigate(`/role-reveal/${session.gameCode}`, {
+              state: { ...baseState, rejoinRoleInfo: response.roleInfo, hasConfirmedRole: response.hasConfirmedRole },
+            });
+            break;
+          case "night":
+            navigate(`/night/${session.gameCode}`, {
+              state: {
+                ...baseState,
+                roleName: response.roleInfo?.roleName,
+                initialGroundCards: response.groundCardsInfo,
+                hasPerformedAction: response.hasPerformedAction,
+                initialActiveRole: response.currentActiveRole,
+                lastActionResult: response.lastActionResult,
+              },
+            });
+            break;
+          case "discussion":
+            navigate(`/discussion/${session.gameCode}`, {
+              state: {
+                ...baseState,
+                timerSeconds: response.timerSeconds || 360,
+                roleName: response.roleInfo?.roleName,
+                actionResult: response.lastActionResult,
+              },
+            });
+            break;
+          case "vote":
+            navigate(`/vote/${session.gameCode}`, { state: { ...baseState, hasVoted: response.hasVoted } });
+            break;
+          default:
             clearSession();
-            setShowRejoinModal(false);
-            return;
-          }
-
-          // Update session with confirmed player ID
-          saveSession({
-            gameCode: session.gameCode,
-            playerId: response.playerId || session.playerId,
-            playerName: response.playerName || session.playerName,
-            isHost: session.isHost,
-          });
-
-          const baseState = {
-            playerName: response.playerName || session.playerName,
-            playerId: response.playerId || session.playerId,
-            isHost: session.isHost,
-          };
-
-          // Navigate to the correct page based on phase
-          switch (response.phase) {
-            case "waiting":
-              navigate(`/waiting/${session.gameCode}`, { state: baseState });
-              break;
-            case "role":
-              navigate(`/role-reveal/${session.gameCode}`, {
-                state: {
-                  ...baseState,
-                  rejoinRoleInfo: response.roleInfo,
-                  hasConfirmedRole: response.hasConfirmedRole,
-                },
-              });
-              break;
-            case "night":
-              navigate(`/night/${session.gameCode}`, {
-                state: {
-                  ...baseState,
-                  roleName: response.roleInfo?.roleName,
-                  initialGroundCards: response.groundCardsInfo,
-                  hasPerformedAction: response.hasPerformedAction,
-                  initialActiveRole: response.currentActiveRole,
-                  lastActionResult: response.lastActionResult,
-                },
-              });
-              break;
-            case "discussion":
-              navigate(`/discussion/${session.gameCode}`, {
-                state: {
-                  ...baseState,
-                  timerSeconds: response.timerSeconds || 360,
-                  roleName: response.roleInfo?.roleName,
-                  actionResult: response.lastActionResult,
-                },
-              });
-              break;
-            case "vote":
-              navigate(`/vote/${session.gameCode}`, {
-                state: {
-                  ...baseState,
-                  hasVoted: response.hasVoted,
-                },
-              });
-              break;
-            default:
-              clearSession();
-              setShowRejoinModal(false);
-          }
-        },
-      );
+            setRejoinDismissed(true);
+        }
+      });
     } catch {
       clearSession();
-      setShowRejoinModal(false);
+      setRejoinDismissed(true);
       setRejoinLoading(false);
     }
   };
 
   const handleDeclineRejoin = () => {
     clearSession();
-    setShowRejoinModal(false);
+    setRejoinDismissed(true);
   };
 
+  // ---- CREATE / JOIN ----
   const handleCreateGame = async () => {
     if (playerName.trim().length < 2) {
       setError("Name must be at least 2 characters");
       return;
     }
-
     setLoading(true);
     setError("");
-
     try {
-      const res = await fetch(`${API_URL}/api/games/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const res = await fetch(`${API_URL}/api/games/create`, { method: "POST", headers: { "Content-Type": "application/json" } });
       const data = await res.json();
-
       if (!data.success) {
         setError("Failed to create game");
         setLoading(false);
         return;
       }
-
       const code = data.data.code;
-
-      if (!socket.connected) {
-        socket.connect();
-      }
-
+      if (!socket.connected) socket.connect();
       socket.emit("joinGame", { gameCode: code, playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
         setLoading(false);
         if (response.success) {
-          saveSession({
-            gameCode: code,
-            playerId: response.playerId || "",
-            playerName: response.playerName || "",
-            isHost: true,
-          });
+          saveSession({ gameCode: code, playerId: response.playerId || "", playerName: response.playerName || "", isHost: true });
           setShowCreateModal(false);
-          navigate(`/waiting/${code}`, {
-            state: {
-              playerName: response.playerName,
-              playerId: response.playerId,
-              isHost: true,
-            },
-          });
+          navigate(`/waiting/${code}`, { state: { playerName: response.playerName, playerId: response.playerId, isHost: true } });
         } else {
           setError(response.error || "Failed to join game");
         }
@@ -228,31 +320,15 @@ function HomePage() {
       setError("Game code must be 6 characters");
       return;
     }
-
     setLoading(true);
     setError("");
-
-    if (!socket.connected) {
-      socket.connect();
-    }
-
+    if (!socket.connected) socket.connect();
     socket.emit("joinGame", { gameCode: gameCode.trim().toLowerCase(), playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
       setLoading(false);
       if (response.success) {
-        saveSession({
-          gameCode: gameCode.trim().toLowerCase(),
-          playerId: response.playerId || "",
-          playerName: response.playerName || "",
-          isHost: false,
-        });
+        saveSession({ gameCode: gameCode.trim().toLowerCase(), playerId: response.playerId || "", playerName: response.playerName || "", isHost: false });
         setShowJoinModal(false);
-        navigate(`/waiting/${gameCode.trim().toLowerCase()}`, {
-          state: {
-            playerName: response.playerName,
-            playerId: response.playerId,
-            isHost: false,
-          },
-        });
+        navigate(`/waiting/${gameCode.trim().toLowerCase()}`, { state: { playerName: response.playerName, playerId: response.playerId, isHost: false } });
       } else {
         setError(response.error || "Failed to join game");
       }
@@ -267,50 +343,123 @@ function HomePage() {
     setGameCode("");
   };
 
-  return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>WEREWOLF</h1>
-      <p style={styles.subtitle}>One Night Ultimate</p>
+  const teamColor = (team: string) => {
+    if (team === "villain") return "#c41e1e";
+    if (team === "neutral") return "#d4a017";
+    return "#2a8a4a";
+  };
 
-      <div style={styles.buttonGroup}>
-        <button
-          style={styles.button}
-          onClick={() => {
-            closeModals();
-            setShowCreateModal(true);
-          }}
-        >
-          Create Game
-        </button>
-        <button
-          style={styles.button}
-          onClick={() => {
-            closeModals();
-            setShowJoinModal(true);
-          }}
-        >
-          Join Game
-        </button>
-        <button style={styles.buttonDisabled} disabled>
-          Characters (Coming Soon)
-        </button>
-        <button style={styles.buttonDisabled} disabled>
-          How to Play (Coming Soon)
-        </button>
+  const teamLabel = (team: string) => {
+    if (team === "villain") return "WEREWOLF TEAM";
+    if (team === "neutral") return "NEUTRAL";
+    return "VILLAGE TEAM";
+  };
+
+  return (
+    <div style={styles.page}>
+      {/* Background vignette overlay */}
+      <div style={styles.vignette} />
+
+      {/* ===== TOP: TITLE + BUTTONS ===== */}
+      <div style={styles.topBar}>
+        <h1 style={styles.title}>WEREWOLF</h1>
+        <p style={styles.subtitle}>ONE NIGHT IN THE VILLAGE</p>
+        <div style={styles.buttonRow}>
+          <button
+            style={styles.actionBtn}
+            onClick={() => {
+              closeModals();
+              setShowCreateModal(true);
+            }}
+          >
+            CREATE GAME
+          </button>
+          <button
+            style={styles.actionBtn}
+            onClick={() => {
+              closeModals();
+              setShowJoinModal(true);
+            }}
+          >
+            JOIN GAME
+          </button>
+        </div>
       </div>
 
+      {/* ===== MIDDLE: CHARACTER SHOWCASE ===== */}
+      <div style={styles.showcase}>
+        {/* Left: Full body */}
+        <div style={styles.characterDisplay}>
+          {selectedChar.fullBody ? (
+            <img src={selectedChar.fullBody} alt={selectedChar.name} style={styles.fullBodyImg} key={selectedChar.id} />
+          ) : (
+            <div style={styles.placeholderBody}>
+              <span style={styles.placeholderIcon}>?</span>
+              <span style={styles.placeholderText}>COMING SOON</span>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Info panel */}
+        <div style={styles.infoPanel}>
+          <div style={{ ...styles.teamBadge, backgroundColor: teamColor(selectedChar.team) }}>{teamLabel(selectedChar.team)}</div>
+          <h2 style={styles.charName}>{selectedChar.name.toUpperCase()}</h2>
+          <p style={styles.charTitle}>{selectedChar.title}</p>
+          <div style={styles.divider} />
+          <p style={styles.charDesc}>{selectedChar.description}</p>
+          <div style={styles.abilityBox}>
+            <span style={styles.abilityLabel}>ABILITY</span>
+            <p style={styles.abilityText}>{selectedChar.ability}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== BOTTOM: CHARACTER SELECT GRID ===== */}
+      <div style={styles.selectBar}>
+        <div style={styles.selectGrid}>
+          {characters.map((char) => (
+            <button
+              key={char.id}
+              style={{
+                ...styles.gridSlot,
+                borderColor: selectedChar.id === char.id ? teamColor(char.team) : "#2a2a2a",
+                boxShadow: selectedChar.id === char.id ? `0 0 20px ${teamColor(char.team)}60, inset 0 0 15px ${teamColor(char.team)}20` : "none",
+              }}
+              onClick={() => setSelectedChar(char)}
+            >
+              {char.square ? (
+                <img src={char.square} alt={char.name} style={styles.gridImg} />
+              ) : (
+                <div style={styles.gridPlaceholder}>
+                  <span style={styles.gridPlaceholderText}>{char.name.charAt(0)}</span>
+                </div>
+              )}
+              <span
+                style={{
+                  ...styles.gridLabel,
+                  color: selectedChar.id === char.id ? teamColor(char.team) : "#666",
+                }}
+              >
+                {char.name}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== MODALS ===== */}
       {showCreateModal && (
         <div style={styles.overlay} onClick={closeModals}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>Create Game</h2>
-            <input style={styles.input} type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleCreateGame()} />
+            <h2 style={styles.modalTitle}>CREATE GAME</h2>
+            <input style={styles.input} type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleCreateGame()} autoFocus />
             {error && <p style={styles.error}>{error}</p>}
             <div style={styles.modalButtons}>
-              <button style={styles.cancelButton} onClick={closeModals}>
-                Cancel
+              <button style={styles.cancelBtn} onClick={closeModals}>
+                CANCEL
               </button>
-              <button style={styles.confirmButton} onClick={handleCreateGame} disabled={loading}>
-                {loading ? "Creating..." : "Create"}
+              <button style={styles.confirmBtn} onClick={handleCreateGame} disabled={loading}>
+                {loading ? "CREATING..." : "CREATE"}
               </button>
             </div>
           </div>
@@ -320,33 +469,33 @@ function HomePage() {
       {showJoinModal && (
         <div style={styles.overlay} onClick={closeModals}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>Join Game</h2>
-            <input style={styles.input} type="text" placeholder="Game Code" value={gameCode} onChange={(e) => setGameCode(e.target.value)} maxLength={6} />
+            <h2 style={styles.modalTitle}>JOIN GAME</h2>
+            <input style={styles.input} type="text" placeholder="Game Code" value={gameCode} onChange={(e) => setGameCode(e.target.value)} maxLength={6} autoFocus />
             <input style={styles.input} type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleJoinGame()} />
             {error && <p style={styles.error}>{error}</p>}
             <div style={styles.modalButtons}>
-              <button style={styles.cancelButton} onClick={closeModals}>
-                Cancel
+              <button style={styles.cancelBtn} onClick={closeModals}>
+                CANCEL
               </button>
-              <button style={styles.confirmButton} onClick={handleJoinGame} disabled={loading}>
-                {loading ? "Joining..." : "Join"}
+              <button style={styles.confirmBtn} onClick={handleJoinGame} disabled={loading}>
+                {loading ? "JOINING..." : "JOIN"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {showRejoinModal && (
+      {showRejoinModal && !rejoinDismissed && (
         <div style={styles.overlay}>
           <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>Rejoin Game?</h2>
+            <h2 style={styles.modalTitle}>REJOIN GAME?</h2>
             <p style={styles.rejoinText}>You were in a game. Would you like to rejoin?</p>
             <div style={styles.modalButtons}>
-              <button style={styles.cancelButton} onClick={handleDeclineRejoin}>
-                No, start fresh
+              <button style={styles.cancelBtn} onClick={handleDeclineRejoin}>
+                NO, START FRESH
               </button>
-              <button style={styles.confirmButton} onClick={handleRejoin} disabled={rejoinLoading}>
-                {rejoinLoading ? "Rejoining..." : "Rejoin"}
+              <button style={styles.confirmBtn} onClick={handleRejoin} disabled={rejoinLoading}>
+                {rejoinLoading ? "REJOINING..." : "REJOIN"}
               </button>
             </div>
           </div>
@@ -356,119 +505,337 @@ function HomePage() {
   );
 }
 
+// ============================================================
+// STYLES
+// ============================================================
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
+  page: {
+    position: "relative",
+    width: "100vw",
+    height: "100vh",
+    overflow: "hidden",
     display: "flex",
     flexDirection: "column",
+    background: "radial-gradient(ellipse at 30% 50%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
+    fontFamily: "'Cinzel', 'Palatino Linotype', 'Georgia', serif",
+    color: "#e8dcc8",
+  },
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
+    zIndex: 1,
+  },
+
+  // TOP BAR
+  topBar: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column" as const,
     alignItems: "center",
-    justifyContent: "center",
-    minHeight: "100vh",
-    padding: "20px",
+    padding: "28px 40px 20px",
+    borderBottom: "1px solid #1a1510",
   },
   title: {
-    fontSize: "48px",
-    fontWeight: "bold",
-    letterSpacing: "4px",
-    marginBottom: "4px",
+    fontSize: "52px",
+    fontWeight: 900,
+    letterSpacing: "14px",
+    margin: 0,
+    fontFamily: "'Cinzel', serif",
+    background: "linear-gradient(180deg, #e8c84a 0%, #c9a84c 40%, #8a6d2e 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
+    textShadow: "none",
+    filter: "drop-shadow(0 0 40px rgba(201,168,76,0.25))",
   },
   subtitle: {
-    fontSize: "16px",
-    color: "#888",
-    marginBottom: "60px",
+    fontSize: "11px",
+    letterSpacing: "8px",
+    color: "#5a4a30",
+    margin: "6px 0 20px 0",
+    fontFamily: "'Cinzel', serif",
   },
-  buttonGroup: {
+  buttonRow: {
     display: "flex",
-    flexDirection: "column",
-    gap: "16px",
-    width: "280px",
+    gap: "20px",
   },
-  button: {
-    padding: "14px 24px",
-    fontSize: "16px",
-    backgroundColor: "#fff",
-    color: "#111",
-    border: "2px solid #fff",
-    borderRadius: "6px",
-    fontWeight: "600",
-  },
-  buttonDisabled: {
-    padding: "14px 24px",
-    fontSize: "16px",
+  actionBtn: {
+    padding: "14px 36px",
+    fontSize: "12px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    fontFamily: "'Cinzel', serif",
     backgroundColor: "transparent",
-    color: "#555",
-    border: "2px solid #333",
-    borderRadius: "6px",
-    fontWeight: "600",
-    cursor: "not-allowed",
+    color: "#c9a84c",
+    border: "1px solid #3d2e1a",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+    textTransform: "uppercase" as const,
+    position: "relative" as const,
+    overflow: "hidden",
   },
+
+  // SHOWCASE
+  showcase: {
+    position: "relative",
+    zIndex: 10,
+    flex: 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "40px",
+    padding: "0 60px",
+    minHeight: 0,
+  },
+  characterDisplay: {
+    flex: "0 0 auto",
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
+    height: "100%",
+    maxHeight: "500px",
+  },
+  fullBodyImg: {
+    maxHeight: "480px",
+    width: "auto",
+    objectFit: "contain" as const,
+    filter: "drop-shadow(0 0 60px rgba(201,168,76,0.15))",
+    animation: "characterFloat 4s ease-in-out infinite",
+  },
+  placeholderBody: {
+    width: "240px",
+    height: "400px",
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    border: "1px dashed #2a2019",
+    borderRadius: "4px",
+    gap: "12px",
+  },
+  placeholderIcon: {
+    fontSize: "64px",
+    color: "#2a2019",
+    fontFamily: "'Cinzel', serif",
+  },
+  placeholderText: {
+    fontSize: "12px",
+    letterSpacing: "4px",
+    color: "#2a2019",
+  },
+
+  // INFO PANEL
+  infoPanel: {
+    flex: "0 0 340px",
+    maxWidth: "340px",
+  },
+  teamBadge: {
+    display: "inline-block",
+    padding: "4px 14px",
+    fontSize: "10px",
+    fontWeight: 700,
+    letterSpacing: "3px",
+    color: "#fff",
+    borderRadius: "2px",
+    marginBottom: "12px",
+    fontFamily: "'Cinzel', serif",
+  },
+  charName: {
+    fontSize: "32px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    color: "#e8dcc8",
+    margin: "0 0 4px 0",
+  },
+  charTitle: {
+    fontSize: "14px",
+    fontStyle: "italic",
+    color: "#8a7a60",
+    margin: "0 0 16px 0",
+    fontFamily: "'Georgia', serif",
+  },
+  divider: {
+    width: "60px",
+    height: "1px",
+    backgroundColor: "#3d2e1a",
+    marginBottom: "16px",
+  },
+  charDesc: {
+    fontSize: "14px",
+    lineHeight: "1.7",
+    color: "#9a8a70",
+    margin: "0 0 20px 0",
+    fontFamily: "'Georgia', serif",
+  },
+  abilityBox: {
+    padding: "16px",
+    backgroundColor: "rgba(201,168,76,0.05)",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+  },
+  abilityLabel: {
+    display: "block",
+    fontSize: "10px",
+    fontWeight: 700,
+    letterSpacing: "4px",
+    color: "#c9a84c",
+    marginBottom: "8px",
+    fontFamily: "'Cinzel', serif",
+  },
+  abilityText: {
+    fontSize: "13px",
+    lineHeight: "1.6",
+    color: "#b0a080",
+    margin: 0,
+    fontFamily: "'Georgia', serif",
+  },
+
+  // SELECT BAR
+  selectBar: {
+    position: "relative",
+    zIndex: 10,
+    padding: "16px 40px 24px",
+    borderTop: "1px solid #1a1510",
+    background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
+  },
+  selectGrid: {
+    display: "flex",
+    gap: "8px",
+    justifyContent: "center",
+    flexWrap: "wrap" as const,
+  },
+  gridSlot: {
+    width: "80px",
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    gap: "6px",
+    padding: "4px",
+    backgroundColor: "transparent",
+    border: "2px solid #2a2a2a",
+    borderRadius: "4px",
+    cursor: "pointer",
+    transition: "all 0.3s ease",
+  },
+  gridImg: {
+    width: "72px",
+    height: "72px",
+    objectFit: "cover" as const,
+    borderRadius: "2px",
+  },
+  gridPlaceholder: {
+    width: "72px",
+    height: "72px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0f0d0a",
+    borderRadius: "2px",
+    border: "1px solid #1a1510",
+  },
+  gridPlaceholderText: {
+    fontSize: "24px",
+    color: "#2a2019",
+    fontFamily: "'Cinzel', serif",
+    fontWeight: 700,
+  },
+  gridLabel: {
+    fontSize: "9px",
+    fontWeight: 700,
+    letterSpacing: "1px",
+    textTransform: "uppercase" as const,
+    fontFamily: "'Cinzel', serif",
+    textAlign: "center" as const,
+  },
+
+  // MODALS
   overlay: {
-    position: "fixed",
+    position: "fixed" as const,
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    backgroundColor: "rgba(0,0,0,0.85)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1000,
   },
   modal: {
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    borderRadius: "12px",
+    backgroundColor: "#0f0d0a",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
     padding: "32px",
     width: "340px",
   },
   modalTitle: {
-    fontSize: "22px",
-    marginBottom: "24px",
+    fontSize: "18px",
+    fontWeight: 700,
+    letterSpacing: "4px",
     textAlign: "center" as const,
+    marginBottom: "24px",
+    color: "#c9a84c",
+    fontFamily: "'Cinzel', serif",
   },
   input: {
     width: "100%",
     padding: "12px",
-    fontSize: "16px",
-    backgroundColor: "#222",
-    color: "#fff",
-    border: "1px solid #444",
-    borderRadius: "6px",
+    fontSize: "14px",
+    backgroundColor: "#1a1510",
+    color: "#e8dcc8",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
     marginBottom: "12px",
+    fontFamily: "'Georgia', serif",
+    outline: "none",
+    boxSizing: "border-box" as const,
   },
   error: {
-    color: "#ff4444",
-    fontSize: "14px",
+    color: "#c41e1e",
+    fontSize: "13px",
     marginBottom: "12px",
+    fontFamily: "'Georgia', serif",
   },
   rejoinText: {
-    color: "#aaa",
+    color: "#8a7a60",
     fontSize: "14px",
     marginBottom: "20px",
     textAlign: "center" as const,
+    fontFamily: "'Georgia', serif",
   },
   modalButtons: {
     display: "flex",
     gap: "12px",
     marginTop: "8px",
   },
-  cancelButton: {
+  cancelBtn: {
     flex: 1,
     padding: "12px",
-    fontSize: "14px",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "2px",
     backgroundColor: "transparent",
-    color: "#888",
-    border: "1px solid #444",
-    borderRadius: "6px",
+    color: "#6b5a3a",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
   },
-  confirmButton: {
+  confirmBtn: {
     flex: 1,
     padding: "12px",
-    fontSize: "14px",
-    backgroundColor: "#fff",
-    color: "#111",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "2px",
+    backgroundColor: "#c9a84c",
+    color: "#0a0a0a",
     border: "none",
-    borderRadius: "6px",
-    fontWeight: "600",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
   },
 };
 
