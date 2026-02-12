@@ -7,7 +7,7 @@ import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import backCard from "../assets/back_card.jpg";
 import werewolfCard from "../assets/werewolf_card.jpg";
 import minionCard from "../assets/minion_card.jpg";
-import seerCard from "../assets/seer_card.jpg";
+import seerCard from "../assets/Seer_card.jpg";
 import robberCard from "../assets/robber_card.jpg";
 import troublemakerCard from "../assets/troublemaker_card.jpg";
 import masonCard from "../assets/mason_card.jpg";
