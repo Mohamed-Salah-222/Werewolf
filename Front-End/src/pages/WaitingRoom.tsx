@@ -21,7 +21,7 @@ import jokerCard from "../assets/joker_card.jpg";
 // Small card imports for grid
 import werewolfCardSmall from "../assets/werewolf_card_small.jpg";
 import minionCardSmall from "../assets/minion_card_small.jpg";
-import seerCardSmall from "../assets/Seer_card_small.jpg";
+import seerCardSmall from "../assets/seer_card_small.jpg";
 import robberCardSmall from "../assets/robber_card_small.jpg";
 import troublemakerCardSmall from "../assets/troublemaker_card_small.jpg";
 import masonCardSmall from "../assets/mason_card_small.jpg";
