@@ -9,6 +9,7 @@ export interface ClientToServerEvents {
   performAction: (data: { gameCode: string; playerId: PlayerId; action: any }) => void;
   vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) => void;
   restartGame: (data: { gameCode: string, playerId: PlayerId }) => void;
+  skipToVote(data: { gameCode: string, playerId: PlayerId }): void;
 }
 
 // Server -> Client events (what backend sends)

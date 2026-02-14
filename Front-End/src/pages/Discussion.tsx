@@ -12,6 +12,8 @@ interface LocationState {
   actionResult?: { message?: string } | null;
 }
 
+
+
 function Discussion() {
   const { gameCode } = useParams();
   const location = useLocation();
@@ -47,6 +49,7 @@ function Discussion() {
     };
   }, []);
 
+
   useEffect(() => {
     if (!socket.connected) {
       socket.connect();
@@ -62,6 +65,13 @@ function Discussion() {
       socket.off("votingStarted");
     };
   }, [gameCode, navigate, playerName, playerId, isHost]);
+
+  function skipToVote() {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setSecondsLeft(0);
+
+    socket.emit("skipToVote", { gameCode, playerId });
+  }
 
   const formatTime = (s: number) => {
     const mins = Math.floor(s / 60);
@@ -137,6 +147,7 @@ function Discussion() {
             setSecondsLeft(0);
             socket.emit("skipToVote", { gameCode });
           }}
+          onClick={skipToVote}
         >
           Skip to Vote (Host)
         </button>
