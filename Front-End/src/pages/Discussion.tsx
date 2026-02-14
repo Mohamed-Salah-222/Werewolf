@@ -142,11 +142,6 @@ function Discussion() {
       {isHost && secondsLeft > 0 && (
         <button
           style={styles.skipButton}
-          onClick={() => {
-            if (intervalRef.current) clearInterval(intervalRef.current);
-            setSecondsLeft(0);
-            socket.emit("skipToVote", { gameCode });
-          }}
           onClick={skipToVote}
         >
           Skip to Vote (Host)
