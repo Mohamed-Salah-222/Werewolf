@@ -6,26 +6,26 @@ import { getSession, clearSession, saveSession } from "../utils/gameSession";
 import "./HomePage.css";
 
 // Import character images
-import werewolfSquare from "../assets/werewolf_sqaure.png";
-import werewolf2d from "../assets/werewolf_2d.png";
-import minionSquare from "../assets/minion_square.png";
-import minion2d from "../assets/minion_2d.png";
-import seerSquare from "../assets/seer_square.png";
-import seer2d from "../assets/seer_2d.png";
-import robberSquare from "../assets/robber_square.png";
-import robber2d from "../assets/robber_2d.png";
-import troublemakerSquare from "../assets/troublemaker_square.png";
-import troublemaker2d from "../assets/troublemaker_2d.png";
-import masonSquare from "../assets/mason_square.png";
-import mason2d from "../assets/mason_2d.png";
-import drunkSquare from "../assets/drunk_square.png";
-import drunk2d from "../assets/drunk_2d.png";
-import insomniacSquare from "../assets/insomaniac_square.png";
-import insomniac2d from "../assets/insomaniac_2d.png";
-import cloneSquare from "../assets/clone_square.png";
-import clone2d from "../assets/clone_2d.png";
-import jokerSquare from "../assets/joker_square.png";
-import joker2d from "../assets/joker_2d.png";
+import werewolfSquare from "../assets/werewolf_square.webp";
+import werewolf2d from "../assets/werewolf_2d.webp";
+import minionSquare from "../assets/minion_square.webp";
+import minion2d from "../assets/minion_2d.webp";
+import seerSquare from "../assets/seer_square.webp";
+import seer2d from "../assets/seer_2d.webp";
+import robberSquare from "../assets/robber_square.webp";
+import robber2d from "../assets/robber_2d.webp";
+import troublemakerSquare from "../assets/troublemaker_square.webp";
+import troublemaker2d from "../assets/troublemaker_2d.webp";
+import masonSquare from "../assets/mason_square.webp";
+import mason2d from "../assets/mason_2d.webp";
+import drunkSquare from "../assets/drunk_square.webp";
+import drunk2d from "../assets/drunk_2d.webp";
+import insomniacSquare from "../assets/insomaniac_square.webp";
+import insomniac2d from "../assets/insomaniac_2d.webp";
+import cloneSquare from "../assets/clone_square.webp";
+import clone2d from "../assets/clone_2d.webp";
+import jokerSquare from "../assets/joker_square.webp";
+import joker2d from "../assets/joker_2d.webp";
 
 interface CharacterData {
   id: string;

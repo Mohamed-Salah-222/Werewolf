@@ -1,0 +1,60 @@
+/* ===== TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  .res-content {
+    padding: 24px 20px 32px !important;
+    max-width: 100% !important;
+  }
+
+  .res-content h1 {
+    font-size: 26px !important;
+    letter-spacing: 4px !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .res-content {
+    padding: 20px 16px 28px !important;
+  }
+
+  .res-content h1 {
+    font-size: 22px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .res-content p {
+    font-size: 12px !important;
+  }
+
+  .res-content h2 {
+    font-size: 14px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .res-content button {
+    padding: 12px !important;
+    font-size: 12px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .res-content span {
+    font-size: 12px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .res-content {
+    padding: 16px 12px 24px !important;
+  }
+
+  .res-content h1 {
+    font-size: 18px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .res-content button {
+    padding: 10px !important;
+    font-size: 11px !important;
+  }
+}

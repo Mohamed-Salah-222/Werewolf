@@ -2,19 +2,20 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import "./RoleReveal.css";
 
 // Card imports
-import backCard from "../assets/back_card.jpg";
-import werewolfCard from "../assets/werewolf_card.jpg";
-import minionCard from "../assets/minion_card.jpg";
-import seerCard from "../assets/Seer_card.jpg";
-import robberCard from "../assets/robber_card.jpg";
-import troublemakerCard from "../assets/troublemaker_card.jpg";
-import masonCard from "../assets/mason_card.jpg";
-import drunkCard from "../assets/drunk_card.jpg";
-import insomniacCard from "../assets/insomaniac_card.jpg";
-import cloneCard from "../assets/clone_card.jpg";
-import jokerCard from "../assets/joker_card.jpg";
+import backCard from "../assets/back_card.webp";
+import werewolfCard from "../assets/werewolf_card.webp";
+import minionCard from "../assets/minion_card.webp";
+import seerCard from "../assets/Seer_card.webp";
+import robberCard from "../assets/robber_card.webp";
+import troublemakerCard from "../assets/troublemaker_card.webp";
+import masonCard from "../assets/mason_card.webp";
+import drunkCard from "../assets/drunk_card.webp";
+import insomniacCard from "../assets/insomaniac_card.webp";
+import cloneCard from "../assets/clone_card.webp";
+import jokerCard from "../assets/joker_card.webp";
 
 const cardMap: { [key: string]: string } = {
   werewolf: werewolfCard,
@@ -139,7 +140,7 @@ function RoleReveal() {
   // Waiting for role data
   if (!role) {
     return (
-      <div style={styles.page}>
+      <div style={styles.page} className="rr-page">
         <div style={styles.vignette} />
         <div style={styles.center}>
           <h1 style={styles.loadingTitle}>ASSIGNING ROLES</h1>
@@ -150,10 +151,10 @@ function RoleReveal() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="rr-page">
       <div style={styles.vignette} />
 
-      <div style={styles.content}>
+      <div style={styles.content} className="rr-content">
         {/* Title */}
         {!flipped && (
           <div style={styles.topSection}>
@@ -177,7 +178,7 @@ function RoleReveal() {
         )}
 
         {/* Card */}
-        <div style={styles.cardContainer} onClick={!flipped ? handleFlip : undefined}>
+        <div style={styles.cardContainer} className="rr-card" onClick={!flipped ? handleFlip : undefined}>
           <div
             style={{
               ...styles.cardInner,
@@ -188,7 +189,7 @@ function RoleReveal() {
             {/* Front = back of card */}
             <div style={styles.cardFace}>
               <img src={backCard} alt="Card back" style={styles.cardImg} />
-              {!flipped && <div style={styles.tapOverlay}>TAP TO REVEAL</div>}
+              {/* {!flipped && <div style={styles.tapOverlay}>TAP TO REVEAL</div>} */}
             </div>
 
             {/* Back = role card */}

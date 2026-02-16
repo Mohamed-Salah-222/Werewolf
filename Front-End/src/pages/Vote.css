@@ -1,0 +1,54 @@
+/* ===== TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  .vote-content {
+    padding: 24px 20px 32px !important;
+    max-width: 100% !important;
+  }
+
+  .vote-content h1 {
+    font-size: 28px !important;
+    letter-spacing: 6px !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .vote-content {
+    padding: 20px 16px 28px !important;
+  }
+
+  .vote-content h1 {
+    font-size: 24px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .vote-content p {
+    font-size: 12px !important;
+  }
+
+  .vote-content button {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+
+  .vote-content span {
+    font-size: 13px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .vote-content {
+    padding: 16px 12px 24px !important;
+  }
+
+  .vote-content h1 {
+    font-size: 20px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .vote-content button {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+}

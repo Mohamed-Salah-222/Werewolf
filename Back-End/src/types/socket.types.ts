@@ -4,12 +4,17 @@ import { PlayerId } from "./game.types";
 export interface ClientToServerEvents {
   joinGame: (data: JoinGameData, callback: (response: JoinGameResponse) => void) => void;
   leaveGame: (data: { gameCode: string; playerId: PlayerId }) => void;
-  startGame: (data: { gameCode: string, playerId: PlayerId }) => void;
+  startGame: (data: { gameCode: string; playerId: PlayerId }) => void;
   confirmRoleReveal: (data: { gameCode: string; playerId: PlayerId }) => void;
   performAction: (data: { gameCode: string; playerId: PlayerId; action: any }) => void;
   vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) => void;
+<<<<<<< HEAD
   restartGame: (data: { gameCode: string, playerId: PlayerId }) => void;
   skipToVote(data: { gameCode: string, playerId: PlayerId }): void;
+=======
+  restartGame: (data: { gameCode: string; playerId: PlayerId }) => void;
+  skipToVote: (data: { gameCode: string }) => void;
+>>>>>>> 9661f1b (7mada blgnzbel)
 }
 
 // Server -> Client events (what backend sends)

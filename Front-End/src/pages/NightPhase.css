@@ -1,0 +1,109 @@
+/* ===== TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  .np-page {
+    overflow-y: auto !important;
+  }
+
+  .np-header {
+    padding: 20px 20px 16px !important;
+  }
+
+  .np-header h1 {
+    font-size: 28px !important;
+    letter-spacing: 6px !important;
+  }
+
+  .np-header .moonIcon {
+    font-size: 28px !important;
+  }
+
+  .np-timer {
+    padding: 12px 20px 8px !important;
+  }
+
+  .np-content {
+    padding: 16px 20px !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .np-header {
+    padding: 16px 16px 12px !important;
+  }
+
+  .np-header h1 {
+    font-size: 22px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .np-header p {
+    font-size: 10px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .np-timer {
+    padding: 10px 16px 6px !important;
+    gap: 10px !important;
+  }
+
+  .np-timer span {
+    font-size: 14px !important;
+  }
+
+  .np-content {
+    padding: 12px 16px !important;
+  }
+
+  .np-content button {
+    font-size: 13px !important;
+    padding: 10px 16px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .np-header {
+    padding: 12px 12px 10px !important;
+  }
+
+  .np-header h1 {
+    font-size: 18px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .np-timer {
+    padding: 8px 12px 4px !important;
+  }
+
+  .np-content {
+    padding: 10px 12px !important;
+  }
+}
+
+/* ===== SHORT SCREENS (landscape phones) ===== */
+@media (max-height: 500px) {
+  .np-header {
+    padding: 8px 20px 6px !important;
+  }
+
+  .np-header h1 {
+    font-size: 20px !important;
+  }
+
+  .np-header > div > div:first-child {
+    font-size: 20px !important;
+  }
+
+  .np-header > div > div[style*="height: 1px"] {
+    margin: 4px 0 !important;
+  }
+
+  .np-timer {
+    padding: 6px 20px 4px !important;
+  }
+
+  .np-content {
+    padding: 8px 20px !important;
+  }
+}

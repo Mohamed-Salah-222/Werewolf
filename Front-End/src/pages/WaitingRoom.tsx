@@ -4,31 +4,32 @@ import socket from "../socket";
 import { API_URL } from "../config";
 import { clearSession } from "../utils/gameSession";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import "./WaitingRoom.css";
 
 // Card imports
-import backCard from "../assets/back_card.jpg";
-import werewolfCard from "../assets/werewolf_card.jpg";
-import minionCard from "../assets/minion_card.jpg";
-import seerCard from "../assets/Seer_card.jpg";
-import robberCard from "../assets/robber_card.jpg";
-import troublemakerCard from "../assets/troublemaker_card.jpg";
-import masonCard from "../assets/mason_card.jpg";
-import drunkCard from "../assets/drunk_card.jpg";
-import insomniacCard from "../assets/insomaniac_card.jpg";
-import cloneCard from "../assets/clone_card.jpg";
-import jokerCard from "../assets/joker_card.jpg";
+import backCard from "../assets/back_card.webp";
+import werewolfCard from "../assets/werewolf_card.webp";
+import minionCard from "../assets/minion_card.webp";
+import seerCard from "../assets/Seer_card.webp";
+import robberCard from "../assets/robber_card.webp";
+import troublemakerCard from "../assets/troublemaker_card.webp";
+import masonCard from "../assets/mason_card.webp";
+import drunkCard from "../assets/drunk_card.webp";
+import insomniacCard from "../assets/insomaniac_card.webp";
+import cloneCard from "../assets/clone_card.webp";
+import jokerCard from "../assets/joker_card.webp";
 
 // Small card imports for grid
-import werewolfCardSmall from "../assets/werewolf_card_small.jpg";
-import minionCardSmall from "../assets/minion_card_small.jpg";
-import seerCardSmall from "../assets/seer_card_small.jpg";
-import robberCardSmall from "../assets/robber_card_small.jpg";
-import troublemakerCardSmall from "../assets/troublemaker_card_small.jpg";
-import masonCardSmall from "../assets/mason_card_small.jpg";
-import drunkCardSmall from "../assets/drunk_card_small.jpg";
-import insomniacCardSmall from "../assets/insomaniac_card_small.jpg";
-import cloneCardSmall from "../assets/clone_card_small.jpg";
-import jokerCardSmall from "../assets/joker_card_small.jpg";
+import werewolfCardSmall from "../assets/werewolf_card_small.webp";
+import minionCardSmall from "../assets/minion_card_small.webp";
+import seerCardSmall from "../assets/seer_card_small.webp";
+import robberCardSmall from "../assets/robber_card_small.webp";
+import troublemakerCardSmall from "../assets/troublemaker_card_small.webp";
+import masonCardSmall from "../assets/mason_card_small.webp";
+import drunkCardSmall from "../assets/drunk_card_small.webp";
+import insomniacCardSmall from "../assets/insomaniac_card_small.webp";
+import cloneCardSmall from "../assets/clone_card_small.webp";
+import jokerCardSmall from "../assets/joker_card_small.webp";
 
 const allCards = [
   { id: "werewolf", name: "Werewolf", image: werewolfCard, small: werewolfCardSmall },
@@ -69,6 +70,27 @@ function WaitingRoom() {
   const [revealedCard, setRevealedCard] = useState<number | null>(null);
   const [selectedPileCard, setSelectedPileCard] = useState<number | null>(null);
   // const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
+
+  const [cardCount, setCardCount] = useState(42);
+
+  useEffect(() => {
+    const updateCardCount = () => {
+      const width = window.innerWidth;
+      if (width <= 768) {
+        setCardCount(0);
+      } else if (width <= 1024) {
+        setCardCount(20);
+      } else if (width <= 1280) {
+        setCardCount(30);
+      } else {
+        setCardCount(42);
+      }
+    };
+
+    updateCardCount();
+    window.addEventListener("resize", updateCardCount);
+    return () => window.removeEventListener("resize", updateCardCount);
+  }, []);
 
   useLeaveWarning(true);
 
@@ -187,7 +209,7 @@ function WaitingRoom() {
   };
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="wr-page">
       <div style={styles.vignette} />
 
       <style>{`
@@ -237,9 +259,9 @@ function WaitingRoom() {
       `}</style>
 
       {/* ===== LEFT: CARD GRID ===== */}
-      <div style={styles.cardPile}>
+      <div style={styles.cardPile} className="wr-cards">
         <div style={styles.cardGrid}>
-          {gridCards.map((card) => (
+          {gridCards.slice(0, cardCount).map((card) => (
             <div key={card.id} className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`} onClick={() => handleCardClick(card.id, card.cardIndex)}>
               <div className="flip-card-inner">
                 <div className="flip-card-front">
@@ -255,7 +277,7 @@ function WaitingRoom() {
       </div>
 
       {/* ===== MIDDLE: WAITING ROOM ===== */}
-      <div style={styles.centerPanel}>
+      <div style={styles.centerPanel} className="wr-center">
         <h1 style={styles.title}>WAITING ROOM</h1>
 
         <div style={styles.codeSection}>
@@ -293,7 +315,7 @@ function WaitingRoom() {
       </div>
 
       {/* ===== RIGHT: REVEALED CARD ===== */}
-      <div style={styles.revealPanel}>
+      <div style={styles.revealPanel} className="wr-reveal">
         {revealedCard !== null ? (
           <div style={styles.revealedCardWrapper}>
             <img src={allCards[revealedCard].image} alt={allCards[revealedCard].name} style={styles.revealedCardImg} />

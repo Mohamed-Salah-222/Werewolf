@@ -1,0 +1,58 @@
+/* ===== TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  .disc-content {
+    padding: 24px 20px !important;
+    max-width: 100% !important;
+  }
+
+  .disc-content h1 {
+    font-size: 28px !important;
+    letter-spacing: 6px !important;
+  }
+
+  .disc-content span[style*="font-size: 72px"] {
+    font-size: 60px !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .disc-content {
+    padding: 20px 16px !important;
+  }
+
+  .disc-content h1 {
+    font-size: 24px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .disc-content p {
+    font-size: 12px !important;
+  }
+
+  .disc-content span[style*="font-size: 72px"] {
+    font-size: 48px !important;
+  }
+
+  .disc-content button {
+    padding: 10px 24px !important;
+    font-size: 11px !important;
+    letter-spacing: 2px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .disc-content {
+    padding: 16px 12px !important;
+  }
+
+  .disc-content h1 {
+    font-size: 20px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .disc-content span[style*="font-size: 72px"] {
+    font-size: 40px !important;
+  }
+}

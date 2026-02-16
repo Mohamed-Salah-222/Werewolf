@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import "./Discussion.css";
 
 interface LocationState {
   playerName: string;
@@ -11,8 +12,6 @@ interface LocationState {
   roleName?: string;
   actionResult?: { message?: string } | null;
 }
-
-
 
 function Discussion() {
   const { gameCode } = useParams();
@@ -43,17 +42,13 @@ function Discussion() {
         return prev - 1;
       });
     }, 1000);
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, []);
 
-
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
+    if (!socket.connected) socket.connect();
 
     socket.on("votingStarted", () => {
       navigate(`/vote/${gameCode}`, {
@@ -83,135 +78,185 @@ function Discussion() {
 
   const roleColor = (role: string) => {
     const villains = ["werewolf", "minion"];
-    if (villains.includes(role.toLowerCase())) return "#ff4444";
-    if (role.toLowerCase() === "joker") return "#f0c040";
-    return "#4ade80";
+    if (villains.includes(role.toLowerCase())) return "#c41e1e";
+    if (role.toLowerCase() === "joker") return "#d4a017";
+    return "#2a8a4a";
   };
 
+  const timerColor = () => {
+    if (secondsLeft <= 30) return "#c41e1e";
+    if (secondsLeft <= 60) return "#d4a017";
+    return "#c9a84c";
+  };
+
+  // const handleSkipToVote = () => {
+  //   if (intervalRef.current) clearInterval(intervalRef.current);
+  //   setSecondsLeft(0);
+  //   socket.emit("skipToVote", { gameCode });
+  // };
+
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>☀️ Discussion</h1>
-      <p style={styles.subtitle}>Talk it out. Who's the werewolf?</p>
+    <div style={styles.page}>
+      <div style={styles.vignette} />
 
-      <div style={styles.timerContainer}>
-        <span
-          style={{
-            ...styles.timer,
-            color: secondsLeft <= 30 ? "#ff4444" : secondsLeft <= 60 ? "#f0c040" : "#fff",
-          }}
-        >
-          {formatTime(secondsLeft)}
-        </span>
-        <div style={styles.progressBarBg}>
-          <div
-            style={{
-              ...styles.progressBarFill,
-              width: `${progress * 100}%`,
-              backgroundColor: secondsLeft <= 30 ? "#ff4444" : secondsLeft <= 60 ? "#f0c040" : "#4ade80",
-            }}
-          />
+      <div style={styles.content} className="disc-content">
+        <h1 style={styles.title}>DISCUSSION</h1>
+        <p style={styles.subtitle}>Talk it out. Who's the werewolf?</p>
+
+        {/* Timer */}
+        <div style={styles.timerSection}>
+          <span style={{ ...styles.timer, color: timerColor() }}>{formatTime(secondsLeft)}</span>
+          <div style={styles.progressBg}>
+            <div
+              style={{
+                ...styles.progressFill,
+                width: `${progress * 100}%`,
+                backgroundColor: timerColor(),
+              }}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Night recap card */}
-      {roleName && (
-        <div style={styles.recapCard}>
-          <button style={styles.recapToggle} onClick={() => setShowResult(!showResult)}>
-            {showResult ? "Hide" : "Show"} Night Recap
-          </button>
+        {/* Night recap */}
+        {roleName && (
+          <div style={styles.recapCard}>
+            <button style={styles.recapToggle} onClick={() => setShowResult(!showResult)}>
+              <span style={styles.recapToggleText}>{showResult ? "HIDE" : "SHOW"} NIGHT RECAP</span>
+              <span style={styles.recapArrow}>{showResult ? "▲" : "▼"}</span>
+            </button>
 
-          {showResult && (
-            <div style={styles.recapContent}>
-              <div style={styles.recapRole}>
-                <span style={styles.recapLabel}>YOUR ROLE</span>
-                <span style={{ ...styles.recapRoleName, color: roleColor(roleName) }}>{roleName}</span>
-              </div>
-              {actionResult?.message && (
-                <div style={styles.recapResult}>
-                  <span style={styles.recapLabel}>WHAT HAPPENED</span>
-                  <p style={styles.recapMessage}>{actionResult.message}</p>
+            {showResult && (
+              <div style={styles.recapContent}>
+                <div style={styles.recapRole}>
+                  <span style={styles.recapLabel}>YOUR ROLE</span>
+                  <span style={{ ...styles.recapRoleName, color: roleColor(roleName) }}>{roleName}</span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                {actionResult?.message && (
+                  <div style={styles.recapResult}>
+                    <span style={styles.recapLabel}>WHAT HAPPENED</span>
+                    <p style={styles.recapMessage}>{actionResult.message}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
-      {secondsLeft === 0 && <p style={styles.timesUp}>Time's up! Moving to vote...</p>}
+        {/* Times up */}
+        {secondsLeft === 0 && <p style={styles.timesUp}>Time's up! Moving to vote...</p>}
 
-      {isHost && secondsLeft > 0 && (
-        <button
-          style={styles.skipButton}
-          onClick={skipToVote}
-        >
-          Skip to Vote (Host)
-        </button>
-      )}
+        {isHost && secondsLeft > 0 && (
+          <button style={styles.skipButton} onClick={skipToVote}>
+            Skip to Vote (Host)
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+  page: {
+    position: "relative",
+    width: "100vw",
     minHeight: "100vh",
-    padding: "20px",
-    maxWidth: "480px",
-    margin: "0 auto",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
+    fontFamily: "'Trade Winds', cursive",
+    color: "#e8dcc8",
+  },
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
+    zIndex: 1,
+  },
+  content: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "420px",
+    padding: "32px 20px",
   },
   title: {
-    fontSize: "32px",
-    fontWeight: "bold",
-    marginBottom: "8px",
+    fontSize: "36px",
+    fontWeight: 400,
+    letterSpacing: "8px",
+    margin: "0 0 8px 0",
+    fontFamily: "'Creepster', cursive",
+    color: "#c9a84c",
+    textShadow: "0 0 30px rgba(201,168,76,0.2)",
+    textAlign: "center" as const,
   },
   subtitle: {
-    color: "#888",
-    fontSize: "16px",
+    fontSize: "14px",
+    color: "#5a4a30",
     marginBottom: "32px",
+    fontStyle: "italic",
   },
-  timerContainer: {
+
+  // Timer
+  timerSection: {
     width: "100%",
     textAlign: "center" as const,
     marginBottom: "32px",
   },
   timer: {
     fontSize: "72px",
-    fontWeight: "bold",
+    fontWeight: 400,
+    fontFamily: "'Creepster', cursive",
     fontVariantNumeric: "tabular-nums",
     display: "block",
     marginBottom: "16px",
+    textShadow: "0 0 20px rgba(201,168,76,0.15)",
   },
-  progressBarBg: {
+  progressBg: {
     width: "100%",
-    height: "6px",
-    backgroundColor: "#333",
-    borderRadius: "3px",
+    height: "4px",
+    backgroundColor: "#1a1510",
+    borderRadius: "2px",
     overflow: "hidden",
   },
-  progressBarFill: {
+  progressFill: {
     height: "100%",
-    borderRadius: "3px",
+    borderRadius: "2px",
     transition: "width 1s linear",
   },
+
+  // Recap
   recapCard: {
     width: "100%",
-    backgroundColor: "#1a1a1a",
-    border: "1px solid #333",
-    borderRadius: "12px",
+    backgroundColor: "rgba(201,168,76,0.03)",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
     overflow: "hidden",
     marginBottom: "24px",
   },
   recapToggle: {
     width: "100%",
     padding: "14px 16px",
-    fontSize: "14px",
+    fontSize: "12px",
     backgroundColor: "transparent",
-    color: "#aaa",
+    color: "#6b5a3a",
     border: "none",
-    borderBottom: "1px solid #333",
-    textAlign: "left" as const,
+    borderBottom: "1px solid #1a1510",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    cursor: "pointer",
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
+  },
+  recapToggleText: {},
+  recapArrow: {
+    fontSize: "10px",
+    color: "#5a4a30",
   },
   recapContent: {
     padding: "16px",
@@ -221,36 +266,49 @@ const styles: { [key: string]: React.CSSProperties } = {
   },
   recapLabel: {
     display: "block",
-    fontSize: "11px",
-    color: "#666",
-    letterSpacing: "2px",
-    marginBottom: "4px",
+    fontSize: "10px",
+    color: "#5a4a30",
+    letterSpacing: "3px",
+    marginBottom: "6px",
+    fontFamily: "'Creepster', cursive",
   },
   recapRoleName: {
-    fontSize: "20px",
-    fontWeight: "bold",
+    fontSize: "22px",
+    fontWeight: 400,
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
   },
   recapResult: {},
   recapMessage: {
-    fontSize: "15px",
-    color: "#ccc",
-    lineHeight: "1.5",
+    fontSize: "14px",
+    color: "#9a8a70",
+    lineHeight: "1.6",
     marginTop: "4px",
   },
+
+  // Times up
   timesUp: {
-    color: "#ff4444",
+    color: "#c41e1e",
     fontSize: "16px",
-    fontWeight: "bold",
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
     marginBottom: "16px",
   },
-  skipButton: {
+
+  // Skip button
+  skipBtn: {
     marginTop: "16px",
     padding: "12px 32px",
-    fontSize: "14px",
+    fontSize: "13px",
+    fontWeight: 400,
+    letterSpacing: "3px",
     backgroundColor: "transparent",
-    color: "#888",
-    border: "1px solid #444",
-    borderRadius: "8px",
+    color: "#6b5a3a",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Creepster', cursive",
+    transition: "all 0.3s ease",
   },
 };
 

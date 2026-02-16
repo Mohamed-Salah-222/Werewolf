@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { clearSession } from "../utils/gameSession";
+import { clearSession, saveSession } from "../utils/gameSession";
+import "./Results.css";
 
 interface LocationState {
   playerName: string;
@@ -28,21 +29,17 @@ function Results() {
   const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
-    clearSession();
-  }, []);
-
-  useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
+    if (!socket.connected) socket.connect();
 
     socket.on("gameRestarted", () => {
+      saveSession({
+        gameCode: gameCode || "",
+        playerId: state?.playerId || "",
+        playerName: state?.playerName || "",
+        isHost: state?.isHost || false,
+      });
       navigate(`/waiting/${gameCode}`, {
-        state: {
-          playerName: state?.playerName,
-          playerId: state?.playerId,
-          isHost: state?.isHost,
-        },
+        state: { playerName: state?.playerName, playerId: state?.playerId, isHost: state?.isHost },
       });
     });
 
@@ -56,13 +53,11 @@ function Results() {
     socket.emit("restartGame", { gameCode });
   };
 
-  // Count votes per player
   const voteCounts = new Map<string, number>();
   votes.forEach((v) => {
     voteCounts.set(v.vote, (voteCounts.get(v.vote) || 0) + 1);
   });
 
-  // Find most voted
   let mostVotedId = "";
   let maxVotes = 0;
   voteCounts.forEach((count, id) => {
@@ -95,11 +90,11 @@ function Results() {
   const winnerLabel = () => {
     switch (winners) {
       case "werewolves":
-        return "🐺 Werewolves Win!";
+        return "Werewolves Win";
       case "villagers":
-        return "🏘️ Village Wins!";
+        return "Village Wins";
       case "joker":
-        return "🃏 Joker Wins!";
+        return "Joker Wins";
       default:
         return winners;
     }
@@ -108,13 +103,13 @@ function Results() {
   const winnerColor = () => {
     switch (winners) {
       case "werewolves":
-        return "#ff4444";
+        return "#c41e1e";
       case "villagers":
-        return "#4ade80";
+        return "#2a8a4a";
       case "joker":
-        return "#f0c040";
+        return "#d4a017";
       default:
-        return "#fff";
+        return "#c9a84c";
     }
   };
 
@@ -126,247 +121,306 @@ function Results() {
 
   const roleColor = (role: string) => {
     const team = getTeam(role);
-    if (team === "werewolves") return "#ff4444";
-    if (team === "joker") return "#f0c040";
-    return "#4ade80";
+    if (team === "werewolves") return "#c41e1e";
+    if (team === "joker") return "#d4a017";
+    return "#2a8a4a";
   };
 
   return (
-    <div style={styles.container}>
-      {/* Winner banner */}
-      <div style={{ ...styles.banner, borderColor: winnerColor() }}>
-        <h1 style={{ ...styles.winnerText, color: winnerColor() }}>{winnerLabel()}</h1>
-        <p style={styles.personalResult}>{didIWin() ? "You won! 🎉" : "You lost 💀"}</p>
-      </div>
-
-      {/* Eliminated player */}
-      {isNoWerewolfVote ? (
-        <div style={styles.eliminatedSection}>
-          <p style={styles.eliminatedLabel}>VILLAGE DECISION</p>
-          <p style={styles.eliminatedName}>🐺 No Werewolf</p>
-          <p style={{ ...styles.eliminatedRole, color: "#f0c040" }}>The village believes all werewolves are on the ground</p>
-          <p style={styles.eliminatedVotes}>
-            {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
-          </p>
+    <div style={styles.page}>
+      <div style={styles.vignette} />
+      <div style={styles.content} className="res-content">
+        {/* Winner banner */}
+        <div style={{ ...styles.banner, borderColor: winnerColor() }}>
+          <h1 style={{ ...styles.winnerText, color: winnerColor() }}>{winnerLabel()}</h1>
+          <p style={styles.personalResult}>{didIWin() ? "You won!" : "You lost."}</p>
         </div>
-      ) : (
-        mostVotedPlayer && (
+
+        {/* Eliminated */}
+        {isNoWerewolfVote ? (
           <div style={styles.eliminatedSection}>
-            <p style={styles.eliminatedLabel}>ELIMINATED</p>
-            <p style={styles.eliminatedName}>{mostVotedPlayer.name}</p>
-            <p style={{ ...styles.eliminatedRole, color: roleColor(mostVotedPlayer.role) }}>{mostVotedPlayer.role}</p>
+            <p style={styles.eliminatedLabel}>VILLAGE DECISION</p>
+            <p style={styles.eliminatedName}>No Werewolf</p>
+            <p style={{ ...styles.eliminatedRole, color: "#d4a017" }}>The village believes all werewolves are on the ground</p>
             <p style={styles.eliminatedVotes}>
               {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
             </p>
           </div>
-        )
-      )}
-
-      {/* All roles revealed */}
-      <div style={styles.section}>
-        <h2 style={styles.sectionTitle}>All Roles</h2>
-        <div style={styles.roleList}>
-          {playerRoles.map((p) => (
-            <div key={p.playerId} style={styles.roleRow}>
-              <span style={styles.roleName}>
-                {p.name}
-                {p.playerId === playerId && <span style={styles.youTag}> (You)</span>}
-              </span>
-              <span style={{ ...styles.roleValue, color: roleColor(p.role) }}>{p.role}</span>
+        ) : (
+          mostVotedPlayer && (
+            <div style={styles.eliminatedSection}>
+              <p style={styles.eliminatedLabel}>ELIMINATED</p>
+              <p style={styles.eliminatedName}>{mostVotedPlayer.name}</p>
+              <p style={{ ...styles.eliminatedRole, color: roleColor(mostVotedPlayer.role) }}>{mostVotedPlayer.role}</p>
+              <p style={styles.eliminatedVotes}>
+                {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
+          )
+        )}
 
-      {/* Vote breakdown */}
-      <div style={styles.section}>
-        <button style={styles.toggleButton} onClick={() => setShowVotes(!showVotes)}>
-          {showVotes ? "Hide Vote Details" : "Show Vote Details"}
-        </button>
-
-        {showVotes && (
-          <div style={styles.voteList}>
-            {votes.map((v, i) => (
-              <div key={i} style={styles.voteRow}>
-                <span style={styles.voterName}>{getPlayerName(v.voter)}</span>
-                <span style={styles.arrow}>→</span>
-                <span style={styles.votedName}>{getPlayerName(v.vote)}</span>
+        {/* All roles */}
+        <div style={styles.section}>
+          <h2 style={styles.sectionTitle}>ALL ROLES</h2>
+          <div style={styles.roleList}>
+            {playerRoles.map((p) => (
+              <div key={p.playerId} style={styles.roleRow}>
+                <span style={styles.roleName}>
+                  {p.name}
+                  {p.playerId === playerId && <span style={styles.youTag}> (You)</span>}
+                </span>
+                <span style={{ ...styles.roleValue, color: roleColor(p.role) }}>{p.role}</span>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Action buttons */}
-      <div style={styles.actionButtons}>
-        {isHost && (
-          <button style={styles.restartButton} onClick={handleRestart} disabled={restarting}>
-            {restarting ? "Restarting..." : "🔄 Play Again"}
+        {/* Vote breakdown */}
+        <div style={styles.section}>
+          <button style={styles.toggleButton} onClick={() => setShowVotes(!showVotes)}>
+            <span>{showVotes ? "HIDE" : "SHOW"} VOTE DETAILS</span>
+            <span style={styles.toggleArrow}>{showVotes ? "▲" : "▼"}</span>
           </button>
-        )}
-        <button style={styles.homeButton} onClick={() => navigate("/")}>
-          Back to Home
-        </button>
+          {showVotes && (
+            <div style={styles.voteList}>
+              {votes.map((v, i) => (
+                <div key={i} style={styles.voteRow}>
+                  <span style={styles.voterName}>{getPlayerName(v.voter)}</span>
+                  <span style={styles.arrow}>→</span>
+                  <span style={styles.votedName}>{getPlayerName(v.vote)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={styles.actionButtons}>
+          {isHost && (
+            <button style={styles.restartButton} onClick={handleRestart} disabled={restarting}>
+              {restarting ? "RESTARTING..." : "PLAY AGAIN"}
+            </button>
+          )}
+          <button
+            style={styles.homeButton}
+            onClick={() => {
+              clearSession();
+              navigate("/");
+            }}
+          >
+            BACK TO HOME
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
+  page: {
+    position: "relative",
+    width: "100vw",
     minHeight: "100vh",
-    padding: "20px",
-    maxWidth: "480px",
-    margin: "0 auto",
-    paddingBottom: "40px",
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "center",
+    background: "radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
+    fontFamily: "'Trade Winds', cursive",
+    color: "#e8dcc8",
+  },
+  vignette: {
+    position: "absolute",
+    inset: 0,
+    pointerEvents: "none",
+    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
+    zIndex: 1,
+  },
+  content: {
+    position: "relative",
+    zIndex: 10,
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "420px",
+    padding: "32px 20px 40px",
   },
   banner: {
     width: "100%",
     textAlign: "center" as const,
-    padding: "32px 20px",
-    borderRadius: "16px",
-    border: "2px solid #333",
-    backgroundColor: "#1a1a1a",
+    padding: "28px 20px",
+    borderRadius: "4px",
+    border: "2px solid #2a2019",
+    backgroundColor: "rgba(201,168,76,0.03)",
     marginBottom: "24px",
   },
   winnerText: {
-    fontSize: "28px",
-    fontWeight: "bold",
+    fontSize: "32px",
+    fontWeight: 400,
+    letterSpacing: "6px",
     marginBottom: "8px",
+    fontFamily: "'Creepster', cursive",
+    textShadow: "0 0 20px currentColor",
   },
   personalResult: {
-    fontSize: "18px",
-    color: "#ccc",
+    fontSize: "16px",
+    color: "#9a8a70",
+    fontStyle: "italic",
   },
   eliminatedSection: {
     width: "100%",
     textAlign: "center" as const,
     padding: "20px",
-    backgroundColor: "#1a1a1a",
-    borderRadius: "12px",
-    border: "1px solid #333",
+    backgroundColor: "rgba(201,168,76,0.03)",
+    borderRadius: "4px",
+    border: "1px solid #2a2019",
     marginBottom: "24px",
   },
   eliminatedLabel: {
-    fontSize: "11px",
-    color: "#666",
-    letterSpacing: "2px",
-    marginBottom: "4px",
+    fontSize: "10px",
+    color: "#5a4a30",
+    letterSpacing: "3px",
+    marginBottom: "6px",
+    fontFamily: "'Creepster', cursive",
   },
   eliminatedName: {
-    fontSize: "22px",
-    fontWeight: "bold",
+    fontSize: "24px",
+    fontWeight: 400,
     marginBottom: "4px",
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "3px",
+    color: "#e8dcc8",
   },
   eliminatedRole: {
     fontSize: "14px",
-    marginBottom: "4px",
+    marginBottom: "6px",
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
   },
   eliminatedVotes: {
-    fontSize: "13px",
-    color: "#888",
+    fontSize: "12px",
+    color: "#5a4a30",
   },
   section: {
     width: "100%",
-    marginBottom: "24px",
+    marginBottom: "20px",
   },
   sectionTitle: {
-    fontSize: "18px",
-    fontWeight: "bold",
+    fontSize: "16px",
+    fontWeight: 400,
+    letterSpacing: "4px",
     marginBottom: "12px",
+    fontFamily: "'Creepster', cursive",
+    color: "#c9a84c",
   },
   roleList: {
     display: "flex",
-    flexDirection: "column",
-    gap: "8px",
+    flexDirection: "column" as const,
+    gap: "6px",
   },
   roleRow: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "12px 16px",
-    backgroundColor: "#1a1a1a",
-    borderRadius: "8px",
-    border: "1px solid #2a2a2a",
+    padding: "10px 14px",
+    backgroundColor: "rgba(201,168,76,0.03)",
+    borderRadius: "4px",
+    border: "1px solid #1a1510",
   },
   roleName: {
-    fontSize: "15px",
+    fontSize: "14px",
+    color: "#9a8a70",
   },
   youTag: {
-    fontSize: "12px",
-    color: "#666",
+    fontSize: "11px",
+    color: "#5a4a30",
   },
   roleValue: {
-    fontSize: "14px",
-    fontWeight: "bold",
+    fontSize: "13px",
+    fontWeight: 400,
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "1px",
   },
   toggleButton: {
     width: "100%",
-    padding: "12px",
-    fontSize: "14px",
+    padding: "12px 14px",
+    fontSize: "12px",
     backgroundColor: "transparent",
-    color: "#888",
-    border: "1px solid #333",
-    borderRadius: "8px",
-    marginBottom: "12px",
+    color: "#6b5a3a",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+    marginBottom: "10px",
+    cursor: "pointer",
+    fontFamily: "'Creepster', cursive",
+    letterSpacing: "2px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  toggleArrow: {
+    fontSize: "10px",
+    color: "#5a4a30",
   },
   voteList: {
     display: "flex",
-    flexDirection: "column",
-    gap: "6px",
+    flexDirection: "column" as const,
+    gap: "4px",
   },
   voteRow: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "10px 16px",
-    backgroundColor: "#1a1a1a",
-    borderRadius: "8px",
-    border: "1px solid #2a2a2a",
-    fontSize: "14px",
+    padding: "8px 14px",
+    backgroundColor: "rgba(201,168,76,0.03)",
+    borderRadius: "4px",
+    border: "1px solid #1a1510",
+    fontSize: "13px",
   },
   voterName: {
-    color: "#ccc",
+    color: "#9a8a70",
     flex: 1,
   },
   arrow: {
-    color: "#555",
+    color: "#3d2e1a",
   },
   votedName: {
-    color: "#fff",
-    fontWeight: "bold",
+    color: "#c9b896",
+    fontWeight: 400,
     flex: 1,
     textAlign: "right" as const,
   },
   actionButtons: {
     display: "flex",
-    flexDirection: "column",
-    gap: "12px",
+    flexDirection: "column" as const,
+    gap: "10px",
     width: "100%",
     marginTop: "8px",
   },
   restartButton: {
     width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
-    backgroundColor: "#fff",
-    color: "#111",
+    padding: "14px",
+    fontSize: "14px",
+    fontWeight: 400,
+    letterSpacing: "3px",
+    backgroundColor: "#c9a84c",
+    color: "#0a0a0a",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Creepster', cursive",
   },
   homeButton: {
     width: "100%",
-    padding: "16px",
-    fontSize: "16px",
-    fontWeight: "bold",
+    padding: "14px",
+    fontSize: "13px",
+    fontWeight: 400,
+    letterSpacing: "3px",
     backgroundColor: "transparent",
-    color: "#888",
-    border: "1px solid #444",
-    borderRadius: "8px",
+    color: "#6b5a3a",
+    border: "1px solid #2a2019",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Creepster', cursive",
   },
 };
 

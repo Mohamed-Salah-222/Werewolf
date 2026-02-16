@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import "./NightPhase.css";
 
 import WaitingForTurn from "../components/roles/WaitingForTurn";
 import ActionComplete from "../components/roles/ActionComplete";
@@ -216,7 +217,7 @@ function NightPhase() {
   const timerFraction = timerMax > 0 ? roleTimer / timerMax : 0;
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="np-page">
       <div style={styles.vignette} />
 
       <style>{`
@@ -239,7 +240,7 @@ function NightPhase() {
       `}</style>
 
       {/* ===== HEADER ===== */}
-      <div style={styles.header}>
+      <div style={styles.header} className="np-header">
         <div style={styles.headerInner}>
           <div style={styles.moonIcon}>☽</div>
           <h1 style={styles.phaseTitle}>NIGHT PHASE</h1>
@@ -250,7 +251,7 @@ function NightPhase() {
 
       {/* ===== TIMER ===== */}
       {isMyTurn && roleTimer > 0 && (
-        <div style={styles.timerSection}>
+        <div style={styles.timerSection} className="np-timer">
           <div style={styles.timerTrack}>
             <div
               style={{
@@ -274,7 +275,7 @@ function NightPhase() {
       )}
 
       {/* ===== CONTENT ===== */}
-      <div style={styles.contentArea}>
+      <div style={styles.contentArea} className="np-content">
         <div style={styles.contentInner}>{actionDone ? <ActionComplete result={actionResult} /> : isMyTurn ? <div style={{ animation: "fadeSlideIn 0.4s ease-out" }}>{renderActionComponent()}</div> : <WaitingForTurn />}</div>
       </div>
     </div>

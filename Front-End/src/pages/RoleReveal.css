@@ -1,0 +1,82 @@
+/* ===== TABLET (768px and below) ===== */
+@media (max-width: 768px) {
+  .rr-page {
+    padding: 20px !important;
+  }
+
+  .rr-content h1 {
+    font-size: 22px !important;
+    letter-spacing: 5px !important;
+  }
+
+  .rr-card {
+    width: 240px !important;
+    height: 360px !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .rr-content {
+    gap: 16px !important;
+  }
+
+  .rr-content h1 {
+    font-size: 18px !important;
+    letter-spacing: 4px !important;
+  }
+
+  .rr-content p {
+    font-size: 10px !important;
+  }
+
+  .rr-card {
+    width: 200px !important;
+    height: 300px !important;
+  }
+
+  .rr-content button {
+    padding: 12px 36px !important;
+    font-size: 12px !important;
+    letter-spacing: 3px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .rr-content h1 {
+    font-size: 16px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .rr-card {
+    width: 170px !important;
+    height: 255px !important;
+  }
+
+  .rr-content button {
+    padding: 10px 28px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* ===== SHORT SCREENS (landscape phones) ===== */
+@media (max-height: 500px) {
+  .rr-content {
+    gap: 10px !important;
+  }
+
+  .rr-card {
+    width: 160px !important;
+    height: 240px !important;
+  }
+
+  .rr-content h1 {
+    font-size: 16px !important;
+  }
+
+  .rr-content button {
+    padding: 8px 24px !important;
+    font-size: 11px !important;
+  }
+}

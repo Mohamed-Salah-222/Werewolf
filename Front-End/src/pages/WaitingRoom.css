@@ -1,0 +1,76 @@
+/* ===== TABLET (1024px and below) ===== */
+@media (max-width: 1024px) {
+  .wr-cards {
+    flex: 0 0 30% !important;
+  }
+
+  .wr-center {
+    flex: 0 0 35% !important;
+  }
+
+  .wr-reveal {
+    flex: 0 0 35% !important;
+  }
+
+  .wr-cards .flip-card {
+    width: 72px !important;
+    height: 100px !important;
+  }
+}
+
+/* ===== MOBILE (768px and below) ===== */
+@media (max-width: 768px) {
+  .wr-page {
+    flex-direction: column !important;
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .wr-cards {
+    display: none !important;
+  }
+
+  .wr-reveal {
+    display: none !important;
+  }
+
+  .wr-center {
+    flex: 1 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 24px 20px 40px !important;
+    min-height: 100vh !important;
+    justify-content: flex-start !important;
+  }
+}
+
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .wr-center {
+    padding: 20px 16px 32px !important;
+  }
+
+  .wr-center h1 {
+    font-size: 18px !important;
+    letter-spacing: 4px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .wr-center button span:first-child {
+    font-size: 22px !important;
+    letter-spacing: 6px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .wr-center {
+    padding: 16px 12px 28px !important;
+  }
+
+  .wr-center h1 {
+    font-size: 16px !important;
+    letter-spacing: 3px !important;
+  }
+}

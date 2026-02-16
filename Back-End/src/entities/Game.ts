@@ -431,7 +431,6 @@ export class Game extends EventEmitter {
       }, 1000);
     });
   }
-
   skipToVote(playerId: PlayerId): void {
     if (playerId !== this.host) {
       throw new Error("Only the host can skip to vote");
@@ -442,9 +441,12 @@ export class Game extends EventEmitter {
     clearInterval(this.timerInterval);
     this.startVoting();
   }
-
   startVoting(): void {
+    if (this.phase === Phase.Vote) return;
     this.phase = Phase.Vote;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
     this.logger.log("Game state is now voting");
     this.newEmit("votingStarted");
   }

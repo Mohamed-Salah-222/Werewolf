@@ -421,6 +421,28 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         console.error("Error in restartGame:", error);
       }
     });
+
+    // SKIP TO VOTE
+    socket.on("skipToVote", ({ gameCode }: { gameCode: string }) => {
+      try {
+        const game = manager.getGameByCode(gameCode);
+        if (!game) return;
+        if ((socket as any).playerId !== game.host) return;
+
+        // Clear the discussion timer
+        if (game.timerInterval) {
+          clearInterval(game.timerInterval);
+        }
+
+        game.startVoting();
+        io.to(gameCode).emit("votingStarted");
+
+        console.log(`Host skipped to vote in game ${gameCode}`);
+      } catch (error) {
+        console.error("Error in skipToVote:", error);
+      }
+    });
+    
     // DISCONNECT
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);

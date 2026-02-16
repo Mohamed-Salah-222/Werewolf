@@ -1,34 +1,67 @@
-/* Mobile overrides for HomePage */
-@media (max-width: 768px) {
+/* ===== TABLET (1024px and below) ===== */
+@media (max-width: 1024px) {
   .home-page-override {
     height: auto !important;
     min-height: 100vh !important;
     overflow-y: auto !important;
   }
 
+  .home-page-override .topbar-override {
+    padding: 20px 24px 16px !important;
+  }
+
+  .home-page-override .topbar-override h1 {
+    font-size: 56px !important;
+    letter-spacing: 8px !important;
+  }
+
   .home-page-override .showcase-override {
-    flex-direction: column !important;
-    padding: 12px 16px !important;
-    gap: 12px !important;
-    flex: none !important;
+    gap: 24px !important;
+    padding: 0 30px !important;
   }
 
   .home-page-override .char-display-override {
-    flex: none !important;
-    width: 100% !important;
-    max-height: 240px !important;
-    height: 240px !important;
+    flex: 0 0 220px !important;
+    width: 220px !important;
   }
 
   .home-page-override .char-display-override img {
-    max-height: 220px !important;
+    max-height: 380px !important;
   }
 
   .home-page-override .info-panel-override {
-    flex: none !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    text-align: center !important;
+    flex: 0 0 280px !important;
+    max-width: 280px !important;
+  }
+
+  .home-page-override .info-panel-override h2 {
+    font-size: 28px !important;
+  }
+
+  .home-page-override .info-panel-override p {
+    font-size: 13px !important;
+  }
+
+  .home-page-override .selectbar-override {
+    padding: 12px 20px 20px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override button {
+    width: 72px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override img {
+    width: 64px !important;
+    height: 64px !important;
+  }
+}
+
+/* ===== SMALL TABLET / LARGE PHONE LANDSCAPE (768px and below) ===== */
+@media (max-width: 768px) {
+  .home-page-override {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
   }
 
   .home-page-override .topbar-override {
@@ -45,6 +78,41 @@
     font-size: 13px !important;
   }
 
+  .home-page-override .showcase-override {
+    flex-direction: column !important;
+    padding: 16px !important;
+    gap: 16px !important;
+    flex: none !important;
+  }
+
+  .home-page-override .char-display-override {
+    flex: none !important;
+    width: 100% !important;
+    max-height: 260px !important;
+    height: 260px !important;
+  }
+
+  .home-page-override .char-display-override img {
+    max-height: 240px !important;
+  }
+
+  .home-page-override .info-panel-override {
+    flex: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  .home-page-override .info-panel-override h2 {
+    font-size: 26px !important;
+  }
+
+  /* Center the divider */
+  .home-page-override .info-panel-override div[style*="width: 60px"][style*="height: 1px"] {
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
   .home-page-override .selectbar-override {
     padding: 10px 8px 14px !important;
   }
@@ -55,36 +123,199 @@
     justify-content: flex-start !important;
     gap: 6px !important;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override::-webkit-scrollbar {
+    height: 3px;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override::-webkit-scrollbar-track {
+    background: #0a0a0a;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override::-webkit-scrollbar-thumb {
+    background: #2a2019;
+    border-radius: 2px;
   }
 
   .home-page-override .selectbar-override .selectgrid-override button {
-    width: 60px !important;
+    width: 64px !important;
     flex-shrink: 0 !important;
   }
 
   .home-page-override .selectbar-override .selectgrid-override img {
-    width: 52px !important;
-    height: 52px !important;
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  /* Modal adjustments */
+  .home-page-override div[style*="position: fixed"] > div {
+    width: 90vw !important;
+    max-width: 340px !important;
+    padding: 24px !important;
   }
 }
 
-@media (max-width: 400px) {
+/* ===== PHONE (480px and below) ===== */
+@media (max-width: 480px) {
+  .home-page-override .topbar-override {
+    padding: 12px 12px 10px !important;
+  }
+
   .home-page-override .topbar-override h1 {
-    font-size: 34px !important;
+    font-size: 36px !important;
     letter-spacing: 4px !important;
   }
 
   .home-page-override .topbar-override button {
-    padding: 8px 14px !important;
-    font-size: 11px !important;
+    padding: 8px 16px !important;
+    font-size: 12px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .home-page-override .showcase-override {
+    padding: 12px !important;
+    gap: 12px !important;
   }
 
   .home-page-override .char-display-override {
-    max-height: 180px !important;
-    height: 180px !important;
+    max-height: 200px !important;
+    height: 200px !important;
   }
 
   .home-page-override .char-display-override img {
+    max-height: 180px !important;
+  }
+
+  .home-page-override .info-panel-override h2 {
+    font-size: 22px !important;
+    letter-spacing: 2px !important;
+  }
+
+  .home-page-override .info-panel-override p {
+    font-size: 12px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override button {
+    width: 56px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override img {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override span {
+    font-size: 7px !important;
+  }
+}
+
+/* ===== SMALL PHONE (360px and below) ===== */
+@media (max-width: 360px) {
+  .home-page-override .topbar-override h1 {
+    font-size: 30px !important;
+    letter-spacing: 3px !important;
+  }
+
+  .home-page-override .topbar-override button {
+    padding: 7px 12px !important;
+    font-size: 11px !important;
+    letter-spacing: 1px !important;
+  }
+
+  .home-page-override .topbar-override > div {
+    gap: 10px !important;
+  }
+
+  .home-page-override .char-display-override {
     max-height: 160px !important;
+    height: 160px !important;
+  }
+
+  .home-page-override .char-display-override img {
+    max-height: 140px !important;
+  }
+
+  .home-page-override .info-panel-override h2 {
+    font-size: 20px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override button {
+    width: 50px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override img {
+    width: 42px !important;
+    height: 42px !important;
+  }
+}
+
+/* ===== LANDSCAPE PHONE ===== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .home-page-override {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+  }
+
+  .home-page-override .topbar-override {
+    padding: 8px 20px 6px !important;
+  }
+
+  .home-page-override .topbar-override h1 {
+    font-size: 32px !important;
+  }
+
+  .home-page-override .topbar-override button {
+    padding: 6px 16px !important;
+    font-size: 11px !important;
+  }
+
+  .home-page-override .topbar-override > div {
+    margin-top: 6px !important;
+  }
+
+  .home-page-override .showcase-override {
+    flex-direction: row !important;
+    padding: 8px 20px !important;
+    gap: 20px !important;
+  }
+
+  .home-page-override .char-display-override {
+    flex: 0 0 160px !important;
+    width: 160px !important;
+    max-height: 200px !important;
+    height: 200px !important;
+  }
+
+  .home-page-override .char-display-override img {
+    max-height: 180px !important;
+  }
+
+  .home-page-override .info-panel-override {
+    flex: 1 !important;
+    max-width: none !important;
+    text-align: left !important;
+  }
+
+  .home-page-override .selectbar-override {
+    padding: 6px 10px 10px !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    justify-content: flex-start !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override button {
+    width: 52px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .home-page-override .selectbar-override .selectgrid-override img {
+    width: 44px !important;
+    height: 44px !important;
   }
 }
