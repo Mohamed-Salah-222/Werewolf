@@ -145,7 +145,8 @@ function NightPhase() {
     });
     // slta byta5d
 
-    socket.on("discussionStarted", (data: { timerSeconds: number }) => {
+
+    socket.on("discussionStarted", (data: { timerSeconds: number, currentTimerSec: number, startedAt: number }) => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
       if (!actionResultRef.current && !hasAlreadyActed) {
@@ -160,6 +161,8 @@ function NightPhase() {
           playerId,
           isHost,
           timerSeconds: data.timerSeconds,
+          currentTimerSec: data.currentTimerSec,
+          startedAt: data.startedAt,
           roleName: myRole,
           actionResult: actionResultRef.current,
         },

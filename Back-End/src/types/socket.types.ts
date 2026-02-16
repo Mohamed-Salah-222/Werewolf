@@ -8,13 +8,8 @@ export interface ClientToServerEvents {
   confirmRoleReveal: (data: { gameCode: string; playerId: PlayerId }) => void;
   performAction: (data: { gameCode: string; playerId: PlayerId; action: any }) => void;
   vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) => void;
-<<<<<<< HEAD
-  restartGame: (data: { gameCode: string, playerId: PlayerId }) => void;
-  skipToVote(data: { gameCode: string, playerId: PlayerId }): void;
-=======
   restartGame: (data: { gameCode: string; playerId: PlayerId }) => void;
-  skipToVote: (data: { gameCode: string }) => void;
->>>>>>> 9661f1b (7mada blgnzbel)
+  skipToVote: (data: { gameCode: string, playerId: PlayerId }) => void;
 }
 
 // Server -> Client events (what backend sends)
@@ -97,6 +92,8 @@ export interface ActionResultData {
 
 export interface DiscussionStartedData {
   timerSeconds: number;
+  currentTimerSec: number;
+  startedAt: number;
 }
 
 export interface GameEndedData {

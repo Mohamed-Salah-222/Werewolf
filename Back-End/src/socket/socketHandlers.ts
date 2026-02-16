@@ -112,21 +112,6 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
-    // skip to vote 
-    socket.on("skipToVote" as any, (data: { gameCode: string; playerId: string }, callback: (response: any) => void) => {
-      try {
-        const game = manager.getGameByCode(data.gameCode);
-        if (!game) {
-          callback({ success: false, error: "Game not found" });
-          return;
-        }
-        game.skipToVote(data.playerId);
-        callback({ success: true, message: "Skipped to vote" });
-      } catch (error) {
-        console.error("Error in skipToVote:", error);
-        callback({ success: false, error: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
-      }
-    });
     // REJOIN GAME
     socket.on("rejoinGame" as any, (data: { gameCode: string; playerId: string; playerName: string }, callback: (response: any) => void) => {
       try {
@@ -423,26 +408,19 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     });
 
     // SKIP TO VOTE
-    socket.on("skipToVote", ({ gameCode }: { gameCode: string }) => {
+    socket.on("skipToVote", (data: { gameCode: string, playerId: PlayerId }) => {
       try {
-        const game = manager.getGameByCode(gameCode);
-        if (!game) return;
-        if ((socket as any).playerId !== game.host) return;
-
-        // Clear the discussion timer
-        if (game.timerInterval) {
-          clearInterval(game.timerInterval);
+        const game = manager.getGameByCode(data.gameCode);
+        if (!game) {
+          return;
         }
-
-        game.startVoting();
-        io.to(gameCode).emit("votingStarted");
-
-        console.log(`Host skipped to vote in game ${gameCode}`);
+        game.skipToVote(data.playerId);
+        io.to(data.gameCode).emit("votingStarted");
       } catch (error) {
         console.error("Error in skipToVote:", error);
       }
     });
-    
+
     // DISCONNECT
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);

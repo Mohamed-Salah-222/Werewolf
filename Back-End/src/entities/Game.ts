@@ -410,26 +410,32 @@ export class Game extends EventEmitter {
     this.newEmit("perfomActionsStarted");
   }
 
-  startDay(): Promise<void> {
+  startDay() {
     this.phase = Phase.Discussion;
-    let totalSeconds = this.timer * 60;
-    totalSeconds = 30;
-    // totalSeconds = 3; Leave it there for quick testing
-    this.newEmit("dayStarted");
-    // find a good soultion for syncing the timer
-    // return new Promise(null);
-    return new Promise((resolve) => {
-      this.timerInterval = setInterval(() => {
-        if (totalSeconds <= 0) {
-          this.currentTimerSec = 0;
-          this.newEmit("timerFinished");
-          this.startVoting();
-          clearInterval(this.timerInterval);
-          resolve();
-        }
-        totalSeconds--;
-      }, 1000);
+
+    const startedAt = Date.now();
+    this.currentTimerSec = this.timer * 60;
+
+    this.newEmit("dayStarted", {
+      timer: this.currentTimerSec,
+      currentTimerSec: this.currentTimerSec,
+      startedAt,
     });
+
+    const tick = () => {
+      this.currentTimerSec--;
+
+      if (this.currentTimerSec <= 0) {
+        this.currentTimerSec = 0;
+        this.newEmit("timerFinished");
+        this.startVoting();
+        return;
+      }
+
+      this.timerInterval = setTimeout(tick, 1000);
+    };
+
+    this.timerInterval = setTimeout(tick, 1000);
   }
   skipToVote(playerId: PlayerId): void {
     if (playerId !== this.host) {
@@ -438,7 +444,6 @@ export class Game extends EventEmitter {
     if (this.phase !== Phase.Discussion) {
       throw new Error("Cannot skip to vote when not in discussion phase");
     }
-    clearInterval(this.timerInterval);
     this.startVoting();
   }
   startVoting(): void {

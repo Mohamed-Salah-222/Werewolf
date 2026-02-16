@@ -29,9 +29,11 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   });
 
   // When discussion starts
-  game.on("dayStarted", () => {
+  game.on("dayStarted", (data) => {
     io.to(gameCode).emit("discussionStarted", {
-      timerSeconds: game.timer * 60,
+      timerSeconds: data.timer,
+      currentTimerSec: data.currentTimerSec,
+      startedAt: data.startedAt,
     });
   });
 

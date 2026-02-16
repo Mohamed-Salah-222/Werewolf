@@ -9,6 +9,8 @@ interface LocationState {
   playerId: string;
   isHost: boolean;
   timerSeconds: number;
+  currentTimerSec: number;
+  startedAt: number;
   roleName?: string;
   actionResult?: { message?: string } | null;
 }
@@ -23,6 +25,9 @@ function Discussion() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
   const totalSeconds = state?.timerSeconds || 360;
+  const currentTimerSec = state?.currentTimerSec || totalSeconds;
+  // eslint-disable-next-line react-hooks/purity
+  const startedAt = state?.startedAt || Date.now();
   const roleName = state?.roleName || "";
   const actionResult = state?.actionResult || null;
 
@@ -32,23 +37,41 @@ function Discussion() {
 
   useLeaveWarning(true);
 
+
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const updateTimer = () => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = Math.max(currentTimerSec - elapsed, 0);
+      setSecondsLeft(remaining);
+    };
+
+    updateTimer(); // run immediately
+
+    intervalRef.current = setInterval(updateTimer, 1000);
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, []);
+  }, [startedAt, currentTimerSec]);
+  // useEffect(() => {
+  //   intervalRef.current = setInterval(() => {
+  //     setSecondsLeft((prev) => {
+  //       if (prev <= 1) {
+  //         if (intervalRef.current) clearInterval(intervalRef.current);
+  //         return 0;
+  //       }
+  //       return prev - 1;
+  //     });
+  //   }, 1000);
+  //   return () => {
+  //     if (intervalRef.current) clearInterval(intervalRef.current);
+  //   };
+  // }, []);
 
   useEffect(() => {
-    if (!socket.connected) socket.connect();
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     socket.on("votingStarted", () => {
       navigate(`/vote/${gameCode}`, {
