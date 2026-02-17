@@ -362,6 +362,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
       }
     });
+
     // CONFIRM ROLE REVEAL
     socket.on("confirmRoleReveal", ({ gameCode, playerId }) => {
       try {
@@ -388,21 +389,39 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         if (!game) return;
 
         const player = game.getPlayerById(playerId);
+        const isCloneFirstAction = action.type === "clone";
+        const isCloneFollowUp = (player as any)._cloneAwaitingSecondAction === true;
 
-        console.log(`Player ${player.name} (${player.getRole().name}) performing action`);
+        console.log(`Player ${player.name} (${player.getRole().name}) performing action [type: ${action.type}, cloneFollowUp: ${isCloneFollowUp}]`);
 
         // Execute the actual role logic
-        let actionResult;
+        let actionResult: any;
         try {
-          actionResult = player.performOriginalAction(game, action);
-          console.log("Action result:", actionResult);
+          if (isCloneFollowUp) {
+            // Clone's second action — use the cloned role's performAction
+            const clonedRole = player.getRole();
+            actionResult = clonedRole.performAction()(game, player, action);
+            console.log("Clone follow-up action result:", actionResult);
+
+            // Clear the clone flag
+            (player as any)._cloneAwaitingSecondAction = false;
+
+            // Store the combined result
+            const cloneFirstResult = (player as any)._cloneFirstResult;
+            (player as any).lastActionResult = {
+              ...cloneFirstResult,
+              secondActionResult: actionResult,
+              message: actionResult.message || cloneFirstResult.message,
+            };
+          } else {
+            actionResult = player.performOriginalAction(game, action);
+            console.log("Action result:", actionResult);
+            (player as any).lastActionResult = actionResult;
+          }
         } catch (error: any) {
           console.error("Error executing role action:", error);
           actionResult = { error: error.message };
         }
-
-        // Store result for potential rejoin
-        (player as any).lastActionResult = actionResult;
 
         // Send result back to THIS player only
         socket.emit("actionResult", {
@@ -411,7 +430,16 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           data: actionResult,
         });
 
-        // Mark player as done (advances to next role)
+        // Handle clone two-phase logic
+        if (isCloneFirstAction && actionResult.needsSecondAction) {
+          // Clone needs a second action — DON'T mark as done yet
+          (player as any)._cloneAwaitingSecondAction = true;
+          (player as any)._cloneFirstResult = actionResult;
+          console.log(`🧬 Clone ${player.name} needs second action as ${actionResult.clonedRole}`);
+          return; // Don't call playerPerformAction yet
+        }
+
+        // Mark player as done
         game.playerPerformAction(playerId);
       } catch (error) {
         console.error("Error in performAction:", error);
@@ -421,6 +449,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         });
       }
     });
+
     // VOTE
     socket.on("vote", ({ gameCode, playerId, votedPlayerId }) => {
       try {

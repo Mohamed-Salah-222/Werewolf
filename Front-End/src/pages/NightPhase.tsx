@@ -30,6 +30,16 @@ interface LocationState {
   lastActionResult?: { message?: string } | null;
 }
 
+interface CloneResult {
+  clonedRole: string;
+  clonedRoleTeam: string;
+  needsSecondAction: boolean;
+  autoResult: { message: string } | null;
+  groundCards: Array<{ id: string; label: string }> | null;
+  otherPlayers: Array<{ id: string; name: string }> | null;
+  message: string;
+}
+
 function NightPhase() {
   const { gameCode } = useParams();
   const location = useLocation();
@@ -57,7 +67,11 @@ function NightPhase() {
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
-  // Queue-level tracking — separate from game logic
+  // Clone two-phase state
+  const [cloneResult, setCloneResult] = useState<CloneResult | null>(null);
+  const [awaitingCloneResult, setAwaitingCloneResult] = useState(false);
+
+  // Queue-level tracking
   const [activeRole, setActiveRole] = useState<string>(state?.initialActiveRole || "");
   const [queueTimer, setQueueTimer] = useState<number>(0);
   const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -98,7 +112,7 @@ function NightPhase() {
     }
   }, [state?.hasPerformedAction, state?.lastActionResult]);
 
-  // ===== QUEUE PROGRESS — own stable effect, never torn down by actionDone changes =====
+  // ===== QUEUE PROGRESS — stable effect =====
   useEffect(() => {
     if (!socket.connected) {
       socket.connect();
@@ -127,7 +141,7 @@ function NightPhase() {
     };
   }, [gameCode]);
 
-  // ===== GAME LOGIC — socket events for actions, turns, discussion =====
+  // ===== GAME LOGIC =====
   useEffect(() => {
     if (!socket.connected) {
       socket.connect();
@@ -162,13 +176,35 @@ function NightPhase() {
       }
     });
 
-    socket.on("actionResult", (data: { success: boolean; message: string; data?: { message?: string } }) => {
+    socket.on("actionResult", (data: { success: boolean; message: string; data?: any }) => {
       console.log("Action result:", data);
       const result = data.data || { message: data.message };
+
+      // Check if this is a clone first-action result
+      if (awaitingCloneResult && result.clonedRole) {
+        console.log("🧬 Clone first action result:", result);
+        setAwaitingCloneResult(false);
+        setCloneResult(result as CloneResult);
+
+        if (!result.needsSecondAction) {
+          // Passive role — clone is done
+          setActionResult(result);
+          actionResultRef.current = result;
+          setActionDone(true);
+          setIsMyTurn(false);
+          setRoleTimer(0);
+          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        }
+        // If needsSecondAction, stay on isMyTurn — CloneAction will show second action UI
+        return;
+      }
+
+      // Normal action result (or clone's second action result)
       setActionResult(result);
       actionResultRef.current = result;
       setActionDone(true);
       setIsMyTurn(false);
+      setCloneResult(null);
       setRoleTimer(0);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
@@ -227,7 +263,7 @@ function NightPhase() {
       socket.off("discussionStarted");
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
-  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed]);
+  }, [gameCode, myRole, actionDone, awaitingCloneResult, navigate, playerName, playerId, isHost, hasAlreadyActed]);
 
   useEffect(() => {
     if (!hasAlreadyActed) return;
@@ -259,7 +295,18 @@ function NightPhase() {
     return () => clearInterval(interval);
   }, [hasAlreadyActed, gameCode, navigate, playerName, playerId, isHost, myRole]);
 
+  // Normal action handler (used for all roles and clone's second action)
   const handleAction = (action: Record<string, unknown>) => {
+    socket.emit("performAction", {
+      gameCode,
+      playerId,
+      action,
+    });
+  };
+
+  // Clone first action handler — sets awaiting flag so actionResult knows to treat it as clone result
+  const handleCloneFirstAction = (action: Record<string, unknown>) => {
+    setAwaitingCloneResult(true);
     socket.emit("performAction", {
       gameCode,
       playerId,
@@ -276,7 +323,7 @@ function NightPhase() {
       case "minion":
         return <MinionAction onAction={handleAction} />;
       case "clone":
-        return <CloneAction playerId={playerId} players={players} onAction={handleAction} />;
+        return <CloneAction playerId={playerId} players={players} groundCards={groundCards} onAction={handleAction} onCloneFirstAction={handleCloneFirstAction} cloneResult={cloneResult} />;
       case "seer":
         return <SeerAction playerId={playerId} players={players} groundCards={groundCards} onAction={handleAction} />;
       case "mason":

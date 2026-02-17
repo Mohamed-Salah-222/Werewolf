@@ -14,7 +14,6 @@
 // Emits events that socketHandlers listens to
 
 import { Phase, Team, TimerOption, getRoleDistribution, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from "../config/constants";
-// import { Result, RequestType } from '../types/result.types';
 
 import { Role, RoleClasses } from "./roles";
 import { Player } from "./Player";
@@ -179,7 +178,7 @@ export class Game extends EventEmitter {
       this.forceEndNight();
     }, mainTimerSeconds * 1000);
 
-    // Start role queue after small delay
+    // Start role queue after delay to let frontend mount
     setTimeout(() => {
       this.advanceToNextRole();
     }, 1000);
@@ -263,6 +262,52 @@ export class Game extends EventEmitter {
           const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
           action = { type: "clone", targetPlayer: { id: target.id } };
           result = player.performOriginalAction(this, action);
+
+          // If clone copied an active role, auto-perform the second action too
+          if (result.needsSecondAction) {
+            const clonedRoleName = result.clonedRole.toLowerCase();
+            let secondAction: any = null;
+            const cloneOtherPlayers = this.players.filter((p) => p.id !== player.id);
+
+            switch (clonedRoleName) {
+              case "seer": {
+                if (Math.random() > 0.5 && cloneOtherPlayers.length > 0) {
+                  const seerTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
+                  secondAction = { type: "seer_player_role", targetPlayer: { id: seerTarget.id } };
+                } else if (this.groundRoles.length >= 2) {
+                  secondAction = { type: "seer_ground_roles", groundRole1: { id: this.groundRoles[0].id }, groundRole2: { id: this.groundRoles[1].id } };
+                } else {
+                  secondAction = { type: "seer_player_role", targetPlayer: { id: cloneOtherPlayers[0].id } };
+                }
+                break;
+              }
+              case "robber": {
+                const robTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
+                secondAction = { type: "robber", targetPlayer: { id: robTarget.id } };
+                break;
+              }
+              case "troublemaker": {
+                const shuffled = cloneOtherPlayers.sort(() => Math.random() - 0.5);
+                secondAction = { type: "troublemaker", player1: { id: shuffled[0].id }, player2: { id: shuffled[1].id } };
+                break;
+              }
+              case "drunk": {
+                const groundIdx = Math.floor(Math.random() * this.groundRoles.length);
+                secondAction = { type: "drunk", targetRoleId: this.groundRoles[groundIdx].id };
+                break;
+              }
+            }
+
+            if (secondAction) {
+              try {
+                const clonedRole = player.getRole();
+                const secondResult = clonedRole.performAction()(this, player, secondAction);
+                result = { ...result, secondActionResult: secondResult, message: secondResult.message || result.message };
+              } catch (error: any) {
+                console.error(`Error auto-performing clone second action:`, error.message);
+              }
+            }
+          }
           break;
         }
         case "drunk": {
@@ -324,7 +369,22 @@ export class Game extends EventEmitter {
     }
 
     const timerSeconds = this.roleTimers.get(nextRole) || 10;
-    const playersWithRole = this.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
+
+    // Find players who should act for this role slot
+    const playersWithRole = this.players.filter((p) => {
+      // Match by original role name
+      if (p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase()) {
+        return true;
+      }
+      // Also match clones who copied this role
+      // e.g. Clone→Insomniac should act during Insomniac's slot
+      // Check: player's current role matches this slot AND they were originally a Clone
+      // AND they haven't already been marked as done
+      if (p.getOriginalRole().name.toLowerCase() === "clone" && p.getRole().name.toLowerCase() === nextRole.toLowerCase() && !this.confirmedPlayerPerformActions.includes(p.id)) {
+        return true;
+      }
+      return false;
+    });
 
     this.currentActiveRole = nextRole;
     this.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
@@ -414,6 +474,7 @@ export class Game extends EventEmitter {
     // Don't advance to next role — the timer handles that
     // Player just waits until the role slot timer expires
   }
+
   // get the next role action in the role queue
   nextAction(): any {
     const nextRoleAction = this.roleQueue.shift();
@@ -473,6 +534,7 @@ export class Game extends EventEmitter {
 
     this.timerInterval = setTimeout(tick, 1000);
   }
+
   skipToVote(playerId: PlayerId): void {
     if (playerId !== this.host) {
       throw new Error("Only the host can skip to vote");

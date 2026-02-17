@@ -1,44 +1,93 @@
 import { useState } from "react";
 
+import SeerAction from "./SeerAction";
+import RobberAction from "./RobberAction";
+import TroublemakerAction from "./TroublemakerAction";
+import DrunkAction from "./DrunkAction";
+
 interface Props {
   playerId: string;
   players: Array<{ id: string; name: string }>;
-  onAction: (action: { type: string; targetPlayer: { id: string } }) => void;
+  groundCards: Array<{ id: string; label: string }>;
+  onAction: (action: Record<string, unknown>) => void;
+  onCloneFirstAction: (action: Record<string, unknown>) => void;
+  cloneResult: CloneResult | null;
 }
 
-function CloneAction({ playerId, players, onAction }: Props) {
+interface CloneResult {
+  clonedRole: string;
+  clonedRoleTeam: string;
+  needsSecondAction: boolean;
+  autoResult: { message: string } | null;
+  groundCards: Array<{ id: string; label: string }> | null;
+  otherPlayers: Array<{ id: string; name: string }> | null;
+  message: string;
+}
+
+function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAction, cloneResult }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
 
   const others = players.filter((p) => p.id !== playerId);
 
-  const handleAction = () => {
+  const handleClone = () => {
     if (!selected) return;
     setSubmitted(true);
-    onAction({ type: "clone", targetPlayer: { id: selected } });
+    onCloneFirstAction({ type: "clone", targetPlayer: { id: selected } });
   };
+
+  // Phase 1: Pick a target
+  if (!cloneResult) {
+    return (
+      <div style={styles.container}>
+        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>CLONE</h2>
+        <div style={styles.divider} />
+        <p style={styles.description}>Choose a player to copy their role.</p>
+        <div style={styles.list}>
+          {others.map((p) => (
+            <button key={p.id} style={selected === p.id ? styles.selectedItem : styles.item} onClick={() => !submitted && setSelected(p.id)} disabled={submitted}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+        <button style={!selected || submitted ? styles.buttonDisabled : styles.button} onClick={handleClone} disabled={!selected || submitted}>
+          {submitted ? "CLONING..." : "CLONE ROLE"}
+        </button>
+      </div>
+    );
+  }
+
+  // Phase 2a: Passive role — show result
+  if (!cloneResult.needsSecondAction) {
+    return (
+      <div style={styles.container}>
+        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>CLONE → {cloneResult.clonedRole.toUpperCase()}</h2>
+        <div style={styles.divider} />
+        <p style={styles.resultText}>{cloneResult.message}</p>
+      </div>
+    );
+  }
+
+  // Phase 2b: Active role — show the cloned role's action UI
+  const clonedRoleLower = cloneResult.clonedRole.toLowerCase();
+  const secondaryPlayers = cloneResult.otherPlayers || others;
+  const secondaryGroundCards = cloneResult.groundCards || groundCards;
 
   return (
     <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#2a8a4a" }}>CLONE</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>Choose a player to copy their role.</p>
-      <div style={styles.list}>
-        {others.map((p) => (
-          <button key={p.id} style={selected === p.id ? styles.selectedItem : styles.item} onClick={() => !submitted && setSelected(p.id)} disabled={submitted}>
-            {p.name}
-          </button>
-        ))}
+      <div style={styles.cloneBanner}>
+        <span style={styles.cloneBannerText}>CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
       </div>
-      <button style={!selected || submitted ? styles.buttonDisabled : styles.button} onClick={handleAction} disabled={!selected || submitted}>
-        {submitted ? "CLONING..." : "CLONE ROLE"}
-      </button>
+      {clonedRoleLower === "seer" && <SeerAction playerId={playerId} players={secondaryPlayers} groundCards={secondaryGroundCards} onAction={onAction} />}
+      {clonedRoleLower === "robber" && <RobberAction playerId={playerId} players={secondaryPlayers} onAction={onAction} />}
+      {clonedRoleLower === "troublemaker" && <TroublemakerAction playerId={playerId} players={secondaryPlayers} onAction={onAction} />}
+      {clonedRoleLower === "drunk" && <DrunkAction groundCards={secondaryGroundCards} onAction={onAction} />}
     </div>
   );
 }
 
 const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
+  container: { textAlign: "center", padding: "20px 20px" },
   title: {
     fontSize: "28px",
     fontWeight: 400,
@@ -111,6 +160,26 @@ const styles: { [key: string]: React.CSSProperties } = {
     border: "1px solid #1a1510",
     borderRadius: "4px",
     cursor: "not-allowed",
+    fontFamily: "'Creepster', cursive",
+  },
+  resultText: {
+    color: "#c9b896",
+    fontSize: "14px",
+    lineHeight: "1.8",
+    fontFamily: "'Trade Winds', cursive",
+  },
+  cloneBanner: {
+    padding: "8px 16px",
+    backgroundColor: "rgba(42,138,74,0.1)",
+    border: "1px solid rgba(42,138,74,0.3)",
+    borderRadius: "4px",
+    marginBottom: "16px",
+  },
+  cloneBannerText: {
+    fontSize: "11px",
+    fontWeight: 400,
+    letterSpacing: "3px",
+    color: "#2a8a4a",
     fontFamily: "'Creepster', cursive",
   },
 };

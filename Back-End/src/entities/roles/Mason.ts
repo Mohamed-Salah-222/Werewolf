@@ -27,7 +27,7 @@ export class Mason implements Role {
         throw new Error(`Invalid action for Mason. Expected 'mason', received '${action.type}'.`);
       }
 
-      const otherMasons = game.players.filter((p) => p.getRole().name.toLowerCase() === "mason" && p.id !== player.id);
+      const otherMasons = game.players.filter((p) => p.getOriginalRole().name.toLowerCase() === "mason" && p.id !== player.id);
 
       return {
         masons: otherMasons.map((m) => ({ id: m.id, name: m.name })),
