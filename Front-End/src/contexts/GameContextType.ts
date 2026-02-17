@@ -24,9 +24,10 @@ export interface RejoinResponse {
   hasVoted?: boolean;
   players?: Array<{ id: string; name: string }>;
   timerSeconds?: number;
+  currentTimerSec?: number;
+  startedAt?: number;
   currentActiveRole?: string;
   lastActionResult?: { message?: string } | null;
-  startedAt?: number;
   error?: string;
 }
 

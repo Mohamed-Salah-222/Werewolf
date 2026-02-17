@@ -56,7 +56,7 @@ function NightPhase() {
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
-  const pendingNavigationRef = useRef<{ timerSeconds: number } | null>(null);
+  const pendingNavigationRef = useRef<{ timerSeconds: number; currentTimerSec: number; startedAt: number } | null>(null);
   const actionResultRef = useRef<{ message?: string } | null>(actionResult);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -130,6 +130,7 @@ function NightPhase() {
       if (pendingNavigationRef.current) {
         const navData = pendingNavigationRef.current;
         pendingNavigationRef.current = null;
+        console.log("Timer data are: " + navData.timerSeconds, navData.currentTimerSec, navData.startedAt);
         setTimeout(() => {
           navigate(`/discussion/${gameCode}`, {
             state: {
@@ -137,11 +138,13 @@ function NightPhase() {
               playerId,
               isHost,
               timerSeconds: navData.timerSeconds,
+              currentTimerSec: navData.currentTimerSec,
+              startedAt: navData.startedAt,
               roleName: myRole,
               actionResult: actionResultRef.current,
             },
           });
-        }, 100);
+        }, 1000);
       }
     });
     // slta byta5d
@@ -152,7 +155,11 @@ function NightPhase() {
 
       if (!actionResultRef.current && !hasAlreadyActed) {
         console.log("Discussion started but waiting for action result...");
-        pendingNavigationRef.current = data;
+        pendingNavigationRef.current = {
+          timerSeconds: data.timerSeconds,
+          currentTimerSec: data.currentTimerSec,
+          startedAt: data.startedAt,
+        };
         return;
       }
 

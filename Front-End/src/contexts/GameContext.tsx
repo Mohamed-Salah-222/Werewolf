@@ -145,7 +145,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
               navigate(`/discussion/${gameCode}`, {
                 state: {
                   ...baseState,
-                  timerSeconds: response.timerSeconds || 30,
+                  timerSeconds: response.timerSeconds,
+                  currentTimerSec: response.currentTimerSec,
                   startedAt: response.startedAt,
                   roleName: response.roleInfo?.roleName,
                   actionResult: response.lastActionResult,

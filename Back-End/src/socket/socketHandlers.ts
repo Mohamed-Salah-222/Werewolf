@@ -198,6 +198,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           hasVoted,
           players: game.players.map((p) => ({ id: p.id, name: p.name })),
           timerSeconds: game.timer * 60,
+          currentTimerSec: game.currentTimerSec,
+          startedAt: game.startedAt,
           currentActiveRole: game.currentActiveRole || "",
           lastActionResult,
         });

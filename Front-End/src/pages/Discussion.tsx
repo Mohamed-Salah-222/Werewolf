@@ -41,7 +41,7 @@ function Discussion() {
   useEffect(() => {
     const updateTimer = () => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      const remaining = Math.max(currentTimerSec - elapsed, 0);
+      const remaining = Math.max(totalSeconds - elapsed, 0);
       setSecondsLeft(remaining);
     };
 
@@ -52,7 +52,7 @@ function Discussion() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [startedAt, currentTimerSec]);
+  }, [startedAt, totalSeconds]);
   // useEffect(() => {
   //   intervalRef.current = setInterval(() => {
   //     setSecondsLeft((prev) => {

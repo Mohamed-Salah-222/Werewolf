@@ -26,6 +26,7 @@ import { Vote } from "../types/game.types";
 export class Game extends EventEmitter {
   players: Player[] = [];
   readyPlayers: Map<PlayerId, boolean> = new Map();
+  startedAt: number | null = null;
   allPlayersReady: boolean = false;
   groundRoles: Role[] = [];
   prettyVotes: Vote[] = [];
@@ -451,13 +452,13 @@ export class Game extends EventEmitter {
   startDay() {
     this.phase = Phase.Discussion;
 
-    const startedAt = Date.now();
+    this.startedAt = Date.now();
     this.currentTimerSec = this.timer * 60;
 
     this.newEmit("dayStarted", {
-      timer: this.currentTimerSec,
+      timer: this.timer,
       currentTimerSec: this.currentTimerSec,
-      startedAt,
+      startedAt: this.startedAt,
     });
 
     const tick = () => {
