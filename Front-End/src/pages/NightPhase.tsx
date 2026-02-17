@@ -4,7 +4,6 @@ import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import "./NightPhase.css";
 
-import WaitingForTurn from "../components/roles/WaitingForTurn";
 import ActionComplete from "../components/roles/ActionComplete";
 import WerewolfAction from "../components/roles/WerewolfAction";
 import MinionAction from "../components/roles/MinionAction";
@@ -16,6 +15,7 @@ import TroublemakerAction from "../components/roles/TroublemakerAction";
 import DrunkAction from "../components/roles/DrunkAction";
 import InsomniacAction from "../components/roles/InsomniacAction";
 import JokerAction from "../components/roles/JokerAction";
+import NightRoleQueue from "../components/roles/NightRoleQueue";
 import { API_URL } from "../config";
 
 interface LocationState {
@@ -40,6 +40,7 @@ function NightPhase() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
   const hasAlreadyActed = state?.hasPerformedAction || false;
+  const roleQueue = state?.roleQueue || [];
 
   const [myRole] = useState<string>(state?.roleName || "");
   const [isMyTurn, setIsMyTurn] = useState(() => {
@@ -56,10 +57,14 @@ function NightPhase() {
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
+  // Queue-level tracking — separate from game logic
+  const [activeRole, setActiveRole] = useState<string>(state?.initialActiveRole || "");
+  const [queueTimer, setQueueTimer] = useState<number>(0);
+  const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const pendingNavigationRef = useRef<{ timerSeconds: number; currentTimerSec: number; startedAt: number } | null>(null);
   const actionResultRef = useRef<{ message?: string } | null>(actionResult);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const timerMaxRef = useRef<number>(0);
 
   useLeaveWarning(true);
@@ -83,6 +88,46 @@ function NightPhase() {
     fetchGameData();
   }, [gameCode]);
 
+  useEffect(() => {
+    if (state?.hasPerformedAction && !actionDone) {
+      setActionDone(true);
+      setIsMyTurn(false);
+      const result = state.lastActionResult || { message: "Action was performed" };
+      setActionResult(result);
+      actionResultRef.current = result;
+    }
+  }, [state?.hasPerformedAction, state?.lastActionResult]);
+
+  // ===== QUEUE PROGRESS — own stable effect, never torn down by actionDone changes =====
+  useEffect(() => {
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    const handleNightProgress = (data: { roleName: string; seconds: number }) => {
+      setActiveRole(data.roleName);
+      setQueueTimer(data.seconds);
+
+      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+      let remaining = data.seconds;
+      queueTimerRef.current = setInterval(() => {
+        remaining--;
+        setQueueTimer(Math.max(remaining, 0));
+        if (remaining <= 0) {
+          if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+        }
+      }, 1000);
+    };
+
+    socket.on("nightRoleProgress", handleNightProgress);
+
+    return () => {
+      socket.off("nightRoleProgress", handleNightProgress);
+      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+    };
+  }, [gameCode]);
+
+  // ===== GAME LOGIC — socket events for actions, turns, discussion =====
   useEffect(() => {
     if (!socket.connected) {
       socket.connect();
@@ -130,7 +175,6 @@ function NightPhase() {
       if (pendingNavigationRef.current) {
         const navData = pendingNavigationRef.current;
         pendingNavigationRef.current = null;
-        console.log("Timer data are: " + navData.timerSeconds, navData.currentTimerSec, navData.startedAt);
         setTimeout(() => {
           navigate(`/discussion/${gameCode}`, {
             state: {
@@ -147,10 +191,8 @@ function NightPhase() {
         }, 1000);
       }
     });
-    // slta byta5d
 
-
-    socket.on("discussionStarted", (data: { timerSeconds: number, currentTimerSec: number, startedAt: number }) => {
+    socket.on("discussionStarted", (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
       if (!actionResultRef.current && !hasAlreadyActed) {
@@ -187,6 +229,36 @@ function NightPhase() {
     };
   }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed]);
 
+  useEffect(() => {
+    if (!hasAlreadyActed) return;
+
+    const checkPhase = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
+        const data = await res.json();
+        if (data.success && data.data.phase === "discussion") {
+          navigate(`/discussion/${gameCode}`, {
+            state: {
+              playerName,
+              playerId,
+              isHost,
+              timerSeconds: data.data.timerSeconds,
+              currentTimerSec: data.data.currentTimerSec,
+              startedAt: data.data.startedAt,
+              roleName: myRole,
+              actionResult: actionResultRef.current,
+            },
+          });
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const interval = setInterval(checkPhase, 3000);
+    return () => clearInterval(interval);
+  }, [hasAlreadyActed, gameCode, navigate, playerName, playerId, isHost, myRole]);
+
   const handleAction = (action: Record<string, unknown>) => {
     socket.emit("performAction", {
       gameCode,
@@ -220,7 +292,7 @@ function NightPhase() {
       case "joker":
         return <JokerAction groundCards={groundCards} onAction={handleAction} />;
       default:
-        return <WaitingForTurn />;
+        return null;
     }
   };
 
@@ -244,10 +316,6 @@ function NightPhase() {
           from { opacity: 0; transform: translateY(16px); }
           to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes barShrink {
-          from { transform: scaleX(1); }
-          to { transform: scaleX(0); }
-        }
       `}</style>
 
       {/* ===== HEADER ===== */}
@@ -260,7 +328,7 @@ function NightPhase() {
         </div>
       </div>
 
-      {/* ===== TIMER ===== */}
+      {/* ===== TIMER (only when it's my turn) ===== */}
       {isMyTurn && roleTimer > 0 && (
         <div style={styles.timerSection} className="np-timer">
           <div style={styles.timerTrack}>
@@ -287,7 +355,20 @@ function NightPhase() {
 
       {/* ===== CONTENT ===== */}
       <div style={styles.contentArea} className="np-content">
-        <div style={styles.contentInner}>{actionDone ? <ActionComplete result={actionResult} /> : isMyTurn ? <div style={{ animation: "fadeSlideIn 0.4s ease-out" }}>{renderActionComponent()}</div> : <WaitingForTurn />}</div>
+        <div style={styles.contentInner}>
+          {isMyTurn ? (
+            <div style={{ animation: "fadeSlideIn 0.4s ease-out" }}>{renderActionComponent()}</div>
+          ) : (
+            <div>
+              {actionDone && actionResult && (
+                <div style={styles.resultSection}>
+                  <ActionComplete result={actionResult} />
+                </div>
+              )}
+              {roleQueue.length > 0 && <NightRoleQueue roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -312,8 +393,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.8) 100%)",
     zIndex: 1,
   },
-
-  /* Header */
   header: {
     position: "relative",
     zIndex: 10,
@@ -359,8 +438,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: 0,
     fontFamily: "'Trade Winds', cursive",
   },
-
-  /* Timer */
   timerSection: {
     position: "relative",
     zIndex: 10,
@@ -391,8 +468,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     minWidth: "40px",
     textAlign: "right" as const,
   },
-
-  /* Content */
   contentArea: {
     position: "relative",
     zIndex: 10,
@@ -406,6 +481,9 @@ const styles: { [key: string]: React.CSSProperties } = {
   contentInner: {
     width: "100%",
     maxWidth: "480px",
+  },
+  resultSection: {
+    marginBottom: "16px",
   },
 };
 

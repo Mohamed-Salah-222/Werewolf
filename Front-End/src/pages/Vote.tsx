@@ -29,7 +29,8 @@ function Vote() {
 
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
-  const [hasVoted, setHasVoted] = useState(state?.hasVoted || false);
+  const [votedLocally, setVotedLocally] = useState(false);
+  const hasVoted = votedLocally || state?.hasVoted || false;
   const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
 
   useLeaveWarning(true);
@@ -74,7 +75,7 @@ function Vote() {
 
   const handleVote = () => {
     if (!selected || hasVoted) return;
-    setHasVoted(true);
+    setVotedLocally(true);
     socket.emit("vote", { gameCode, playerId, votedPlayerId: selected });
   };
 
@@ -112,9 +113,13 @@ function Vote() {
           </>
         ) : (
           <div style={styles.waitingContainer}>
-            <p style={styles.votedText}>
-              You voted for <strong style={styles.votedStrong}>{selected === "noWerewolf" ? "No Werewolf" : players.find((p) => p.id === selected)?.name}</strong>
-            </p>
+            {selected ? (
+              <p style={styles.votedText}>
+                You voted for <strong style={styles.votedStrong}>{selected === "noWerewolf" ? "No Werewolf" : players.find((p) => p.id === selected)?.name}</strong>
+              </p>
+            ) : (
+              <p style={styles.votedText}>Your vote has been cast</p>
+            )}
             <p style={styles.waitingText}>Waiting for other players...</p>
             <div style={styles.voterList}>
               {players.map((p) => (

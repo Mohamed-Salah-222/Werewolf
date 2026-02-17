@@ -124,7 +124,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
               break;
             case "role":
               navigate(`/role-reveal/${gameCode}`, {
-                state: { ...baseState, rejoinRoleInfo: response.roleInfo, hasConfirmedRole: response.hasConfirmedRole },
+                state: {
+                  ...baseState,
+                  rejoinRoleInfo: response.roleInfo || null,
+                  hasConfirmedRole: response.hasConfirmedRole,
+                },
                 replace: true,
               });
               break;

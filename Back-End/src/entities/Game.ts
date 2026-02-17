@@ -82,7 +82,6 @@ export class Game extends EventEmitter {
     this.players.push(player);
     this.readyPlayers.set(player.id, false);
 
-
     if (this.players.length === 1) {
       this.host = this.players[0].id;
     }
@@ -113,14 +112,12 @@ export class Game extends EventEmitter {
     return activeQueue;
   }
 
-
   playerRead(playerId: PlayerId): void {
     this.readyPlayers.set(playerId, true);
     if (this.readyPlayers.size === this.players.length) {
       this.allPlayersReady = true;
     }
   }
-
 
   start(): void {
     if (this.players.length < this.minimumPlayers) {
@@ -130,7 +127,6 @@ export class Game extends EventEmitter {
     if (!this.allPlayersReady) {
       throw new Error("Not all players are ready");
     }
-
 
     this.currentGameRolesMap = new Map<string, number>();
     this.assignRandomRoles();
@@ -186,7 +182,7 @@ export class Game extends EventEmitter {
     // Start role queue after small delay
     setTimeout(() => {
       this.advanceToNextRole();
-    }, 100);
+    }, 1000);
   }
 
   private forceEndNight(): void {
@@ -331,6 +327,7 @@ export class Game extends EventEmitter {
     const playersWithRole = this.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
 
     this.currentActiveRole = nextRole;
+    this.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
 
     if (playersWithRole.length > 0) {
       console.log(`📢 Role slot: ${nextRole} (${playersWithRole.length} players) — ${timerSeconds}s`);
@@ -497,6 +494,9 @@ export class Game extends EventEmitter {
   }
 
   playerVote(player: PlayerId, vote: PlayerId): void {
+    if (this.votes.find((v) => v.voter === player)) {
+      throw new Error("Player has already voted");
+    }
     this.votes.push({ voter: player, vote: vote });
     if (vote === "noWerewolf") {
       this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for No Werewolf`);

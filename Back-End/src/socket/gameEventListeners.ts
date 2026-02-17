@@ -6,8 +6,6 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   const gameCode = game.code;
 
   game.on("nightStarted", () => {
-    // io.to(gameCode).emit("nightStarted");
-
     // Send ground role IDs (not names) to all players
     const groundCardIds = game.groundRoles.map((r, index) => ({
       id: r.id,
@@ -19,19 +17,25 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   // Listen for role action queue
   game.on("roleActionQueue", (roleName: string) => {
     console.log(`📢 Emitting roleActionQueue to ${gameCode}:`, roleName);
-    io.to(gameCode).emit("roleActionQueue", roleName); // Send STRING directly
+    io.to(gameCode).emit("roleActionQueue", roleName);
+  });
+
+  // Night role progress — fires for EVERY role in the queue (UI only)
+  game.on("nightRoleProgress", (data: { roleName: string; seconds: number }) => {
+    console.log(`🌙 Emitting nightRoleProgress to ${gameCode}:`, data.roleName, `${data.seconds}s`);
+    io.to(gameCode).emit("nightRoleProgress" as any, data);
   });
 
   // Listen for next action
   game.on("nextAction", (roleName: string) => {
     console.log(`📢 Emitting nextAction to ${gameCode}:`, roleName);
-    io.to(gameCode).emit("nextAction", roleName); // Send STRING directly
+    io.to(gameCode).emit("nextAction", roleName);
   });
 
   // When discussion starts
   game.on("dayStarted", (data) => {
     io.to(gameCode).emit("discussionStarted", {
-      timerSeconds: data.timer,
+      timerSeconds: data.currentTimerSec,
       currentTimerSec: data.currentTimerSec,
       startedAt: data.startedAt,
     });

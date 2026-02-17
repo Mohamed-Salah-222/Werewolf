@@ -37,7 +37,6 @@ function Discussion() {
 
   useLeaveWarning(true);
 
-
   useEffect(() => {
     const updateTimer = () => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
@@ -169,7 +168,7 @@ function Discussion() {
         {secondsLeft === 0 && <p style={styles.timesUp}>Time's up! Moving to vote...</p>}
 
         {isHost && secondsLeft > 0 && (
-          <button style={styles.skipButton} onClick={skipToVote}>
+          <button style={styles.skipBtn} onClick={skipToVote}>
             Skip to Vote (Host)
           </button>
         )}

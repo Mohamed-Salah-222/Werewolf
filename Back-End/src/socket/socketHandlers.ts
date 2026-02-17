@@ -159,7 +159,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
               currentRoleName: role.name,
             };
           } catch (e) {
-            // Role might not be assigned yet
+            console.warn(`⚠️ Could not get role for player ${player.name} during rejoin:`, e);
+            roleInfo = null;
           }
         }
 
@@ -203,6 +204,39 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           currentActiveRole: game.currentActiveRole || "",
           lastActionResult,
         });
+
+        console.log("REJOIN DEBUG:", {
+          hasPerformedAction,
+          lastActionResult,
+          playerLastAction: (player as any).lastActionResult,
+        });
+
+        if (game.phase === "night" && hasPerformedAction) {
+          setTimeout(() => {
+            // Check if game moved past night while component was mounting
+            if (game.phase === "discussion") {
+              socket.emit("discussionStarted", {
+                timerSeconds: game.timer * 60,
+                currentTimerSec: game.currentTimerSec,
+                startedAt: game.startedAt,
+              });
+            } else if (game.phase === "vote") {
+              socket.emit("votingStarted");
+            }
+          }, 2000);
+        }
+
+        // Re-emit roleReveal to the reconnected socket if in role or night phase
+        if (roleInfo && (game.phase === "role" || game.phase === "night")) {
+          setTimeout(() => {
+            socket.emit("roleReveal", {
+              playerId: player.id,
+              roleName: roleInfo.roleName,
+              roleTeam: roleInfo.roleTeam,
+              roleDescription: roleInfo.roleDescription,
+            });
+          }, 500);
+        }
 
         console.log(`🔄 Player ${player.name} (${player.id}) rejoined game ${gameCode} in phase ${game.phase}`);
       } catch (error: any) {
@@ -266,7 +300,6 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Start the game
         game.start();
 
-
         // Notify all players game started
         io.to(gameCode).emit("gameStarted", {
           phase: game.phase,
@@ -324,7 +357,6 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         game.playerRead(playerId);
         io.to(gameCode).emit("playerReady", { playerId });
         console.log(`Player ${playerId} is ready`);
-
       } catch (error: any) {
         console.error("Error in playerReady:", error);
         socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
@@ -426,7 +458,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     });
 
     // SKIP TO VOTE
-    socket.on("skipToVote", (data: { gameCode: string, playerId: PlayerId }) => {
+    socket.on("skipToVote", (data: { gameCode: string; playerId: PlayerId }) => {
       try {
         const game = manager.getGameByCode(data.gameCode);
         if (!game) {
