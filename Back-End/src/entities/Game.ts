@@ -645,11 +645,12 @@ export class Game extends EventEmitter {
   }
 
   private addRoles() {
-    const roleNames = ["Clone", "Insomniac", "Werewolf", "Joker"];
+    // Order matters: 7 players → Clone, 8 → Insomniac, 9 → Joker, 10 → Werewolf
+    const extraRolesInOrder = ["Clone", "Insomniac", "Joker", "Werewolf"];
     const needed = this.players.length + this.numberOfGroundRoles - this.availableRoles.length;
-    for (let i = 0; i < needed; i++) {
-      const randomIndex = Math.floor(Math.random() * roleNames.length);
-      const role = new RoleClasses[roleNames[randomIndex].toLowerCase()]();
+
+    for (let i = 0; i < needed && i < extraRolesInOrder.length; i++) {
+      const role = new RoleClasses[extraRolesInOrder[i].toLowerCase()]();
       this.availableRoles.push(role);
     }
   }
