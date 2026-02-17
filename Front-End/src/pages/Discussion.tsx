@@ -25,7 +25,6 @@ function Discussion() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
   const totalSeconds = state?.timerSeconds || 360;
-  const currentTimerSec = state?.currentTimerSec || totalSeconds;
   // eslint-disable-next-line react-hooks/purity
   const startedAt = state?.startedAt || Date.now();
   const roleName = state?.roleName || "";

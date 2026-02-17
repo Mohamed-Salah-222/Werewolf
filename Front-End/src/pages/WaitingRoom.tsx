@@ -132,7 +132,7 @@ function WaitingRoom() {
               id: p.id,
               name: p.name,
               isReady: readyPlayersSet.has(p.id),
-            }))
+            })),
           );
         }
       } catch {
@@ -147,7 +147,7 @@ function WaitingRoom() {
     if (!socket.connected) socket.connect();
 
     if (gameCode && playerId) {
-      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
+      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
     }
 
     socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
@@ -172,7 +172,7 @@ function WaitingRoom() {
           id: p.id,
           name: p.name,
           isReady: readyPlayersSet.has(p.id),
-        }))
+        })),
       );
     });
 
@@ -182,9 +182,7 @@ function WaitingRoom() {
         updated.add(data.playerId);
         return updated;
       });
-      setPlayers((prev) =>
-        prev.map((p) => (p.id === data.playerId ? { ...p, isReady: true } : p))
-      );
+      setPlayers((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, isReady: true } : p)));
     });
 
     socket.on("gameStarted", () => {
@@ -367,18 +365,12 @@ function WaitingRoom() {
               <button
                 style={{
                   ...styles.startBtn,
-                  ...(players.length >= 6 && players.every((p) => p.isReady)
-                    ? {}
-                    : styles.startBtnDisabled),
+                  ...(players.length >= 6 && players.every((p) => p.isReady) ? {} : styles.startBtnDisabled),
                 }}
                 onClick={handleStartGame}
                 disabled={!(players.length >= 6 && players.every((p) => p.isReady))}
               >
-                {players.length < 6
-                  ? `NEED ${6 - players.length} MORE`
-                  : players.every((p) => p.isReady)
-                    ? "START GAME"
-                    : `${players.filter((p) => !p.isReady).length} NOT READY`}
+                {players.length < 6 ? `NEED ${6 - players.length} MORE` : players.every((p) => p.isReady) ? "START GAME" : `${players.filter((p) => !p.isReady).length} NOT READY`}
               </button>
             </>
           )}
