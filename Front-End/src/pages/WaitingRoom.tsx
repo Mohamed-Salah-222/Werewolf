@@ -128,7 +128,7 @@ function WaitingRoom() {
         const data = await res.json();
         if (data.success && data.data.players) {
           setPlayers(
-            data.data.players.map((p: any) => ({
+            data.data.players.map((p: { id: string; name: string }) => ({
               id: p.id,
               name: p.name,
               isReady: readyPlayersSet.has(p.id),
