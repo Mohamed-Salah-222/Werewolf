@@ -312,6 +312,22 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
       }
     });
+
+    // Player ready
+    socket.on("playerReady", ({ gameCode, playerId }) => {
+      try {
+        const game = manager.getGameByCode(gameCode);
+        if (!game) return;
+
+        game.playerRead(playerId);
+        io.to(gameCode).emit("playerReady", { playerId });
+        console.log(`Player ${playerId} is ready`);
+
+      } catch (error: any) {
+        console.error("Error in playerReady:", error);
+        socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
+      }
+    });
     // CONFIRM ROLE REVEAL
     socket.on("confirmRoleReveal", ({ gameCode, playerId }) => {
       try {

@@ -25,6 +25,8 @@ import { Vote } from "../types/game.types";
 
 export class Game extends EventEmitter {
   players: Player[] = [];
+  readyPlayers: Map<PlayerId, boolean> = new Map();
+  allPlayersReady: boolean = false;
   groundRoles: Role[] = [];
   prettyVotes: Vote[] = [];
   code: string;
@@ -75,7 +77,10 @@ export class Game extends EventEmitter {
     if (this.players.length >= this.maxPlayers) {
       throw new Error(`Game is full, max players is ${this.maxPlayers}`);
     }
-    this.players.push(new Player(name));
+    const player = new Player(name);
+    this.players.push(player);
+    this.readyPlayers.set(player.id, false);
+
 
     if (this.players.length === 1) {
       this.host = this.players[0].id;
@@ -107,10 +112,24 @@ export class Game extends EventEmitter {
     return activeQueue;
   }
 
+
+  playerRead(playerId: PlayerId): void {
+    this.readyPlayers.set(playerId, true);
+    if (this.readyPlayers.size === this.players.length) {
+      this.allPlayersReady = true;
+    }
+  }
+
+
   start(): void {
     if (this.players.length < this.minimumPlayers) {
       throw new Error(`Need at least ${this.minimumPlayers} players to start`);
     }
+
+    if (!this.allPlayersReady) {
+      throw new Error("Not all players are ready");
+    }
+
 
     this.currentGameRolesMap = new Map<string, number>();
     this.assignRandomRoles();
@@ -546,6 +565,10 @@ export class Game extends EventEmitter {
 
     this.groundRoles = [];
     this.prettyVotes = [];
+    for (const playerId of this.readyPlayers.keys()) {
+      this.readyPlayers.set(playerId, false);
+    }
+    this.allPlayersReady = false;
     this.votes = [];
     this.winners = null;
     this.phase = Phase.Waiting;
