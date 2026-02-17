@@ -2,7 +2,7 @@ import { useState } from "react";
 import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
-import { getSession, clearSession, saveSession } from "../utils/gameSession";
+import { useGame } from "../hooks/useGame";
 import "./HomePage.css";
 
 // Import character images
@@ -141,42 +141,18 @@ const characters: CharacterData[] = [
   },
 ];
 
-interface RejoinResponse {
-  success: boolean;
-  playerId?: string;
-  playerName?: string;
-  phase?: string;
-  roleInfo?: {
-    roleName: string;
-    roleTeam: string;
-    roleDescription: string;
-    currentRoleName: string;
-  } | null;
-  groundCardsInfo?: Array<{ id: string; label: string }> | null;
-  hasPerformedAction?: boolean;
-  hasConfirmedRole?: boolean;
-  hasVoted?: boolean;
-  players?: Array<{ id: string; name: string }>;
-  timerSeconds?: number;
-  currentActiveRole?: string;
-  lastActionResult?: { message?: string } | null;
-  error?: string;
-}
-
 function HomePage() {
   const navigate = useNavigate();
+  const { setSession } = useGame();
 
   const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
-  const [showRejoinModal] = useState(() => getSession() !== null);
-  const [rejoinDismissed, setRejoinDismissed] = useState(false);
 
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [rejoinLoading, setRejoinLoading] = useState(false);
 
   // Preload all character images
   useState(() => {
@@ -191,96 +167,6 @@ function HomePage() {
       }
     });
   });
-
-  const handleRejoin = async () => {
-    const session = getSession();
-    if (!session) return;
-    setRejoinLoading(true);
-
-    try {
-      const res = await fetch(`${API_URL}/api/games/${session.gameCode}`);
-      const data = await res.json();
-      if (!data.success) {
-        clearSession();
-        setRejoinDismissed(true);
-        setRejoinLoading(false);
-        return;
-      }
-
-      if (!socket.connected) socket.connect();
-      await new Promise<void>((resolve) => {
-        if (socket.connected) resolve();
-        else socket.once("connect", () => resolve());
-      });
-
-      socket.emit("rejoinGame", { gameCode: session.gameCode, playerId: session.playerId, playerName: session.playerName }, (response: RejoinResponse) => {
-        setRejoinLoading(false);
-        if (!response.success) {
-          clearSession();
-          setRejoinDismissed(true);
-          return;
-        }
-        saveSession({
-          gameCode: session.gameCode,
-          playerId: response.playerId || session.playerId,
-          playerName: response.playerName || session.playerName,
-          isHost: session.isHost,
-        });
-        const baseState = {
-          playerName: response.playerName || session.playerName,
-          playerId: response.playerId || session.playerId,
-          isHost: session.isHost,
-        };
-        switch (response.phase) {
-          case "waiting":
-            navigate(`/waiting/${session.gameCode}`, { state: baseState });
-            break;
-          case "role":
-            navigate(`/role-reveal/${session.gameCode}`, {
-              state: { ...baseState, rejoinRoleInfo: response.roleInfo, hasConfirmedRole: response.hasConfirmedRole },
-            });
-            break;
-          case "night":
-            navigate(`/night/${session.gameCode}`, {
-              state: {
-                ...baseState,
-                roleName: response.roleInfo?.roleName,
-                initialGroundCards: response.groundCardsInfo,
-                hasPerformedAction: response.hasPerformedAction,
-                initialActiveRole: response.currentActiveRole,
-                lastActionResult: response.lastActionResult,
-              },
-            });
-            break;
-          case "discussion":
-            navigate(`/discussion/${session.gameCode}`, {
-              state: {
-                ...baseState,
-                timerSeconds: response.timerSeconds || 360,
-                roleName: response.roleInfo?.roleName,
-                actionResult: response.lastActionResult,
-              },
-            });
-            break;
-          case "vote":
-            navigate(`/vote/${session.gameCode}`, { state: { ...baseState, hasVoted: response.hasVoted } });
-            break;
-          default:
-            clearSession();
-            setRejoinDismissed(true);
-        }
-      });
-    } catch {
-      clearSession();
-      setRejoinDismissed(true);
-      setRejoinLoading(false);
-    }
-  };
-
-  const handleDeclineRejoin = () => {
-    clearSession();
-    setRejoinDismissed(true);
-  };
 
   const handleCreateGame = async () => {
     if (playerName.trim().length < 2) {
@@ -302,7 +188,7 @@ function HomePage() {
       socket.emit("joinGame", { gameCode: code, playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
         setLoading(false);
         if (response.success) {
-          saveSession({ gameCode: code, playerId: response.playerId || "", playerName: response.playerName || "", isHost: true });
+          setSession({ gameCode: code, playerId: response.playerId || "", playerName: response.playerName || "", isHost: true });
           setShowCreateModal(false);
           navigate(`/waiting/${code}`, { state: { playerName: response.playerName, playerId: response.playerId, isHost: true } });
         } else {
@@ -330,7 +216,7 @@ function HomePage() {
     socket.emit("joinGame", { gameCode: gameCode.trim().toLowerCase(), playerName: playerName.trim() }, (response: { success: boolean; playerName?: string; playerId?: string; error?: string }) => {
       setLoading(false);
       if (response.success) {
-        saveSession({ gameCode: gameCode.trim().toLowerCase(), playerId: response.playerId || "", playerName: response.playerName || "", isHost: false });
+        setSession({ gameCode: gameCode.trim().toLowerCase(), playerId: response.playerId || "", playerName: response.playerName || "", isHost: false });
         setShowJoinModal(false);
         navigate(`/waiting/${gameCode.trim().toLowerCase()}`, { state: { playerName: response.playerName, playerId: response.playerId, isHost: false } });
       } else {
@@ -474,14 +360,7 @@ function HomePage() {
                   <span style={styles.gridPlaceholderText}>{char.name.charAt(0)}</span>
                 </div>
               )}
-              <span
-                style={{
-                  ...styles.gridLabel,
-                  color: selectedChar.id === char.id ? teamColor(char.team) : "#666",
-                }}
-              >
-                {char.name}
-              </span>
+              <span style={{ ...styles.gridLabel, color: selectedChar.id === char.id ? teamColor(char.team) : "#666" }}>{char.name}</span>
             </button>
           ))}
         </div>
@@ -524,23 +403,6 @@ function HomePage() {
           </div>
         </div>
       )}
-
-      {showRejoinModal && !rejoinDismissed && (
-        <div style={styles.overlay}>
-          <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h2 style={styles.modalTitle}>REJOIN GAME?</h2>
-            <p style={styles.rejoinText}>You were in a game. Would you like to rejoin?</p>
-            <div style={styles.modalButtons}>
-              <button style={styles.cancelBtn} onClick={handleDeclineRejoin}>
-                NO, START FRESH
-              </button>
-              <button style={styles.confirmBtn} onClick={handleRejoin} disabled={rejoinLoading}>
-                {rejoinLoading ? "REJOINING..." : "REJOIN"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -564,7 +426,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
     zIndex: 1,
   },
-
   topBar: {
     position: "relative",
     zIndex: 10,
@@ -592,7 +453,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     gap: "20px",
     marginTop: "16px",
   },
-
   showcase: {
     position: "relative",
     zIndex: 10,
@@ -641,7 +501,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     letterSpacing: "4px",
     color: "#2a2019",
   },
-
   infoPanel: {
     flex: "0 0 340px",
     maxWidth: "340px",
@@ -707,7 +566,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     margin: 0,
     fontFamily: "'Trade Winds', cursive",
   },
-
   selectBar: {
     position: "relative",
     zIndex: 10,
@@ -764,7 +622,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontFamily: "'Creepster', cursive",
     textAlign: "center" as const,
   },
-
   overlay: {
     position: "fixed" as const,
     top: 0,
@@ -810,13 +667,6 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#c41e1e",
     fontSize: "13px",
     marginBottom: "12px",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  rejoinText: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "20px",
-    textAlign: "center" as const,
     fontFamily: "'Trade Winds', cursive",
   },
   modalButtons: {

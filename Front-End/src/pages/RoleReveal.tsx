@@ -58,7 +58,10 @@ function RoleReveal() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
 
-  const [flipped, setFlipped] = useState(false);
+  const [flipped, setFlipped] = useState(() => {
+    // If rejoining and we already have role info, show card flipped
+    return !!state?.rejoinRoleInfo;
+  });
   const [confirmed, setConfirmed] = useState(state?.hasConfirmedRole || false);
 
   const [role, setRole] = useState<RoleInfo | null>(() => {
