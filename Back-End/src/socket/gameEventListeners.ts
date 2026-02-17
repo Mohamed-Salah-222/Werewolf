@@ -6,7 +6,7 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   const gameCode = game.code;
 
   game.on("nightStarted", () => {
-    io.to(gameCode).emit("nightStarted");
+    // io.to(gameCode).emit("nightStarted");
 
     // Send ground role IDs (not names) to all players
     const groundCardIds = game.groundRoles.map((r, index) => ({
