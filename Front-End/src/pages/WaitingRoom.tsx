@@ -55,6 +55,12 @@ interface GridCard {
   cardIndex: number;
 }
 
+interface PlayerStatus {
+  id: string;
+  name: string;
+  isReady: boolean;
+}
+
 function WaitingRoom() {
   const { gameCode } = useParams();
   const location = useLocation();
@@ -65,12 +71,13 @@ function WaitingRoom() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
 
-  const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
+  const [players, setPlayers] = useState<PlayerStatus[]>([]);
   const [copied, setCopied] = useState(false);
   const [revealedCard, setRevealedCard] = useState<number | null>(null);
   const [selectedPileCard, setSelectedPileCard] = useState<number | null>(null);
-  // const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
-
+  const [playerReady, setPlayerReady] = useState(false);
+  const [readyPlayersSet, setReadyPlayersSet] = useState<Set<string>>(new Set());
+  const [startError, setStartError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(42);
 
   useEffect(() => {
@@ -120,36 +127,64 @@ function WaitingRoom() {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
         if (data.success && data.data.players) {
-          setPlayers(data.data.players);
+          setPlayers(
+            data.data.players.map((p: any) => ({
+              id: p.id,
+              name: p.name,
+              isReady: readyPlayersSet.has(p.id),
+            }))
+          );
         }
       } catch {
         console.error("Failed to fetch players");
       }
     };
     fetchPlayers();
-  }, [gameCode]);
+  }, [gameCode, readyPlayersSet]);
 
   // Socket listeners
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
     if (gameCode && playerId) {
-      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
     }
 
     socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
       setPlayers((prev) => {
         if (prev.find((p) => p.id === data.playerId)) return prev;
-        return [...prev, { id: data.playerId, name: data.playerName }];
+        return [...prev, { id: data.playerId, name: data.playerName, isReady: false }];
       });
     });
 
     socket.on("playerLeft", (data: { playerId: string }) => {
       setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
+      setReadyPlayersSet((prev) => {
+        const updated = new Set(prev);
+        updated.delete(data.playerId);
+        return updated;
+      });
     });
 
     socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
-      setPlayers(data.players);
+      setPlayers(
+        data.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          isReady: readyPlayersSet.has(p.id),
+        }))
+      );
+    });
+
+    socket.on("playerReady", (data: { playerId: string }) => {
+      setReadyPlayersSet((prev) => {
+        const updated = new Set(prev);
+        updated.add(data.playerId);
+        return updated;
+      });
+      setPlayers((prev) =>
+        prev.map((p) => (p.id === data.playerId ? { ...p, isReady: true } : p))
+      );
     });
 
     socket.on("gameStarted", () => {
@@ -177,6 +212,7 @@ function WaitingRoom() {
       socket.off("playerJoined");
       socket.off("playerLeft");
       socket.off("playerListUpdate");
+      socket.off("playerReady");
       socket.off("gameStarted");
       socket.off("roleReveal");
     };
@@ -189,6 +225,14 @@ function WaitingRoom() {
   };
 
   const handleStartGame = () => {
+    const allReady = players.length >= 6 && players.every((p) => p.isReady);
+    if (!allReady) {
+      const notReadyCount = players.filter((p) => !p.isReady).length;
+      setStartError(`${notReadyCount} player(s) not ready yet`);
+      setTimeout(() => setStartError(null), 3000);
+      return;
+    }
+    setStartError(null);
     socket.emit("startGame", { gameCode, playerId });
   };
 
@@ -196,6 +240,13 @@ function WaitingRoom() {
     socket.emit("leaveGame", { gameCode, playerId });
     clearSession();
     navigate("/");
+  };
+
+  const handleReady = () => {
+    if (!playerReady) {
+      setPlayerReady(true);
+      socket.emit("playerReady", { gameCode, playerId });
+    }
   };
 
   const handleCardClick = (cardId: number, cardIndex: number) => {
@@ -256,6 +307,11 @@ function WaitingRoom() {
           object-fit: cover;
           display: block;
         }
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          25% { transform: translateX(-8px); }
+          75% { transform: translateX(8px); }
+        }
       `}</style>
 
       {/* ===== LEFT: CARD GRID ===== */}
@@ -294,8 +350,11 @@ function WaitingRoom() {
             {players.map((p) => (
               <div key={p.id} style={styles.playerRow}>
                 <span style={styles.playerName}>{p.name}</span>
-                {p.id === playerId && isHost && <span style={styles.hostBadge}>HOST</span>}
-                {p.id === playerId && !isHost && <span style={styles.youBadge}>YOU</span>}
+                <div style={styles.playerBadgesContainer}>
+                  {p.isReady && <span style={styles.readyBadge}>✓ READY</span>}
+                  {p.id === playerId && isHost && <span style={styles.hostBadge}>HOST</span>}
+                  {p.id === playerId && !isHost && <span style={styles.youBadge}>YOU</span>}
+                </div>
               </div>
             ))}
           </div>
@@ -303,11 +362,30 @@ function WaitingRoom() {
 
         <div style={styles.actions}>
           {isHost && (
-            <button style={players.length >= 6 ? styles.startBtn : styles.startBtnDisabled} onClick={handleStartGame} disabled={players.length < 6}>
-              {players.length < 6 ? `NEED ${6 - players.length} MORE` : "START GAME"}
-            </button>
+            <>
+              {startError && <div style={styles.errorMessage}>{startError}</div>}
+              <button
+                style={{
+                  ...styles.startBtn,
+                  ...(players.length >= 6 && players.every((p) => p.isReady)
+                    ? {}
+                    : styles.startBtnDisabled),
+                }}
+                onClick={handleStartGame}
+                disabled={!(players.length >= 6 && players.every((p) => p.isReady))}
+              >
+                {players.length < 6
+                  ? `NEED ${6 - players.length} MORE`
+                  : players.every((p) => p.isReady)
+                    ? "START GAME"
+                    : `${players.filter((p) => !p.isReady).length} NOT READY`}
+              </button>
+            </>
           )}
           {!isHost && <p style={styles.waitingText}>Waiting for host to start...</p>}
+          <button style={playerReady ? styles.readyBtnActive : styles.readyBtn} onClick={handleReady} disabled={playerReady}>
+            {playerReady ? "✓ READY" : "READY"}
+          </button>
           <button style={styles.leaveBtn} onClick={handleLeave}>
             LEAVE
           </button>
@@ -569,6 +647,64 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#3d2e1a",
     fontFamily: "'Georgia', serif",
     fontStyle: "italic",
+  },
+  playerBadgesContainer: {
+    display: "flex",
+    gap: "6px",
+    alignItems: "center",
+  },
+  readyBadge: {
+    fontSize: "8px",
+    fontWeight: 700,
+    letterSpacing: "1px",
+    color: "#4a7c3f",
+    padding: "2px 6px",
+    border: "1px solid #2d5a26",
+    borderRadius: "2px",
+    fontFamily: "'Cinzel', serif",
+    backgroundColor: "rgba(74, 124, 63, 0.1)",
+  },
+  readyBtn: {
+    width: "100%",
+    padding: "10px",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "3px",
+    backgroundColor: "transparent",
+    color: "#5a3a2a",
+    border: "1px solid #2a1510",
+    borderRadius: "4px",
+    cursor: "pointer",
+    fontFamily: "'Cinzel', serif",
+    transition: "all 0.3s ease",
+  },
+  readyBtnActive: {
+    width: "100%",
+    padding: "10px",
+    fontSize: "11px",
+    fontWeight: 700,
+    letterSpacing: "3px",
+    backgroundColor: "rgba(74, 124, 63, 0.15)",
+    color: "#4a7c3f",
+    border: "1px solid #2d5a26",
+    borderRadius: "4px",
+    cursor: "not-allowed",
+    fontFamily: "'Cinzel', serif",
+    transition: "all 0.3s ease",
+  },
+  errorMessage: {
+    width: "100%",
+    padding: "10px",
+    fontSize: "12px",
+    fontWeight: 700,
+    letterSpacing: "2px",
+    backgroundColor: "rgba(180, 70, 70, 0.2)",
+    color: "#d97a7a",
+    border: "1px solid #8b4545",
+    borderRadius: "4px",
+    textAlign: "center" as const,
+    fontFamily: "'Cinzel', serif",
+    animation: "shake 0.3s ease-in-out",
   },
 };
 
