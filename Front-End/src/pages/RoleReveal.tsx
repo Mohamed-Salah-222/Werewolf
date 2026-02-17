@@ -104,13 +104,14 @@ function RoleReveal() {
       pendingGroundCards = data.cards;
     });
 
-    socket.on("nightStarted", () => {
+    socket.on("nightStarted", (roleQueue: { roleName: string; seconds: number }[]) => {
       setTimeout(() => {
         navigate(`/night/${gameCode}`, {
           state: {
             playerName,
             playerId,
             isHost,
+            roleQueue,
             roleName: role?.roleName,
             initialActiveRole: pendingActiveRole,
             initialGroundCards: pendingGroundCards,

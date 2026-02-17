@@ -22,6 +22,7 @@ interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
+  roleQueue: { roleName: string; seconds: number }[];
   roleName?: string;
   initialActiveRole?: string;
   initialGroundCards?: Array<{ id: string; label: string }>;

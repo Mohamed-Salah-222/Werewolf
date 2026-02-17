@@ -20,7 +20,7 @@ export interface ServerToClientEvents {
   playerListUpdate: (data: PlayerListUpdateData) => void;
   gameStarted: (data: GameStartedData) => void;
   roleReveal: (data: RoleRevealData) => void;
-  nightStarted: () => void;
+  nightStarted: (roleQueueTimer: { roleName: string; seconds: number }[]) => void;
   roleActionQueue: (roleName: string) => void;
   nextAction: (roleName: string) => void;
   yourTurn: (data: YourTurnData) => void;

@@ -379,6 +379,25 @@ export class Game extends EventEmitter {
   ]);
   private nightMainTimer: ReturnType<typeof setTimeout> | null = null;
   private roleSlotTimer: ReturnType<typeof setTimeout> | null = null;
+
+  get roleQueueWithTimer(): { roleName: string; seconds: number }[] {
+    const rolesInGame = this.roleQueue;
+    const roleTimers = this.roleTimers;
+
+    const roleQueueWithTimer = rolesInGame.map((roleName, _) => {
+      const seconds = roleTimers.get(roleName);
+      if (!seconds) {
+        throw new Error(`Role ${roleName} has no timer`);
+      }
+      return {
+        roleName,
+        seconds,
+      };
+    });
+
+    return roleQueueWithTimer;
+  }
+
   public nightTimeRemaining: number = 0;
 
   playerPerformAction(playerId: PlayerId): void {
@@ -465,6 +484,7 @@ export class Game extends EventEmitter {
     }
     this.startVoting();
   }
+
   startVoting(): void {
     if (this.phase === Phase.Vote) return;
     this.phase = Phase.Vote;

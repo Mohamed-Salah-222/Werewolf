@@ -1,6 +1,5 @@
 import { Server, Socket } from "socket.io";
 import { Manager } from "../entities/Manager";
-import { Game } from "../entities/Game";
 import { SOCKET_EVENTS, ERROR_MESSAGES, VALIDATION, Phase } from "../config/constants";
 import { ClientToServerEvents, ServerToClientEvents, JoinGameData, JoinGameResponse } from "../types/socket.types";
 import { PlayerId } from "../types/game.types";
@@ -265,6 +264,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Start the game
         game.start();
 
+
         // Notify all players game started
         io.to(gameCode).emit("gameStarted", {
           phase: game.phase,
@@ -340,7 +340,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         if (game.confirmedPlayerRoleReveal.length === game.players.length) {
           // Move to night phase
           game.startNight();
-          io.to(gameCode).emit("nightStarted");
+          io.to(gameCode).emit("nightStarted", game.roleQueueWithTimer);
         }
       } catch (error) {
         console.error("Error in confirmRoleReveal:", error);
