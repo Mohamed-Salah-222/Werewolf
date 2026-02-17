@@ -10,6 +10,7 @@ export interface ClientToServerEvents {
   vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) => void;
   restartGame: (data: { gameCode: string; playerId: PlayerId }) => void;
   skipToVote: (data: { gameCode: string, playerId: PlayerId }) => void;
+  playerReady: (data: { gameCode: string; playerId: PlayerId }) => void;
 }
 
 // Server -> Client events (what backend sends)
@@ -33,6 +34,7 @@ export interface ServerToClientEvents {
   error: (data: { message: string }) => void;
   groundCards: (data: { cards: Array<{ id: string; label: string }> }) => void;
   gameRestarted: () => void;
+  playerReady: (data: { playerId: PlayerId }) => void;
 }
 
 // Data structures
