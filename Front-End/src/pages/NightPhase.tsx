@@ -67,7 +67,7 @@ function NightPhase() {
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
-  // Clone two-phase state — ref to avoid effect re-registration race condition
+  // Clone two-phase state
   const [cloneResult, setCloneResult] = useState<CloneResult | null>(null);
   const awaitingCloneResultRef = useRef(false);
 
@@ -80,12 +80,17 @@ function NightPhase() {
   const actionResultRef = useRef<{ message?: string } | null>(actionResult);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerMaxRef = useRef<number>(0);
+  const actionDoneRef = useRef(actionDone);
 
   useLeaveWarning(true);
 
   useEffect(() => {
     actionResultRef.current = actionResult;
   }, [actionResult]);
+
+  useEffect(() => {
+    actionDoneRef.current = actionDone;
+  }, [actionDone]);
 
   useEffect(() => {
     const fetchGameData = async () => {
@@ -141,6 +146,22 @@ function NightPhase() {
     };
   }, [gameCode]);
 
+  // ===== CLONE INSOMNIAC RESULT — stable effect, never torn down =====
+  useEffect(() => {
+    const handleCloneInsomniacResult = (data: { message: string; originalRole: string; currentRole: string; hasChanged: boolean }) => {
+      console.log("🧬💤 Clone-Insomniac result received:", data);
+      const updatedResult = { message: data.message };
+      setActionResult(updatedResult);
+      actionResultRef.current = updatedResult;
+    };
+
+    socket.on("cloneInsomniacResult", handleCloneInsomniacResult);
+
+    return () => {
+      socket.off("cloneInsomniacResult", handleCloneInsomniacResult);
+    };
+  }, [gameCode]);
+
   // ===== GAME LOGIC =====
   useEffect(() => {
     if (!socket.connected) {
@@ -153,7 +174,7 @@ function NightPhase() {
 
     socket.on("roleActionQueue", (roleName: string) => {
       console.log(`Role turn: ${roleName}, my role: ${myRole}`);
-      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDone) {
+      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDoneRef.current) {
         setIsMyTurn(true);
       } else {
         setIsMyTurn(false);
@@ -161,7 +182,7 @@ function NightPhase() {
     });
 
     socket.on("roleTimer", (data: { roleName: string; seconds: number }) => {
-      if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDone) {
+      if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDoneRef.current) {
         timerMaxRef.current = data.seconds;
         setRoleTimer(data.seconds);
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
@@ -195,7 +216,6 @@ function NightPhase() {
           setRoleTimer(0);
           if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         }
-        // If needsSecondAction, stay on isMyTurn — CloneAction will show second action UI
         return;
       }
 
@@ -295,7 +315,6 @@ function NightPhase() {
     return () => clearInterval(interval);
   }, [hasAlreadyActed, gameCode, navigate, playerName, playerId, isHost, myRole]);
 
-  // Normal action handler (used for all roles and clone's second action)
   const handleAction = (action: Record<string, unknown>) => {
     socket.emit("performAction", {
       gameCode,
@@ -304,7 +323,6 @@ function NightPhase() {
     });
   };
 
-  // Clone first action handler — sets ref so actionResult knows to treat it as clone result
   const handleCloneFirstAction = (action: Record<string, unknown>) => {
     awaitingCloneResultRef.current = true;
     socket.emit("performAction", {
@@ -365,7 +383,6 @@ function NightPhase() {
         }
       `}</style>
 
-      {/* ===== HEADER ===== */}
       <div style={styles.header} className="np-header">
         <div style={styles.headerInner}>
           <div style={styles.moonIcon}>☽</div>
@@ -375,7 +392,6 @@ function NightPhase() {
         </div>
       </div>
 
-      {/* ===== TIMER (only when it's my turn) ===== */}
       {isMyTurn && roleTimer > 0 && (
         <div style={styles.timerSection} className="np-timer">
           <div style={styles.timerTrack}>
@@ -400,7 +416,6 @@ function NightPhase() {
         </div>
       )}
 
-      {/* ===== CONTENT ===== */}
       <div style={styles.contentArea} className="np-content">
         <div style={styles.contentInner}>
           {isMyTurn ? (

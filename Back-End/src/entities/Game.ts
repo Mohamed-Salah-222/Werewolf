@@ -1,18 +1,3 @@
-// Main game class - THE BRAIN
-// Extends EventEmitter (so it can emit events like 'gameStarted', 'votingStarted')
-// Properties: players[], groundRoles[], phase, code, votes[], timer, winners
-// Methods:
-//   - playerJoin(name)
-//   - start() → assigns roles, moves to RoleReveal phase
-//   - startNight() → moves to Night phase, triggers role actions
-//   - playerPerformAction(player, action)
-//   - startDay() → starts timer
-//   - startVoting()
-//   - playerVote(player, vote)
-//   - finish() → calculates winners
-// Used by: Manager, socketHandlers
-// Emits events that socketHandlers listens to
-
 import { Phase, Team, TimerOption, getRoleDistribution, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from "../config/constants";
 
 import { Role, RoleClasses } from "./roles";
@@ -90,18 +75,15 @@ export class Game extends EventEmitter {
   private buildActiveRoleQueue(): string[] {
     const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER];
 
-    // Collect all role names in this game (players + ground)
     const rolesInGame = new Set<string>();
     this.players.forEach((p) => rolesInGame.add(p.getOriginalRole().name));
     this.groundRoles.forEach((r) => rolesInGame.add(r.name));
 
-    // Filter queue to only roles that exist in this game
     const activeQueue = roleOrder.filter((roleName) => rolesInGame.has(roleName));
 
     console.log(`🎭 Roles in game: ${Array.from(rolesInGame).join(", ")}`);
     console.log(`📋 Active role queue: ${activeQueue.join(", ")}`);
 
-    // Calculate total night time
     let totalTime = 0;
     activeQueue.forEach((role) => {
       totalTime += this.roleTimers.get(role) || 10;
@@ -130,14 +112,12 @@ export class Game extends EventEmitter {
     this.currentGameRolesMap = new Map<string, number>();
     this.assignRandomRoles();
 
-    // Shuffle remaining roles before picking ground cards
     for (let i = this.availableRoles.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [this.availableRoles[i], this.availableRoles[j]] = [this.availableRoles[j], this.availableRoles[i]];
     }
     this.groundRoles = this.availableRoles.slice(0, this.numberOfGroundRoles);
 
-    // Build role queue from only roles that exist in this game
     this.roleQueue = this.buildActiveRoleQueue();
 
     this.phase = Phase.Role;
@@ -161,31 +141,26 @@ export class Game extends EventEmitter {
     this.newEmit("nightStarted");
     console.log("🌙 Night phase started");
 
-    // Calculate main timer from sum of all role slot timers
     let mainTimerSeconds = 0;
     this.roleQueue.forEach((role) => {
       mainTimerSeconds += this.roleTimers.get(role) || 10;
     });
-    // Add small buffer for safety
     mainTimerSeconds += 5;
 
     this.nightTimeRemaining = mainTimerSeconds;
     console.log(`⏱️ Main night timer: ${mainTimerSeconds}s`);
 
-    // Start main timer as safety net
     this.nightMainTimer = setTimeout(() => {
       console.log("⏱️ Main night timer expired — forcing day phase");
       this.forceEndNight();
     }, mainTimerSeconds * 1000);
 
-    // Start role queue after delay to let frontend mount
     setTimeout(() => {
       this.advanceToNextRole();
     }, 1000);
   }
 
   private forceEndNight(): void {
-    // Clear any pending role timer
     if (this.roleSlotTimer) {
       clearTimeout(this.roleSlotTimer);
       this.roleSlotTimer = null;
@@ -196,7 +171,6 @@ export class Game extends EventEmitter {
     }
     this.currentActiveRole = "";
 
-    // Auto-perform actions for any players who haven't acted
     this.players.forEach((player) => {
       if (!this.confirmedPlayerPerformActions.includes(player.id)) {
         console.log(`⏱️ Auto-performing action for ${player.name} (${player.getOriginalRole().name})`);
@@ -234,7 +208,6 @@ export class Game extends EventEmitter {
           result = player.performOriginalAction(this, action);
           break;
         case "seer": {
-          // Random: see a player or two ground cards
           if (Math.random() > 0.5 && otherPlayers.length > 0) {
             const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
             action = { type: "seer_player_role", targetPlayer: { id: target.id } };
@@ -326,7 +299,6 @@ export class Game extends EventEmitter {
           result = { message: "No action performed" };
       }
 
-      // Store result for discussion recap
       (player as any).lastActionResult = result;
       console.log(`⏱️ Auto-action result for ${player.name}:`, result);
       return result;
@@ -338,7 +310,6 @@ export class Game extends EventEmitter {
   }
 
   private advanceToNextRole(): void {
-    // Clear previous role timer
     if (this.roleSlotTimer) {
       clearTimeout(this.roleSlotTimer);
       this.roleSlotTimer = null;
@@ -347,7 +318,6 @@ export class Game extends EventEmitter {
     let nextRole = this.nextAction();
 
     if (!nextRole) {
-      // No more roles in queue — end night
       console.log("✅ All role slots completed");
       if (this.nightMainTimer) {
         clearTimeout(this.nightMainTimer);
@@ -355,7 +325,6 @@ export class Game extends EventEmitter {
       }
       this.currentActiveRole = "";
 
-      // Auto-perform for anyone who hasn't acted
       this.players.forEach((player) => {
         if (!this.confirmedPlayerPerformActions.includes(player.id)) {
           console.log(`⏱️ Auto-performing action for ${player.name}`);
@@ -370,21 +339,8 @@ export class Game extends EventEmitter {
 
     const timerSeconds = this.roleTimers.get(nextRole) || 10;
 
-    // Find players who should act for this role slot
-    const playersWithRole = this.players.filter((p) => {
-      // Match by original role name
-      if (p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase()) {
-        return true;
-      }
-      // Also match clones who copied this role
-      // e.g. Clone→Insomniac should act during Insomniac's slot
-      // Check: player's current role matches this slot AND they were originally a Clone
-      // AND they haven't already been marked as done
-      if (p.getOriginalRole().name.toLowerCase() === "clone" && p.getRole().name.toLowerCase() === nextRole.toLowerCase() && !this.confirmedPlayerPerformActions.includes(p.id)) {
-        return true;
-      }
-      return false;
-    });
+    // Find players who should act for this role slot (by original role)
+    const playersWithRole = this.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
 
     this.currentActiveRole = nextRole;
     this.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
@@ -396,12 +352,42 @@ export class Game extends EventEmitter {
       console.log(`⏭️ Role slot: ${nextRole} — no players, waiting ${timerSeconds}s`);
     }
 
-    // Emit timer info for frontend
     this.newEmit("roleTimer", { roleName: nextRole, seconds: timerSeconds });
 
-    // Set role slot timer
+    // Handle Clone→Insomniac: when Insomniac slot fires, auto-perform for clones who copied Insomniac
+    if (nextRole.toLowerCase() === "insomniac") {
+      const cloneInsomniacs = this.players.filter((p) => {
+        return (p as any)._wasClone === true && p.getOriginalRole().name.toLowerCase() === "insomniac" && this.confirmedPlayerPerformActions.includes(p.id);
+      });
+
+      cloneInsomniacs.forEach((player) => {
+        console.log(`🧬💤 Clone-Insomniac ${player.name} checking role during Insomniac slot`);
+        try {
+          const currentRole = player.getRole();
+          const hasChanged = currentRole.name.toLowerCase() !== "insomniac";
+          const result = {
+            originalRole: "Insomniac",
+            currentRole: currentRole.name,
+            hasChanged,
+            message: hasChanged ? `Your role changed from Insomniac to ${currentRole.name}!` : "Your role is still Insomniac — no one swapped you.",
+          };
+
+          // Update the stored result
+          (player as any).lastActionResult = {
+            ...(player as any).lastActionResult,
+            insomniacResult: result,
+            message: result.message,
+          };
+
+          // Emit to the specific player
+          this.newEmit("cloneInsomniacResult", { playerId: player.id, result });
+        } catch (error: any) {
+          console.error(`Error performing Clone-Insomniac check for ${player.name}:`, error.message);
+        }
+      });
+    }
+
     this.roleSlotTimer = setTimeout(() => {
-      // Auto-perform for players with this role who haven't acted
       if (playersWithRole.length > 0) {
         playersWithRole.forEach((player) => {
           if (!this.confirmedPlayerPerformActions.includes(player.id)) {
@@ -412,13 +398,11 @@ export class Game extends EventEmitter {
             const remaining = (this.currentGameRolesMap.get(player.getOriginalRole().name) || 1) - 1;
             this.currentGameRolesMap.set(player.getOriginalRole().name, remaining);
 
-            // Emit result to player
             this.newEmit("autoActionResult", { playerId: player.id, result });
           }
         });
       }
 
-      // Move to next role
       this.advanceToNextRole();
     }, timerSeconds * 1000);
   }
@@ -470,12 +454,8 @@ export class Game extends EventEmitter {
     this.currentGameRolesMap.set(roleName, remaining);
 
     console.log(`✅ ${player.name} (${roleName}) performed action. Remaining for ${roleName}: ${remaining}`);
-
-    // Don't advance to next role — the timer handles that
-    // Player just waits until the role slot timer expires
   }
 
-  // get the next role action in the role queue
   nextAction(): any {
     const nextRoleAction = this.roleQueue.shift();
     if (nextRoleAction === undefined) {
@@ -590,7 +570,6 @@ export class Game extends EventEmitter {
   calculateResults(mapVotes: Map<string, number>): string {
     let prev = 0;
     let voted = "";
-    // need to check for draw
     let check = 0;
 
     mapVotes.forEach((value, key) => {
@@ -607,7 +586,6 @@ export class Game extends EventEmitter {
 
     if (check === mapVotes.size) {
       this.winners = Team.Villains;
-
       return this.winners;
     }
 
@@ -707,7 +685,6 @@ export class Game extends EventEmitter {
   }
 
   private addRoles() {
-    // Order matters: 7 players → Clone, 8 → Insomniac, 9 → Joker, 10 → Werewolf
     const extraRolesInOrder = ["Clone", "Insomniac", "Joker", "Werewolf"];
     const needed = this.players.length + this.numberOfGroundRoles - this.availableRoles.length;
 
@@ -722,13 +699,11 @@ export class Game extends EventEmitter {
   }
 
   private createRoleQueue(): string[] {
-    // Define the order roles should act in
     const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER];
 
     this.logger.info(`role order template: ${roleOrder.join(", ")}`);
     console.log(`role order template: ${roleOrder.join(", ")}`);
 
-    // Will be filtered after roles are assigned in start()
     return roleOrder;
   }
 

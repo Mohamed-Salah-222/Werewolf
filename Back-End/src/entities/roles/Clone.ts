@@ -54,7 +54,8 @@ export class Clone implements Role {
 
       // Set the clone's role to the copied role
       player.setRole(clonedRole);
-      (player as any).originalRole = clonedRole;
+      (player as any).originalRole = clonedRole; // this could be changed tho
+      (player as any)._wasClone = true;
 
       // Determine if the clone needs a second action
       const needsSecondAction = ACTIVE_ROLES.includes(clonedRoleName);

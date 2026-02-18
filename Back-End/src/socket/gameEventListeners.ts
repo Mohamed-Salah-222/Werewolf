@@ -79,5 +79,17 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
     }
   });
 
+  game.on("cloneInsomniacResult", (data: { playerId: string; result: any }) => {
+    const sockets = io.sockets.sockets;
+    for (const [, s] of sockets) {
+      if (s.rooms.has(gameCode) && (s as any).playerId === data.playerId) {
+        s.emit("cloneInsomniacResult" as any, data.result);
+        break;
+      }
+    }
+  });
+
+  console.log(`Game event listeners attached for game ${gameCode}`);
+
   console.log(`Game event listeners attached for game ${gameCode}`);
 }
