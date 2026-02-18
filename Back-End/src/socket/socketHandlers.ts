@@ -354,7 +354,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         const game = manager.getGameByCode(gameCode);
         if (!game) return;
 
-        game.playerRead(playerId);
+        game.playerReady(playerId);
         io.to(gameCode).emit("playerReady", { playerId });
         console.log(`Player ${playerId} is ready`);
       } catch (error: any) {

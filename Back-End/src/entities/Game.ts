@@ -111,12 +111,18 @@ export class Game extends EventEmitter {
     return activeQueue;
   }
 
-  playerRead(playerId: PlayerId): void {
-    this.readyPlayers.set(playerId, true);
-    if (this.readyPlayers.size === this.players.length) {
+  playerReady(playerId: PlayerId): void {
+    const toggle = this.readyPlayers.get(playerId);
+    if (toggle === undefined) {
+      this.readyPlayers.set(playerId, true);
+    } else {
+      this.readyPlayers.set(playerId, !toggle);
+    }
+    if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
   }
+
 
   start(): void {
     if (this.players.length < this.minimumPlayers) {
@@ -372,6 +378,12 @@ export class Game extends EventEmitter {
 
     // Find players who should act for this role slot
     const playersWithRole = this.players.filter((p) => {
+      if (nextRole.toLowerCase() === "insomniac") {
+        if (p.getOriginalRole().name.toLowerCase() === "clone" && p.getRole().name.toLowerCase() === "insomniac") {
+          console.log("insomniac clone");
+          return true;
+        }
+      }
       // Match by original role name
       if (p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase()) {
         return true;
@@ -481,7 +493,9 @@ export class Game extends EventEmitter {
     if (nextRoleAction === undefined) {
       return;
     }
-    this.logger.info(`next action: ${nextRoleAction}`);
+    const rolePlayersOrg = this.players.filter((p) => p.getOriginalRole().name === nextRoleAction);
+    const rolePlayers = this.players.filter((p) => p.getRole().name === nextRoleAction);
+    this.logger.info(`next action: ${nextRoleAction}, role players ${rolePlayers.map((p) => p.name)}, original role players ${rolePlayersOrg.map((p) => p.name)}`);
     return nextRoleAction;
   }
 
@@ -587,7 +601,7 @@ export class Game extends EventEmitter {
     return mapVotes;
   }
 
-  calculateResults(mapVotes: Map<string, number>): string {
+  calculateResults(mapVotes: Map<PlayerId, number>): string {
     let prev = 0;
     let voted = "";
     // need to check for draw
@@ -605,16 +619,6 @@ export class Game extends EventEmitter {
       }
     });
 
-    let votedPlayerRole = this.getPlayerById(voted).getRole();
-    if (drawCheck === mapVotes.size) {
-      if (votedPlayerRole.team === Team.Joker) {
-        this.winners = Team.Joker;
-        return this.winners;
-      }
-
-      this.winners = Team.Villains;
-      return this.winners;
-    }
 
     if (voted === "noWerewolf") {
       for (const player of this.players) {
@@ -624,23 +628,42 @@ export class Game extends EventEmitter {
         }
       }
       this.winners = Team.Heroes;
+      console.log("how?");
       return this.winners;
     }
 
+    let votedPlayerRole = this.getPlayerById(voted).getRole();
+    if (drawCheck === mapVotes.size) {
+      console.log("drawCheck");
+      if (votedPlayerRole.team === Team.Joker) {
+        this.winners = Team.Joker;
+        console.log("winner is the joker wwith draw");
+        return this.winners;
+      }
+
+      console.log("drawCheck2");
+      this.winners = Team.Villains;
+      return this.winners;
+    }
 
     if (votedPlayerRole.team === Team.Villains) {
       this.winners = Team.Heroes;
+      console.log("winner is the heroes");
     } else {
       this.winners = Team.Villains;
+      console.log("winner is the villains");
     }
 
     if (votedPlayerRole.name === "Minion" || votedPlayerRole.name === "minion") {
       this.winners = Team.Villains;
+      console.log("winner is the minion");
     }
-    if (votedPlayerRole.name === Team.Joker) {
+    if (votedPlayerRole.team === Team.Joker) {
       this.winners = Team.Joker;
+      console.log("winner is the joker");
     }
 
+    console.log(`winners: ${this.winners}`);
     this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
@@ -745,10 +768,20 @@ export class Game extends EventEmitter {
     return roleOrder;
   }
 
-  private isAllRolePlayersDone(roleName: string): boolean {
-    const remaining = this.currentGameRolesMap.get(roleName);
-    this.logger.debug(`remaining: ${remaining}`);
-    return remaining <= 0;
+  private arePlayersReady(): boolean {
+    if (this.readyPlayers.size !== this.players.length) {
+      return false;
+    }
+    for (const player of this.players) {
+      const ready = this.readyPlayers.get(player.id);
+      if (ready === undefined || ready === false) {
+        return false;
+      }
+      if (!ready) {
+        return false;
+      }
+    };
+    return true;
   }
 
   private createRoles() {
