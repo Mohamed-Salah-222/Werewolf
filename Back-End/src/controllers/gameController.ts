@@ -52,6 +52,11 @@ export const getGameByCode = (req: Request, res: Response): void => {
       });
       return;
     }
+    const readyPlayers = game.readyPlayers;
+    const readyPLayersArr = [];
+    for (const [player, ready] of readyPlayers) {
+      readyPLayersArr.push({ id: player, ready });
+    }
 
     res.status(200).json({
       success: true,
@@ -65,6 +70,7 @@ export const getGameByCode = (req: Request, res: Response): void => {
           ...(game.phase === "endGame" && { role: p.getRole().name }),
         })),
         timer: game.timer,
+        readyPlayers: readyPLayersArr,
       },
     });
   } catch (error) {

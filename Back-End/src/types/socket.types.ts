@@ -34,7 +34,7 @@ export interface ServerToClientEvents {
   error: (data: { message: string }) => void;
   groundCards: (data: { cards: Array<{ id: string; label: string }> }) => void;
   gameRestarted: () => void;
-  playerReady: (data: { playerId: PlayerId }) => void;
+  playerReady: (data: { playerId: PlayerId, ready: boolean }) => void;
 }
 
 // Data structures

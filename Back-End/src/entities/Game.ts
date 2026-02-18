@@ -111,16 +111,20 @@ export class Game extends EventEmitter {
     return activeQueue;
   }
 
-  playerReady(playerId: PlayerId): void {
+  playerReady(playerId: PlayerId): boolean {
+    let ready = false;
     const toggle = this.readyPlayers.get(playerId);
     if (toggle === undefined) {
-      this.readyPlayers.set(playerId, true);
+      ready = true;
+      this.readyPlayers.set(playerId, ready);
     } else {
-      this.readyPlayers.set(playerId, !toggle);
+      ready = !toggle;
+      this.readyPlayers.set(playerId, ready);
     }
     if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
+    return ready;
   }
 
 
