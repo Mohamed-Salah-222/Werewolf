@@ -591,12 +591,12 @@ export class Game extends EventEmitter {
     let prev = 0;
     let voted = "";
     // need to check for draw
-    let check = 0;
+    let drawCheck = 0;
 
     mapVotes.forEach((value, key) => {
       if (prev === value) {
         prev = value;
-        check++;
+        drawCheck++;
       }
 
       if (prev < value) {
@@ -605,9 +605,14 @@ export class Game extends EventEmitter {
       }
     });
 
-    if (check === mapVotes.size) {
-      this.winners = Team.Villains;
+    let votedPlayerRole = this.getPlayerById(voted).getRole();
+    if (drawCheck === mapVotes.size) {
+      if (votedPlayerRole.team === Team.Joker) {
+        this.winners = Team.Joker;
+        return this.winners;
+      }
 
+      this.winners = Team.Villains;
       return this.winners;
     }
 
@@ -622,7 +627,6 @@ export class Game extends EventEmitter {
       return this.winners;
     }
 
-    let votedPlayerRole = this.getPlayerById(voted).getRole();
 
     if (votedPlayerRole.team === Team.Villains) {
       this.winners = Team.Heroes;
@@ -646,21 +650,30 @@ export class Game extends EventEmitter {
       player.reset();
     }
 
+    this.startedAt = null;
+    this.allPlayersReady = false;
     this.groundRoles = [];
     this.prettyVotes = [];
+
     for (const playerId of this.readyPlayers.keys()) {
       this.readyPlayers.set(playerId, false);
     }
-    this.allPlayersReady = false;
+
     this.votes = [];
     this.winners = null;
     this.phase = Phase.Waiting;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
     this.confirmedPlayerRoleReveal = [];
     this.confirmedPlayerPerformActions = [];
     this.currentTimerSec = 0;
 
     this.availableRoles = this.createRoles();
     this.roleQueue = this.createRoleQueue();
+    this.currentActiveRole = "";
+
+    this.endedAt = null;
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");
