@@ -67,9 +67,9 @@ function NightPhase() {
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
-  // Clone two-phase state
+  // Clone two-phase state — ref to avoid effect re-registration race condition
   const [cloneResult, setCloneResult] = useState<CloneResult | null>(null);
-  const [awaitingCloneResult, setAwaitingCloneResult] = useState(false);
+  const awaitingCloneResultRef = useRef(false);
 
   // Queue-level tracking
   const [activeRole, setActiveRole] = useState<string>(state?.initialActiveRole || "");
@@ -181,9 +181,9 @@ function NightPhase() {
       const result = data.data || { message: data.message };
 
       // Check if this is a clone first-action result
-      if (awaitingCloneResult && result.clonedRole) {
+      if (awaitingCloneResultRef.current && result.clonedRole) {
         console.log("🧬 Clone first action result:", result);
-        setAwaitingCloneResult(false);
+        awaitingCloneResultRef.current = false;
         setCloneResult(result as CloneResult);
 
         if (!result.needsSecondAction) {
@@ -263,7 +263,7 @@ function NightPhase() {
       socket.off("discussionStarted");
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
     };
-  }, [gameCode, myRole, actionDone, awaitingCloneResult, navigate, playerName, playerId, isHost, hasAlreadyActed]);
+  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed]);
 
   useEffect(() => {
     if (!hasAlreadyActed) return;
@@ -304,9 +304,9 @@ function NightPhase() {
     });
   };
 
-  // Clone first action handler — sets awaiting flag so actionResult knows to treat it as clone result
+  // Clone first action handler — sets ref so actionResult knows to treat it as clone result
   const handleCloneFirstAction = (action: Record<string, unknown>) => {
-    setAwaitingCloneResult(true);
+    awaitingCloneResultRef.current = true;
     socket.emit("performAction", {
       gameCode,
       playerId,
