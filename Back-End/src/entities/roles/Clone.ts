@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team, CLONE_ACTIVE_ROLES as ACTIVE_ROLES } from "../../config/constants";
 import { Game } from "../Game";
 import { Player } from "../Player";
 
@@ -12,12 +12,6 @@ export const createCloneAction = (targetPlayer: Player): CloneAction => ({
   type: "clone",
   targetPlayer,
 });
-
-// Roles where the clone needs to make a second choice
-const ACTIVE_ROLES = ["seer", "robber", "troublemaker", "drunk"];
-
-// Roles where the clone auto-performs immediately
-const PASSIVE_ROLES = ["werewolf", "minion", "mason", "joker", "insomniac"];
 
 export class Clone implements Role {
   public id: string;
@@ -39,22 +33,18 @@ export class Clone implements Role {
         throw new Error("Clone action requires a target player");
       }
 
-      const targetPlayer = game.players.find((p) => p.id === action.targetPlayer.id);
-
-      if (!targetPlayer) {
-        throw new Error(`Target player not found`);
-      }
-
-      if (targetPlayer.id === player.id) {
+      if (action.targetPlayer.id === player.id) {
         throw new Error("Clone cannot target themselves");
       }
+
+      const targetPlayer = game.getPlayerById(action.targetPlayer.id);
 
       const clonedRole = targetPlayer.getOriginalRole();
       const clonedRoleName = clonedRole.name.toLowerCase();
 
       // Set the clone's role to the copied role
       player.setRole(clonedRole);
-      (player as any).originalRole = clonedRole; // this could be changed tho
+      (player as any).originalRole = clonedRole;
       (player as any)._wasClone = true;
 
       // Determine if the clone needs a second action
@@ -66,21 +56,18 @@ export class Clone implements Role {
         try {
           switch (clonedRoleName) {
             case "werewolf": {
-              // Just learn you're a werewolf — no extra info
               autoResult = {
                 message: `You cloned ${targetPlayer.name} and became a Werewolf. You are now on the Villain team.`,
               };
               break;
             }
             case "minion": {
-              // Just learn you're a minion — no extra info
               autoResult = {
                 message: `You cloned ${targetPlayer.name} and became a Minion. You are now on the Villain team.`,
               };
               break;
             }
             case "mason": {
-              // Perform mason action — see other masons
               const otherMasons = game.players.filter((p) => p.getOriginalRole().name.toLowerCase() === "mason" && p.id !== player.id);
               autoResult = {
                 masons: otherMasons.map((m) => ({ id: m.id, name: m.name })),
@@ -89,7 +76,6 @@ export class Clone implements Role {
               break;
             }
             case "insomniac": {
-              // Clone becomes insomniac — will check role during Insomniac's slot
               autoResult = {
                 message: `You cloned ${targetPlayer.name} and became an Insomniac. You will check your role at the end of the night.`,
               };
@@ -134,7 +120,6 @@ export class Clone implements Role {
         clonedRoleTeam: clonedRole.team,
         needsSecondAction,
         autoResult,
-        // Data for the second action UI
         groundCards,
         otherPlayers,
         message: needsSecondAction ? `You cloned ${targetPlayer.name} and became a ${clonedRole.name}. Now perform their action!` : autoResult?.message || `You became a ${clonedRole.name}`,

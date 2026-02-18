@@ -29,18 +29,8 @@ export class Player {
   setRole(role: Role): void {
     this.role = role;
   }
-  // wtv
-  performAction(game: Game, action?: any) {
-    if (game.phase !== Phase.Role && game.phase !== Phase.Night) {
-      throw new Error("Cannot perform action in this phase");
-    }
-    return this.role.performAction()(game, this, action);
-  }
   toString(): string {
     return this.name;
-  }
-  vote(game: Game, vote: string) {
-    return game.votes.push({ voter: this.id, vote: vote });
   }
   reset() {
     this.role = null;

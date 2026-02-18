@@ -30,6 +30,7 @@ export enum Team {
   Joker = "joker",
 }
 
+export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "drunk"];
 // ROLE NAMES
 export const ROLE_NAMES = {
   WEREWOLF: "Werewolf",

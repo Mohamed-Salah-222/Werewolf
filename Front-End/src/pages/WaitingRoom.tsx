@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
@@ -6,7 +6,6 @@ import { clearSession } from "../utils/gameSession";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import "./WaitingRoom.css";
 
-// Card imports
 import backCard from "../assets/back_card.webp";
 import werewolfCard from "../assets/werewolf_card.webp";
 import minionCard from "../assets/minion_card.webp";
@@ -19,7 +18,6 @@ import insomniacCard from "../assets/insomaniac_card.webp";
 import cloneCard from "../assets/clone_card.webp";
 import jokerCard from "../assets/joker_card.webp";
 
-// Small card imports for grid
 import werewolfCardSmall from "../assets/werewolf_card_small.webp";
 import minionCardSmall from "../assets/minion_card_small.webp";
 import seerCardSmall from "../assets/seer_card_small.webp";
@@ -76,24 +74,20 @@ function WaitingRoom() {
   const [revealedCard, setRevealedCard] = useState<number | null>(null);
   const [selectedPileCard, setSelectedPileCard] = useState<number | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
-  const [readyPlayersSet, setReadyPlayersSet] = useState<Set<string>>(new Set());
   const [startError, setStartError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(42);
+
+  // Always-fresh ref — no stale closure issues in socket callbacks
+  const readySetRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const updateCardCount = () => {
       const width = window.innerWidth;
-      if (width <= 768) {
-        setCardCount(0);
-      } else if (width <= 1024) {
-        setCardCount(20);
-      } else if (width <= 1280) {
-        setCardCount(30);
-      } else {
-        setCardCount(42);
-      }
+      if (width <= 768) setCardCount(0);
+      else if (width <= 1024) setCardCount(20);
+      else if (width <= 1280) setCardCount(30);
+      else setCardCount(42);
     };
-
     updateCardCount();
     window.addEventListener("resize", updateCardCount);
     return () => window.removeEventListener("resize", updateCardCount);
@@ -102,68 +96,83 @@ function WaitingRoom() {
   useLeaveWarning(true);
 
   const [gridCards] = useState<GridCard[]>(() => {
-    const cards: GridCard[] = [];
-    const shuffledIndices: number[] = [];
-    for (let i = 0; i < 42; i++) {
-      shuffledIndices.push(i % allCards.length);
-    }
+    const shuffledIndices: number[] = Array.from({ length: 42 }, (_, i) => i % allCards.length);
     for (let i = shuffledIndices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
     }
-    for (let i = 0; i < 42; i++) {
-      cards.push({
-        id: i,
-        cardIndex: shuffledIndices[i],
-      });
-    }
-    return cards;
+    return shuffledIndices.map((cardIndex, id) => ({ id, cardIndex }));
   });
 
-  // Fetch players on mount
+  // Fetch players, seed ready state, THEN rejoin
   useEffect(() => {
-    const fetchPlayers = async () => {
+    if (!socket.connected) socket.connect();
+
+    const init = async () => {
       try {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
+
         if (data.success && data.data.players) {
+          // Defensively build the ready set — handle whatever shape readyPlayers comes in
+          const seededSet = new Set<string>();
+          const rawReady = data.data.readyPlayers;
+          console.log("rawReady", rawReady);
+
+          if (Array.isArray(rawReady)) {
+            for (const entry of rawReady) {
+              // shape: { id: string, ready: boolean }
+              if (entry && entry.ready && entry.id) {
+                seededSet.add(entry.id);
+              }
+            }
+          }
+
+          readySetRef.current = seededSet;
+          console.log("seededSet", [...seededSet]);
+
           setPlayers(
             data.data.players.map((p: { id: string; name: string }) => ({
               id: p.id,
               name: p.name,
-              isReady: readyPlayersSet.has(p.id),
-            })),
+              isReady: seededSet.has(p.id),
+            }))
           );
+
+          if (seededSet.has(playerId)) setPlayerReady(true);
         }
-      } catch {
-        console.error("Failed to fetch players");
+      } catch (err) {
+        console.error("Failed to fetch players", err);
+      }
+
+      // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
+      if (gameCode && playerId) {
+        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
       }
     };
-    fetchPlayers();
-  }, [gameCode, readyPlayersSet]);
+
+    init();
+  }, [gameCode, playerId, playerName]);
 
   // Socket listeners
   useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    if (gameCode && playerId) {
-      socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
-    }
+    socket.on("playerKicked", (data: { kickedPlayerId: string }) => {
+      if (data.kickedPlayerId === playerId) {
+        clearSession();
+        navigate("/", { state: { kicked: true } });
+      }
+    });
 
     socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
       setPlayers((prev) => {
         if (prev.find((p) => p.id === data.playerId)) return prev;
-        return [...prev, { id: data.playerId, name: data.playerName, isReady: false }];
+        return [...prev, { id: data.playerId, name: data.playerName, isReady: readySetRef.current.has(data.playerId) }];
       });
     });
 
     socket.on("playerLeft", (data: { playerId: string }) => {
+      readySetRef.current.delete(data.playerId);
       setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
-      setReadyPlayersSet((prev) => {
-        const updated = new Set(prev);
-        updated.delete(data.playerId);
-        return updated;
-      });
     });
 
     socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
@@ -171,24 +180,25 @@ function WaitingRoom() {
         data.players.map((p) => ({
           id: p.id,
           name: p.name,
-          isReady: readyPlayersSet.has(p.id),
-        })),
+          isReady: readySetRef.current.has(p.id),
+        }))
       );
     });
 
-    socket.on("playerReady", (data: { playerId: string }) => {
-      setReadyPlayersSet((prev) => {
-        const updated = new Set(prev);
-        updated.add(data.playerId);
-        return updated;
-      });
-      setPlayers((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, isReady: true } : p)));
+    socket.on("playerReady", (data: { playerId: string; ready: boolean }) => {
+      if (data.ready) {
+        readySetRef.current.add(data.playerId);
+      } else {
+        readySetRef.current.delete(data.playerId);
+      }
+      setPlayers((prev) =>
+        prev.map((p) => (p.id === data.playerId ? { ...p, isReady: data.ready } : p))
+      );
+      if (data.playerId === playerId) setPlayerReady(data.ready);
     });
 
     socket.on("gameStarted", () => {
-      navigate(`/role-reveal/${gameCode}`, {
-        state: { playerName, playerId, isHost },
-      });
+      navigate(`/role-reveal/${gameCode}`, { state: { playerName, playerId, isHost } });
     });
 
     socket.on("roleReveal", (data: { playerId: string; roleName: string; roleTeam: string; roleDescription: string }) => {
@@ -213,6 +223,7 @@ function WaitingRoom() {
       socket.off("playerReady");
       socket.off("gameStarted");
       socket.off("roleReveal");
+      socket.off("playerKicked");
     };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
@@ -240,11 +251,16 @@ function WaitingRoom() {
     navigate("/");
   };
 
+
+  // AFTER:
+  const handleKick = (kickedPlayerId: string) => {
+    socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId });
+  };
+
   const handleReady = () => {
-    if (!playerReady) {
-      setPlayerReady(true);
-      socket.emit("playerReady", { gameCode, playerId });
-    }
+    const newReady = !playerReady;
+    setPlayerReady(newReady);
+    socket.emit("playerReady", { gameCode, playerId });
   };
 
   const handleCardClick = (cardId: number, cardIndex: number) => {
@@ -316,7 +332,11 @@ function WaitingRoom() {
       <div style={styles.cardPile} className="wr-cards">
         <div style={styles.cardGrid}>
           {gridCards.slice(0, cardCount).map((card) => (
-            <div key={card.id} className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`} onClick={() => handleCardClick(card.id, card.cardIndex)}>
+            <div
+              key={card.id}
+              className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`}
+              onClick={() => handleCardClick(card.id, card.cardIndex)}
+            >
               <div className="flip-card-inner">
                 <div className="flip-card-front">
                   <img src={backCard} alt="Card back" />
@@ -352,6 +372,11 @@ function WaitingRoom() {
                   {p.isReady && <span style={styles.readyBadge}>✓ READY</span>}
                   {p.id === playerId && isHost && <span style={styles.hostBadge}>HOST</span>}
                   {p.id === playerId && !isHost && <span style={styles.youBadge}>YOU</span>}
+                  {isHost && p.id !== playerId && (
+                    <button style={styles.kickBtn} onClick={() => handleKick(p.id)}>
+                      KICK
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -370,12 +395,16 @@ function WaitingRoom() {
                 onClick={handleStartGame}
                 disabled={!(players.length >= 6 && players.every((p) => p.isReady))}
               >
-                {players.length < 6 ? `NEED ${6 - players.length} MORE` : players.every((p) => p.isReady) ? "START GAME" : `${players.filter((p) => !p.isReady).length} NOT READY`}
+                {players.length < 6
+                  ? `NEED ${6 - players.length} MORE`
+                  : players.every((p) => p.isReady)
+                    ? "START GAME"
+                    : `${players.filter((p) => !p.isReady).length} NOT READY`}
               </button>
             </>
           )}
           {!isHost && <p style={styles.waitingText}>Waiting for host to start...</p>}
-          <button style={playerReady ? styles.readyBtnActive : styles.readyBtn} onClick={handleReady} disabled={playerReady}>
+          <button style={playerReady ? styles.readyBtnActive : styles.readyBtn} onClick={handleReady}>
             {playerReady ? "✓ READY" : "READY"}
           </button>
           <button style={styles.leaveBtn} onClick={handleLeave}>
@@ -680,7 +709,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#4a7c3f",
     border: "1px solid #2d5a26",
     borderRadius: "4px",
-    cursor: "not-allowed",
+    cursor: "pointer",
     fontFamily: "'Cinzel', serif",
     transition: "all 0.3s ease",
   },
@@ -697,6 +726,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     textAlign: "center" as const,
     fontFamily: "'Cinzel', serif",
     animation: "shake 0.3s ease-in-out",
+  },
+  kickBtn: {
+    fontSize: "8px",
+    fontWeight: 700,
+    letterSpacing: "1px",
+    color: "#8b3a3a",
+    padding: "2px 6px",
+    border: "1px solid #5a2020",
+    borderRadius: "2px",
+    fontFamily: "'Cinzel', serif",
+    backgroundColor: "rgba(139, 58, 58, 0.1)",
+    cursor: "pointer",
   },
 };
 

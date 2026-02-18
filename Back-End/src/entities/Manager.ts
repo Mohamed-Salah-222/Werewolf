@@ -72,6 +72,7 @@ export class Manager {
   }
 
   startCleanupJob(): void {
+    console.log("Starting cleanup job first time");
     setInterval(async () => {
       if (this.cleanupRunning) return;
       this.cleanupRunning = true;
@@ -111,6 +112,8 @@ export class Manager {
         game.endedAt &&
         now - game.endedAt > ttl
     );
+    console.log(`🗑️ Deleting ${expired.length} expired games`);
+    console.log(expired.map((g) => g.code));
 
     expired.forEach((game) => this.deleteGame(game));
   }

@@ -16,16 +16,16 @@ import { Joker } from "./Joker";
 
 
 export { Role } from "./Role";
-export { Clone } from "./Clone";
-export { Drunk } from "./Drunk";
-export { Insomniac } from "./Insomniac";
-export { Joker } from "./Joker";
+export { Clone, createCloneAction } from "./Clone";
+export { Drunk, createDrunkAction } from "./Drunk";
+export { Insomniac, createInsomniacAction } from "./Insomniac";
+export { Joker, createJokerAction } from "./Joker";
 export { Mason } from "./Mason";
-export { Minion } from "./Minion";
-export { Robber } from "./Robber";
-export { Seer } from "./Seer";
-export { Troublemaker } from "./Troublemaker";
-export { Werewolf } from "./Werewolf";
+export { Minion, createMinionAction } from "./Minion";
+export { Robber, createRobberAction } from "./Robber";
+export { Seer, SeerActionType, createSeerAction } from "./Seer";
+export { Troublemaker, createTroublemakerAction } from "./Troublemaker";
+export { Werewolf, createWerewolfAction } from "./Werewolf";
 
 
 export const RoleClasses = {

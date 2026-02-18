@@ -93,11 +93,20 @@ export class Game extends EventEmitter {
     return activeQueue;
   }
 
-  playerRead(playerId: PlayerId): void {
-    this.readyPlayers.set(playerId, true);
-    if (this.readyPlayers.size === this.players.length) {
+  playerReady(playerId: PlayerId): boolean {
+    let ready = false;
+    const toggle = this.readyPlayers.get(playerId);
+    if (toggle === undefined) {
+      ready = true;
+      this.readyPlayers.set(playerId, ready);
+    } else {
+      ready = !toggle;
+      this.readyPlayers.set(playerId, ready);
+    }
+    if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
+    return ready;
   }
 
   start(): void {
@@ -461,7 +470,9 @@ export class Game extends EventEmitter {
     if (nextRoleAction === undefined) {
       return;
     }
-    this.logger.info(`next action: ${nextRoleAction}`);
+    const rolePlayersOrg = this.players.filter((p) => p.getOriginalRole().name === nextRoleAction);
+    const rolePlayers = this.players.filter((p) => p.getRole().name === nextRoleAction);
+    this.logger.info(`next action: ${nextRoleAction}, role players ${rolePlayers.map((p) => p.name)}, original role players ${rolePlayersOrg.map((p) => p.name)}`);
     return nextRoleAction;
   }
 
@@ -567,15 +578,17 @@ export class Game extends EventEmitter {
     return mapVotes;
   }
 
-  calculateResults(mapVotes: Map<string, number>): string {
+  calculateResults(mapVotes: Map<PlayerId, number>): string {
     let prev = 0;
     let voted = "";
-    let check = 0;
+
+    // need to check for draw
+    let drawCheck = 0;
 
     mapVotes.forEach((value, key) => {
       if (prev === value) {
         prev = value;
-        check++;
+        drawCheck++;
       }
 
       if (prev < value) {
@@ -583,11 +596,6 @@ export class Game extends EventEmitter {
         voted = key;
       }
     });
-
-    if (check === mapVotes.size) {
-      this.winners = Team.Villains;
-      return this.winners;
-    }
 
     if (voted === "noWerewolf") {
       for (const player of this.players) {
@@ -597,24 +605,42 @@ export class Game extends EventEmitter {
         }
       }
       this.winners = Team.Heroes;
+      console.log("how?");
       return this.winners;
     }
 
     let votedPlayerRole = this.getPlayerById(voted).getRole();
+    if (drawCheck === mapVotes.size) {
+      console.log("drawCheck");
+      if (votedPlayerRole.team === Team.Joker) {
+        this.winners = Team.Joker;
+        console.log("winner is the joker wwith draw");
+        return this.winners;
+      }
+
+      console.log("drawCheck2");
+      this.winners = Team.Villains;
+      return this.winners;
+    }
 
     if (votedPlayerRole.team === Team.Villains) {
       this.winners = Team.Heroes;
+      console.log("winner is the heroes");
     } else {
       this.winners = Team.Villains;
+      console.log("winner is the villains");
     }
 
     if (votedPlayerRole.name === "Minion" || votedPlayerRole.name === "minion") {
       this.winners = Team.Villains;
+      console.log("winner is the minion");
     }
-    if (votedPlayerRole.name === Team.Joker) {
+    if (votedPlayerRole.team === Team.Joker) {
       this.winners = Team.Joker;
+      console.log("winner is the joker");
     }
 
+    console.log(`winners: ${this.winners}`);
     this.logger.info(`winners: ${this.winners}`);
     return this.winners;
   }
@@ -624,21 +650,30 @@ export class Game extends EventEmitter {
       player.reset();
     }
 
+    this.startedAt = null;
+    this.allPlayersReady = false;
     this.groundRoles = [];
     this.prettyVotes = [];
+
     for (const playerId of this.readyPlayers.keys()) {
       this.readyPlayers.set(playerId, false);
     }
-    this.allPlayersReady = false;
+
     this.votes = [];
     this.winners = null;
     this.phase = Phase.Waiting;
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+    }
     this.confirmedPlayerRoleReveal = [];
     this.confirmedPlayerPerformActions = [];
     this.currentTimerSec = 0;
 
     this.availableRoles = this.createRoles();
     this.roleQueue = this.createRoleQueue();
+    this.currentActiveRole = "";
+
+    this.endedAt = null;
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");
@@ -707,10 +742,20 @@ export class Game extends EventEmitter {
     return roleOrder;
   }
 
-  private isAllRolePlayersDone(roleName: string): boolean {
-    const remaining = this.currentGameRolesMap.get(roleName);
-    this.logger.debug(`remaining: ${remaining}`);
-    return remaining <= 0;
+  private arePlayersReady(): boolean {
+    if (this.readyPlayers.size !== this.players.length) {
+      return false;
+    }
+    for (const player of this.players) {
+      const ready = this.readyPlayers.get(player.id);
+      if (ready === undefined || ready === false) {
+        return false;
+      }
+      if (!ready) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private createRoles() {

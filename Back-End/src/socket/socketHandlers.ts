@@ -245,6 +245,43 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
+    // KICK PLAYER
+    socket.on("kickPlayer", ({ gameCode, hostId, kickedPlayerId }) => {
+      try {
+        const game = manager.getGameByCode(gameCode);
+        if (!game) return;
+        if (game.phase !== Phase.Waiting) return;
+        if (game.host !== hostId) return;
+
+        const player = game.getPlayerById(kickedPlayerId)
+        if (!player) return;
+
+        // Remove player from game
+        game.players = game.players.filter((p) => p.id !== player.id);
+
+
+        // Notify others
+        io.to(gameCode).emit("playerKicked", {
+          kickedPlayerId,
+        });
+
+        io.to(gameCode).emit("playerListUpdate", {
+          players: game.players.map((p) => ({
+            id: p.id,
+            name: p.name,
+          })),
+        });
+
+        // Clear current game info
+        currentGameCode = null;
+        currentPlayerId = null;
+
+        console.log(`Player ${player.name} left game ${gameCode}`);
+      } catch (error) {
+        console.error("Error in leaveGame:", error);
+      }
+    });
+
     // LEAVE GAME
     socket.on("leaveGame", ({ gameCode, playerId }) => {
       try {
@@ -354,8 +391,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         const game = manager.getGameByCode(gameCode);
         if (!game) return;
 
-        game.playerRead(playerId);
-        io.to(gameCode).emit("playerReady", { playerId });
+        const ready = game.playerReady(playerId);
+        io.to(gameCode).emit("playerReady", { playerId, ready });
         console.log(`Player ${playerId} is ready`);
       } catch (error: any) {
         console.error("Error in playerReady:", error);
