@@ -156,6 +156,13 @@ function WaitingRoom() {
 
   // Socket listeners
   useEffect(() => {
+    socket.on("playerKicked", (data: { kickedPlayerId: string }) => {
+      if (data.kickedPlayerId === playerId) {
+        clearSession();
+        navigate("/", { state: { kicked: true } });
+      }
+    });
+
     socket.on("playerJoined", (data: { playerId: string; playerName: string; playerCount: number }) => {
       setPlayers((prev) => {
         if (prev.find((p) => p.id === data.playerId)) return prev;
@@ -216,6 +223,7 @@ function WaitingRoom() {
       socket.off("playerReady");
       socket.off("gameStarted");
       socket.off("roleReveal");
+      socket.off("playerKicked");
     };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
@@ -241,6 +249,12 @@ function WaitingRoom() {
     socket.emit("leaveGame", { gameCode, playerId });
     clearSession();
     navigate("/");
+  };
+
+
+  // AFTER:
+  const handleKick = (kickedPlayerId: string) => {
+    socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId });
   };
 
   const handleReady = () => {
@@ -358,6 +372,11 @@ function WaitingRoom() {
                   {p.isReady && <span style={styles.readyBadge}>✓ READY</span>}
                   {p.id === playerId && isHost && <span style={styles.hostBadge}>HOST</span>}
                   {p.id === playerId && !isHost && <span style={styles.youBadge}>YOU</span>}
+                  {isHost && p.id !== playerId && (
+                    <button style={styles.kickBtn} onClick={() => handleKick(p.id)}>
+                      KICK
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -707,6 +726,18 @@ const styles: { [key: string]: React.CSSProperties } = {
     textAlign: "center" as const,
     fontFamily: "'Cinzel', serif",
     animation: "shake 0.3s ease-in-out",
+  },
+  kickBtn: {
+    fontSize: "8px",
+    fontWeight: 700,
+    letterSpacing: "1px",
+    color: "#8b3a3a",
+    padding: "2px 6px",
+    border: "1px solid #5a2020",
+    borderRadius: "2px",
+    fontFamily: "'Cinzel', serif",
+    backgroundColor: "rgba(139, 58, 58, 0.1)",
+    cursor: "pointer",
   },
 };
 
