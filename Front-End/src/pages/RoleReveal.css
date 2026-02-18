@@ -1,82 +1,178 @@
-/* ===== TABLET (768px and below) ===== */
-@media (max-width: 768px) {
-  .rr-page {
-    padding: 20px !important;
-  }
-
-  .rr-content h1 {
-    font-size: 22px !important;
-    letter-spacing: 5px !important;
-  }
-
-  .rr-card {
-    width: 240px !important;
-    height: 360px !important;
-  }
+/* ===== PAGE ===== */
+.rr-page {
+  position: relative;
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 40%, #1a0a0a 0%, #0a0a0a 50%, #000 100%);
+  font-family: var(--font-body);
+  color: var(--color-text);
 }
 
-/* ===== PHONE (480px and below) ===== */
-@media (max-width: 480px) {
-  .rr-content {
-    gap: 16px !important;
-  }
-
-  .rr-content h1 {
-    font-size: 18px !important;
-    letter-spacing: 4px !important;
-  }
-
-  .rr-content p {
-    font-size: 10px !important;
-  }
-
-  .rr-card {
-    width: 200px !important;
-    height: 300px !important;
-  }
-
-  .rr-content button {
-    padding: 12px 36px !important;
-    font-size: 12px !important;
-    letter-spacing: 3px !important;
-  }
+/* ===== VIGNETTE ===== */
+.rr-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 1;
 }
 
-/* ===== SMALL PHONE (360px and below) ===== */
-@media (max-width: 360px) {
-  .rr-content h1 {
-    font-size: 16px !important;
-    letter-spacing: 3px !important;
-  }
-
-  .rr-card {
-    width: 170px !important;
-    height: 255px !important;
-  }
-
-  .rr-content button {
-    padding: 10px 28px !important;
-    font-size: 11px !important;
-  }
+/* ===== LOADING STATE ===== */
+.rr-loading {
+  position: relative;
+  z-index: 10;
+  text-align: center;
 }
+
+.rr-loading-title {
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 400;
+  letter-spacing: clamp(4px, 0.6vw, 8px);
+  color: var(--color-gold);
+  text-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+}
+
+.rr-loading-text {
+  font-size: 14px;
+  color: #5a4a30;
+  font-family: var(--font-body);
+  font-style: italic;
+}
+
+/* ===== CONTENT ===== */
+.rr-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2vw, 24px);
+}
+
+/* ===== TOP SECTION ===== */
+.rr-top-section {
+  text-align: center;
+}
+
+.rr-warning {
+  font-size: 11px;
+  letter-spacing: 4px;
+  color: var(--color-villain);
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+}
+
+.rr-heading {
+  font-size: clamp(16px, 2.4vw, 28px);
+  font-weight: 400;
+  letter-spacing: clamp(3px, 0.6vw, 8px);
+  color: var(--color-gold);
+  margin: 0;
+  text-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+  font-family: var(--font-display);
+}
+
+.rr-sub-text {
+  font-size: 13px;
+  color: #5a4a30;
+  font-family: var(--font-body);
+  font-style: italic;
+  margin-top: 8px;
+}
+
+.rr-waiting-text {
+  font-size: 13px;
+  color: #4a8a4a;
+  font-family: var(--font-body);
+  font-style: italic;
+  margin-top: 8px;
+}
+
+/* ===== CARD FLIP ===== */
+.rr-card-container {
+  width: clamp(170px, 22vw, 280px);
+  height: clamp(255px, 33vw, 420px);
+  perspective: 1200px;
+}
+
+.rr-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s ease;
+  transform-style: preserve-3d;
+}
+
+.rr-card-inner--flipped {
+  transform: rotateY(180deg);
+}
+
+.rr-card-container--clickable {
+  cursor: pointer;
+}
+
+.rr-card-face {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(201, 168, 76, 0.1);
+}
+
+.rr-card-face--back {
+  transform: rotateY(180deg);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.8),
+    0 0 60px rgba(201, 168, 76, 0.15);
+}
+
+.rr-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ===== CONFIRM BUTTON ===== */
+.rr-confirm-btn {
+  padding: clamp(10px, 1.2vw, 14px) clamp(28px, 4vw, 48px);
+  font-size: clamp(11px, 1.1vw, 13px);
+  font-weight: 400;
+  letter-spacing: clamp(2px, 0.3vw, 4px);
+  background-color: var(--color-gold);
+  color: var(--color-bg);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  margin-top: 8px;
+  transition: background-color 0.2s ease;
+}
+
+.rr-confirm-btn:hover {
+  background-color: #d4b255;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
 
 /* ===== SHORT SCREENS (landscape phones) ===== */
 @media (max-height: 500px) {
-  .rr-content {
-    gap: 10px !important;
-  }
-
-  .rr-card {
-    width: 160px !important;
-    height: 240px !important;
-  }
-
-  .rr-content h1 {
-    font-size: 16px !important;
-  }
-
-  .rr-content button {
-    padding: 8px 24px !important;
-    font-size: 11px !important;
+  .rr-card-container {
+    width: 160px;
+    height: 240px;
   }
 }
