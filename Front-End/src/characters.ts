@@ -37,7 +37,7 @@ export const characters: CharacterData[] = [
     name: "Werewolf",
     team: "villain",
     title: "The Beast Among Us",
-    description: "A creature of the night hiding in plain sight. When darkness falls, the werewolf reveals its true nature and hunts with its pack.",
+    description: "A creature of the night hiding in plain sight. When darkness falls, the werewolf reveals its true nature — hunting alongside its pack to devour the innocent.",
     ability: "During the night, all Werewolves open their eyes and identify each other. If you are the only Werewolf, you may peek at one ground card.",
     square: werewolfSquare,
     fullBody: werewolf2d,
@@ -133,6 +133,55 @@ export const characters: CharacterData[] = [
     fullBody: joker2d,
   },
 ];
+
+// ===== CARD IMAGES =====
+
+import backCard from "./assets/back_card.webp";
+import werewolfCard from "./assets/werewolf_card.webp";
+import minionCard from "./assets/minion_card.webp";
+import seerCard from "./assets/Seer_card.webp";
+import robberCard from "./assets/robber_card.webp";
+import troublemakerCard from "./assets/troublemaker_card.webp";
+import masonCard from "./assets/mason_card.webp";
+import drunkCard from "./assets/drunk_card.webp";
+import insomniacCard from "./assets/insomaniac_card.webp";
+import cloneCard from "./assets/clone_card.webp";
+import jokerCard from "./assets/joker_card.webp";
+
+import werewolfCardSmall from "./assets/werewolf_card_small.webp";
+import minionCardSmall from "./assets/minion_card_small.webp";
+import seerCardSmall from "./assets/seer_card_small.webp";
+import robberCardSmall from "./assets/robber_card_small.webp";
+import troublemakerCardSmall from "./assets/troublemaker_card_small.webp";
+import masonCardSmall from "./assets/mason_card_small.webp";
+import drunkCardSmall from "./assets/drunk_card_small.webp";
+import insomniacCardSmall from "./assets/insomaniac_card_small.webp";
+import cloneCardSmall from "./assets/clone_card_small.webp";
+import jokerCardSmall from "./assets/joker_card_small.webp";
+
+export interface CardData {
+  id: string;
+  name: string;
+  image: string;
+  small: string;
+}
+
+export const backCardImage = backCard;
+
+export const allCards: CardData[] = [
+  { id: "werewolf", name: "Werewolf", image: werewolfCard, small: werewolfCardSmall },
+  { id: "minion", name: "Minion", image: minionCard, small: minionCardSmall },
+  { id: "seer", name: "Seer", image: seerCard, small: seerCardSmall },
+  { id: "robber", name: "Robber", image: robberCard, small: robberCardSmall },
+  { id: "troublemaker", name: "Troublemaker", image: troublemakerCard, small: troublemakerCardSmall },
+  { id: "mason", name: "Mason", image: masonCard, small: masonCardSmall },
+  { id: "drunk", name: "Drunk", image: drunkCard, small: drunkCardSmall },
+  { id: "insomniac", name: "Insomniac", image: insomniacCard, small: insomniacCardSmall },
+  { id: "clone", name: "Clone", image: cloneCard, small: cloneCardSmall },
+  { id: "joker", name: "Joker", image: jokerCard, small: jokerCardSmall },
+];
+
+// ===== PRELOADING =====
 
 // Preload all characters
 characters.forEach((char) => {
