@@ -1,0 +1,330 @@
+/* ===== OVERLAY ===== */
+.htp-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.88);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+/* ===== MODAL ===== */
+.htp-modal {
+  background-color: #0f0d0a;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  width: min(500px, 95vw);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== HEADER ===== */
+.htp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.htp-title {
+  font-size: clamp(16px, 1.8vw, 20px);
+  font-weight: 400;
+  letter-spacing: 4px;
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+.htp-close {
+  background: none;
+  border: none;
+  color: #5a4a30;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.htp-close:hover {
+  color: var(--color-text);
+}
+
+/* ===== TABS ===== */
+.htp-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-dark);
+}
+
+.htp-tab {
+  flex: 1;
+  padding: 12px 8px;
+  font-size: clamp(9px, 0.9vw, 11px);
+  font-weight: 400;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #3d2e1a;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.htp-tab:hover {
+  color: #5a4a30;
+}
+
+.htp-tab--active {
+  color: var(--color-gold);
+  border-bottom-color: var(--color-gold);
+}
+
+/* ===== CONTENT ===== */
+.htp-content {
+  overflow-y: auto;
+  padding: 20px 24px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.htp-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.htp-content::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.htp-section {
+  animation: htpFadeIn 0.25s ease-out;
+}
+
+@keyframes htpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== FLAVOR TEXT ===== */
+.htp-flavor {
+  font-size: clamp(12px, 1.1vw, 14px);
+  color: var(--color-text-dim);
+  font-style: italic;
+  line-height: 1.7;
+  margin: 0 0 20px 0;
+  font-family: var(--font-body);
+}
+
+/* ===== STEPS (How to Play tab) ===== */
+.htp-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.htp-step-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  margin-top: 2px;
+}
+
+.htp-step-title {
+  display: block;
+  font-size: clamp(11px, 1vw, 13px);
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.htp-step-desc {
+  font-size: clamp(11px, 1vw, 13px);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+  font-family: var(--font-body);
+}
+
+/* ===== WIN CONDITIONS BOX ===== */
+.htp-win-box {
+  margin-top: 24px;
+  padding: 16px;
+  background-color: rgba(201, 168, 76, 0.04);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.htp-win-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  margin-bottom: 12px;
+}
+
+.htp-win-item {
+  font-size: clamp(11px, 1vw, 13px);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 0 6px 0;
+  font-family: var(--font-body);
+}
+
+.htp-win-item:last-child {
+  margin-bottom: 0;
+}
+
+.htp-win-team {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin-right: 4px;
+}
+
+.htp-win-team--village {
+  color: var(--color-village);
+}
+
+.htp-win-team--villain {
+  color: var(--color-villain);
+}
+
+.htp-win-team--neutral {
+  color: var(--color-neutral);
+}
+
+/* ===== ROLE ORDER (Night Order tab) ===== */
+.htp-order-list {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.htp-order-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+
+.htp-order-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-family: var(--font-display);
+  color: #3d2e1a;
+  margin-bottom: 4px;
+}
+
+.htp-order-name {
+  font-size: clamp(12px, 1.1vw, 14px);
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  color: var(--color-text);
+}
+
+.htp-order-arrow {
+  font-size: 14px;
+  color: #2a2019;
+  margin: 4px 0;
+  line-height: 1;
+}
+
+/* ===== ROLE SETUP (Role Setup tab) ===== */
+.htp-roles-block {
+  margin-bottom: 24px;
+}
+
+.htp-roles-heading {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--color-gold);
+  font-family: var(--font-display);
+  margin-bottom: 12px;
+}
+
+.htp-roles-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.htp-role-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 4px;
+}
+
+.htp-role-name {
+  font-size: clamp(12px, 1.1vw, 14px);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  flex: 1;
+}
+
+.htp-role-count {
+  font-size: 13px;
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  letter-spacing: 1px;
+}
+
+.htp-role-player {
+  font-size: clamp(12px, 1.1vw, 14px);
+  font-family: var(--font-body);
+  color: var(--color-text-dim);
+  min-width: 80px;
+}
+
+.htp-role-arrow {
+  color: #3d2e1a;
+  font-size: 14px;
+}
+
+/* ===== NOTE ===== */
+.htp-note {
+  font-size: clamp(10px, 0.9vw, 12px);
+  color: #5a4a30;
+  font-style: italic;
+  line-height: 1.6;
+  margin-top: 16px;
+  font-family: var(--font-body);
+}

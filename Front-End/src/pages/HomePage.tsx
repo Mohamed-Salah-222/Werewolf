@@ -5,6 +5,7 @@ import { API_URL } from "../config";
 import { useGame } from "../hooks/useGame";
 import { characters, type CharacterData } from "../characters";
 import "./HomePage.css";
+import HowToPlay from "../components/HowToPlay";
 
 // ===== HELPERS =====
 
@@ -47,6 +48,7 @@ function HomePage() {
   const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   const [playerName, setPlayerName] = useState("");
   const [gameCode, setGameCode] = useState("");
@@ -56,6 +58,7 @@ function HomePage() {
   const closeModals = useCallback(() => {
     setShowCreateModal(false);
     setShowJoinModal(false);
+    setShowHowToPlay(false);
     setError("");
     setPlayerName("");
     setGameCode("");
@@ -167,6 +170,15 @@ function HomePage() {
           >
             JOIN GAME
           </button>
+          <button
+            className="action-btn"
+            onClick={() => {
+              closeModals();
+              setShowHowToPlay(true);
+            }}
+          >
+            HOW TO PLAY
+          </button>
         </div>
       </div>
 
@@ -270,6 +282,7 @@ function HomePage() {
           </div>
         </div>
       )}
+      {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
     </div>
   );
 }

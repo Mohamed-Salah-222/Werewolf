@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import "./Discussion.css";
+
+// ===== TYPES =====
 
 interface LocationState {
   playerName: string;
@@ -14,6 +16,33 @@ interface LocationState {
   roleName?: string;
   actionResult?: { message?: string } | null;
 }
+
+// ===== HELPERS =====
+
+function formatTime(s: number): string {
+  const mins = Math.floor(s / 60);
+  const secs = s % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
+function getTimerState(secondsLeft: number): "normal" | "warning" | "urgent" {
+  if (secondsLeft <= 30) return "urgent";
+  if (secondsLeft <= 60) return "warning";
+  return "normal";
+}
+
+function getRoleTeam(role: string): "villain" | "village" | "neutral" {
+  const villains = ["werewolf", "minion"];
+  if (villains.includes(role.toLowerCase())) return "villain";
+  if (role.toLowerCase() === "joker") return "neutral";
+  return "village";
+}
+
+// SVG circle math
+const RING_RADIUS = 70;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+// ===== COMPONENT =====
 
 function Discussion() {
   const { gameCode } = useParams();
@@ -32,44 +61,29 @@ function Discussion() {
 
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [showResult, setShowResult] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useLeaveWarning(true);
 
+  // Timer synced to server timestamp
   useEffect(() => {
     const updateTimer = () => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      const remaining = Math.max(totalSeconds - elapsed, 0);
-      setSecondsLeft(remaining);
+      setSecondsLeft(Math.max(totalSeconds - elapsed, 0));
     };
 
-    updateTimer(); // run immediately
-
+    updateTimer();
     intervalRef.current = setInterval(updateTimer, 1000);
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [startedAt, totalSeconds]);
-  // useEffect(() => {
-  //   intervalRef.current = setInterval(() => {
-  //     setSecondsLeft((prev) => {
-  //       if (prev <= 1) {
-  //         if (intervalRef.current) clearInterval(intervalRef.current);
-  //         return 0;
-  //       }
-  //       return prev - 1;
-  //     });
-  //   }, 1000);
-  //   return () => {
-  //     if (intervalRef.current) clearInterval(intervalRef.current);
-  //   };
-  // }, []);
 
+  // Socket listener
   useEffect(() => {
-    if (!socket.connected) {
-      socket.connect();
-    }
+    if (!socket.connected) socket.connect();
 
     socket.on("votingStarted", () => {
       navigate(`/vote/${gameCode}`, {
@@ -82,80 +96,60 @@ function Discussion() {
     };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
-  function skipToVote() {
+  const skipToVote = useCallback(() => {
+    if (skipping) return;
+    setSkipping(true);
     if (intervalRef.current) clearInterval(intervalRef.current);
     setSecondsLeft(0);
-
     socket.emit("skipToVote", { gameCode, playerId });
-  }
+  }, [skipping, gameCode, playerId]);
 
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
+  // Derived
+  const timerState = getTimerState(secondsLeft);
   const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
-
-  const roleColor = (role: string) => {
-    const villains = ["werewolf", "minion"];
-    if (villains.includes(role.toLowerCase())) return "#c41e1e";
-    if (role.toLowerCase() === "joker") return "#d4a017";
-    return "#2a8a4a";
-  };
-
-  const timerColor = () => {
-    if (secondsLeft <= 30) return "#c41e1e";
-    if (secondsLeft <= 60) return "#d4a017";
-    return "#c9a84c";
-  };
-
-  // const handleSkipToVote = () => {
-  //   if (intervalRef.current) clearInterval(intervalRef.current);
-  //   setSecondsLeft(0);
-  //   socket.emit("skipToVote", { gameCode });
-  // };
+  const dashOffset = RING_CIRCUMFERENCE - progress * RING_CIRCUMFERENCE;
+  const roleTeam = roleName ? getRoleTeam(roleName) : "village";
 
   return (
-    <div style={styles.page}>
-      <div style={styles.vignette} />
+    <div className="disc-page">
+      <div className="disc-vignette" />
 
-      <div style={styles.content} className="disc-content">
-        <h1 style={styles.title}>DISCUSSION</h1>
-        <p style={styles.subtitle}>Talk it out. Who's the werewolf?</p>
+      <div className="disc-content">
+        <h1 className="disc-title">DISCUSSION</h1>
+        <p className="disc-subtitle">Talk it out. Who's the werewolf?</p>
 
         {/* Timer */}
-        <div style={styles.timerSection}>
-          <span style={{ ...styles.timer, color: timerColor() }}>{formatTime(secondsLeft)}</span>
-          <div style={styles.progressBg}>
-            <div
-              style={{
-                ...styles.progressFill,
-                width: `${progress * 100}%`,
-                backgroundColor: timerColor(),
-              }}
-            />
+        <div className="disc-timer-section">
+          {/* Circular ring */}
+          <div className="disc-timer-ring">
+            <svg viewBox="0 0 160 160">
+              <circle className="disc-ring-bg" cx="80" cy="80" r={RING_RADIUS} />
+              <circle className={`disc-ring-progress disc-ring-progress--${timerState}`} cx="80" cy="80" r={RING_RADIUS} strokeDasharray={RING_CIRCUMFERENCE} strokeDashoffset={dashOffset} />
+            </svg>
+            <span className={`disc-timer-text disc-timer-text--${timerState}`}>{formatTime(secondsLeft)}</span>
           </div>
+
+          {/* Linear bar */}
         </div>
 
         {/* Night recap */}
         {roleName && (
-          <div style={styles.recapCard}>
-            <button style={styles.recapToggle} onClick={() => setShowResult(!showResult)}>
-              <span style={styles.recapToggleText}>{showResult ? "HIDE" : "SHOW"} NIGHT RECAP</span>
-              <span style={styles.recapArrow}>{showResult ? "▲" : "▼"}</span>
+          <div className="disc-recap">
+            <button className="disc-recap-toggle" onClick={() => setShowResult(!showResult)}>
+              <span>{showResult ? "HIDE" : "SHOW"} NIGHT RECAP</span>
+              <span className="disc-recap-arrow">{showResult ? "▲" : "▼"}</span>
             </button>
 
             {showResult && (
-              <div style={styles.recapContent}>
-                <div style={styles.recapRole}>
-                  <span style={styles.recapLabel}>YOUR ROLE</span>
-                  <span style={{ ...styles.recapRoleName, color: roleColor(roleName) }}>{roleName}</span>
+              <div className="disc-recap-content">
+                <div className="disc-recap-role">
+                  <span className="disc-recap-label">YOUR ROLE</span>
+                  <span className={`disc-recap-role-name disc-recap-role-name--${roleTeam}`}>{roleName}</span>
                 </div>
                 {actionResult?.message && (
-                  <div style={styles.recapResult}>
-                    <span style={styles.recapLabel}>WHAT HAPPENED</span>
-                    <p style={styles.recapMessage}>{actionResult.message}</p>
+                  <div>
+                    <span className="disc-recap-label">WHAT HAPPENED</span>
+                    <p className="disc-recap-message">{actionResult.message}</p>
                   </div>
                 )}
               </div>
@@ -164,173 +158,17 @@ function Discussion() {
         )}
 
         {/* Times up */}
-        {secondsLeft === 0 && <p style={styles.timesUp}>Time's up! Moving to vote...</p>}
+        {secondsLeft === 0 && <p className="disc-times-up">Time's up! Moving to vote...</p>}
 
+        {/* Host skip button */}
         {isHost && secondsLeft > 0 && (
-          <button style={styles.skipBtn} onClick={skipToVote}>
-            Skip to Vote (Host)
+          <button className="disc-skip-btn" onClick={skipToVote} disabled={skipping}>
+            {skipping ? "SKIPPING..." : "SKIP TO VOTE"}
           </button>
         )}
       </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  page: {
-    position: "relative",
-    width: "100vw",
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
-    fontFamily: "'Trade Winds', cursive",
-    color: "#e8dcc8",
-  },
-  vignette: {
-    position: "absolute",
-    inset: 0,
-    pointerEvents: "none",
-    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
-    zIndex: 1,
-  },
-  content: {
-    position: "relative",
-    zIndex: 10,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    width: "100%",
-    maxWidth: "420px",
-    padding: "32px 20px",
-  },
-  title: {
-    fontSize: "36px",
-    fontWeight: 400,
-    letterSpacing: "8px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    color: "#c9a84c",
-    textShadow: "0 0 30px rgba(201,168,76,0.2)",
-    textAlign: "center" as const,
-  },
-  subtitle: {
-    fontSize: "14px",
-    color: "#5a4a30",
-    marginBottom: "32px",
-    fontStyle: "italic",
-  },
-
-  // Timer
-  timerSection: {
-    width: "100%",
-    textAlign: "center" as const,
-    marginBottom: "32px",
-  },
-  timer: {
-    fontSize: "72px",
-    fontWeight: 400,
-    fontFamily: "'Creepster', cursive",
-    fontVariantNumeric: "tabular-nums",
-    display: "block",
-    marginBottom: "16px",
-    textShadow: "0 0 20px rgba(201,168,76,0.15)",
-  },
-  progressBg: {
-    width: "100%",
-    height: "4px",
-    backgroundColor: "#1a1510",
-    borderRadius: "2px",
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    borderRadius: "2px",
-    transition: "width 1s linear",
-  },
-
-  // Recap
-  recapCard: {
-    width: "100%",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    border: "1px solid #2a2019",
-    borderRadius: "4px",
-    overflow: "hidden",
-    marginBottom: "24px",
-  },
-  recapToggle: {
-    width: "100%",
-    padding: "14px 16px",
-    fontSize: "12px",
-    backgroundColor: "transparent",
-    color: "#6b5a3a",
-    border: "none",
-    borderBottom: "1px solid #1a1510",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-    letterSpacing: "2px",
-  },
-  recapToggleText: {},
-  recapArrow: {
-    fontSize: "10px",
-    color: "#5a4a30",
-  },
-  recapContent: {
-    padding: "16px",
-  },
-  recapRole: {
-    marginBottom: "16px",
-  },
-  recapLabel: {
-    display: "block",
-    fontSize: "10px",
-    color: "#5a4a30",
-    letterSpacing: "3px",
-    marginBottom: "6px",
-    fontFamily: "'Creepster', cursive",
-  },
-  recapRoleName: {
-    fontSize: "22px",
-    fontWeight: 400,
-    fontFamily: "'Creepster', cursive",
-    letterSpacing: "2px",
-  },
-  recapResult: {},
-  recapMessage: {
-    fontSize: "14px",
-    color: "#9a8a70",
-    lineHeight: "1.6",
-    marginTop: "4px",
-  },
-
-  // Times up
-  timesUp: {
-    color: "#c41e1e",
-    fontSize: "16px",
-    fontFamily: "'Creepster', cursive",
-    letterSpacing: "2px",
-    marginBottom: "16px",
-  },
-
-  // Skip button
-  skipBtn: {
-    marginTop: "16px",
-    padding: "12px 32px",
-    fontSize: "13px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#6b5a3a",
-    border: "1px solid #2a2019",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-    transition: "all 0.3s ease",
-  },
-};
 
 export default Discussion;
