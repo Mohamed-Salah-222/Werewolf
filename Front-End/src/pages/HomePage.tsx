@@ -221,9 +221,9 @@ function HomePage() {
                 style={
                   isActive
                     ? {
-                        borderColor: color,
-                        boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                      }
+                      borderColor: color,
+                      boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                    }
                     : undefined
                 }
                 onClick={() => setSelectedChar(char)}

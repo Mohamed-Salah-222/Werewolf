@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { clearSession, saveSession } from "../utils/gameSession";
+import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
 
 interface LocationState {
@@ -134,6 +135,11 @@ function Results() {
         <div style={{ ...styles.banner, borderColor: winnerColor() }}>
           <h1 style={{ ...styles.winnerText, color: winnerColor() }}>{winnerLabel()}</h1>
           <p style={styles.personalResult}>{didIWin() ? "You won!" : "You lost."}</p>
+        </div>
+
+        {/* Voice Chat */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
         </div>
 
         {/* Eliminated */}

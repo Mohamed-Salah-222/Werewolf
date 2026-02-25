@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
+import VoiceChat from "../components/VoiceChat";
 import "./RoleReveal.css";
 
 // ===== TYPES =====
@@ -139,6 +140,11 @@ function RoleReveal() {
       <div className="rr-vignette" />
 
       <div className="rr-content">
+        {/* Voice Chat */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+        </div>
+
         {/* Top section — changes based on phase */}
         <div className="rr-top-section">
           {!flipped && (

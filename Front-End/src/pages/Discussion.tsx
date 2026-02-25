@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
 // ===== TYPES =====
@@ -117,6 +118,11 @@ function Discussion() {
       <div className="disc-content">
         <h1 className="disc-title">DISCUSSION</h1>
         <p className="disc-subtitle">Talk it out. Who's the werewolf?</p>
+
+        {/* Voice Chat */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+        </div>
 
         {/* Timer */}
         <div className="disc-timer-section">

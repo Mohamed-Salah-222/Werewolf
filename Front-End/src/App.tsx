@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GameProvider } from "./contexts/GameContext";
+import { VoiceProvider } from "./contexts/VoiceConext";
 import HomePage from "./pages/HomePage";
 import WaitingRoom from "./pages/WaitingRoom";
 import RoleReveal from "./pages/RoleReveal";
@@ -12,15 +13,19 @@ function App() {
   return (
     <BrowserRouter>
       <GameProvider>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
-          <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
-          <Route path="/night/:gameCode" element={<NightPhase />} />
-          <Route path="/discussion/:gameCode" element={<Discussion />} />
-          <Route path="/vote/:gameCode" element={<Vote />} />
-          <Route path="/results/:gameCode" element={<Results />} />
-        </Routes>
+        <VoiceProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
+            <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
+            <Route path="/night/:gameCode" element={<NightPhase />} />
+            <Route path="/discussion/:gameCode" element={<Discussion />} />
+            <Route path="/vote/:gameCode" element={<Vote />} />
+            <Route path="/results/:gameCode" element={<Results />} />
+          </Routes>
+          <Routes>
+          </Routes>
+        </VoiceProvider>
       </GameProvider>
     </BrowserRouter>
   );

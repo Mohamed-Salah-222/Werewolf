@@ -5,6 +5,7 @@ import { API_URL } from "../config";
 import { clearSession } from "../utils/gameSession";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
+import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
 // ===== TYPES =====
@@ -118,7 +119,7 @@ function WaitingRoom() {
 
       // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
       if (gameCode && playerId) {
-        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
       }
     };
 
@@ -328,6 +329,8 @@ function WaitingRoom() {
         </div>
 
         <div className="wr-actions">
+          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+
           {isHost && (
             <>
               {startError && <div className="wr-error-message">{startError}</div>}

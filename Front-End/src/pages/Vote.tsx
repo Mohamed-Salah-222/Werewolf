@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
+import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
 
 interface LocationState {
@@ -92,6 +93,11 @@ function Vote() {
         <p style={styles.voteCount}>
           {totalVoted} / {totalPlayers} voted
         </p>
+
+        {/* Voice Chat */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+        </div>
 
         {!hasVoted ? (
           <>
