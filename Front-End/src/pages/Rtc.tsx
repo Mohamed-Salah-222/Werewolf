@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { Socket } from "socket.io-client";
 
 const servers = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
 interface RtcProps {
-  socket: any; // replace with your Socket type if you have one
+  socket: Socket;
   roomId: string;
 }
 
