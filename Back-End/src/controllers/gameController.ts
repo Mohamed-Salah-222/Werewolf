@@ -70,6 +70,7 @@ export const getGameByCode = (req: Request, res: Response): void => {
           ...(game.phase === "endGame" && { role: p.getRole().name }),
         })),
         timer: game.timer,
+        host: game.host,
         readyPlayers: readyPLayersArr,
       },
     });

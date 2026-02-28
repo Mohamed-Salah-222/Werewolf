@@ -351,17 +351,18 @@
   font-weight: 400;
   letter-spacing: 3px;
   background-color: transparent;
-  color: #5a3a2a;
+  color: #8b3a3a;
   border: 1px solid #2a1510;
-  border-radius: 4px;
+  border: 1px solid #5a2020;
   cursor: pointer;
   font-family: var(--font-display);
   transition: all 0.2s ease;
 }
 
 .wr-leave-btn:hover {
-  border-color: #5a2020;
-  color: #8b3a3a;
+  border-color: #8b3a3a;
+  color: #c45050;
+  background-color: rgba(139, 58, 58, 0.1);
 }
 
 .wr-error-message {
@@ -465,6 +466,37 @@
 
 /* ===== MOBILE (768px) — single column, hide side panels ===== */
 @media (max-width: 768px) {
+  .wr-code-label {
+    color: var(--color-text);
+  }
+
+  .wr-copy-hint {
+    color: var(--color-text-muted);
+  }
+
+  .wr-player-count {
+    color: var(--color-text);
+  }
+
+  .wr-code-button {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-color: var(--color-gold-dark);
+  }
+
+  .wr-player-row {
+    background-color: rgba(0, 0, 0, 0.6);
+    border-color: rgba(201, 168, 76, 0.2);
+  }
+
+  .wr-ready-btn,
+  .wr-leave-btn {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .wr-start-btn:disabled {
+    background-color: rgba(0, 0, 0, 0.5);
+    color: var(--color-text-dim);
+  }
   .wr-page {
     flex-direction: column;
     height: auto;
@@ -474,6 +506,18 @@
 
   .wr-cards {
     display: none;
+  }
+
+  .wr-page {
+    flex-direction: column;
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+  }
+
+  .wr-vignette {
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.9) 100%);
   }
 
   .wr-reveal {

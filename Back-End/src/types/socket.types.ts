@@ -9,8 +9,8 @@ export interface ClientToServerEvents {
   performAction: (data: { gameCode: string; playerId: PlayerId; action: any }) => void;
   vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) => void;
   restartGame: (data: { gameCode: string; playerId: PlayerId }) => void;
-  skipToVote: (data: { gameCode: string, playerId: PlayerId }) => void;
-  playerReady: (data: { gameCode: string; playerId: PlayerId }) => void;
+  skipToVote: (data: { gameCode: string; playerId: PlayerId }) => void;
+  playerReady: (data: { gameCode: string; playerId: PlayerId; ready: boolean }) => void;
   kickPlayer: (data: { gameCode: string; hostId: PlayerId; kickedPlayerId: PlayerId }) => void;
   voiceJoin: (data: { gameCode: string; playerId: PlayerId }) => void;
   voiceOffer: (data: { to: PlayerId; offer: any }) => void;
@@ -18,7 +18,6 @@ export interface ClientToServerEvents {
   voiceIce: (data: { to: PlayerId; candidate: any }) => void;
   voiceLeave: (data: { playerId: PlayerId }) => void;
 }
-
 
 // Server -> Client events (what backend sends)
 export interface ServerToClientEvents {
@@ -41,16 +40,14 @@ export interface ServerToClientEvents {
   error: (data: { message: string }) => void;
   groundCards: (data: { cards: Array<{ id: string; label: string }> }) => void;
   gameRestarted: () => void;
-  playerReady: (data: { playerId: PlayerId, ready: boolean }) => void;
+  playerReady: (data: { playerId: PlayerId; ready: boolean }) => void;
   playerKicked: (data: { kickedPlayerId: PlayerId }) => void;
   voiceNewPeer: (data: { playerId: PlayerId }) => void;
   voiceOffer: (data: { from: PlayerId; offer: any }) => void;
   voiceAnswer: (data: { from: PlayerId; answer: any }) => void;
   voiceIce: (data: { from: PlayerId; candidate: any }) => void;
   voiceLeave: (data: { playerId: PlayerId }) => void;
-  voiceExistingPeers: (data: {
-    players: PlayerId[];
-  }) => void;
+  voiceExistingPeers: (data: { players: PlayerId[] }) => void;
 }
 
 // Data structures

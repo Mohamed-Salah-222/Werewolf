@@ -31,9 +31,14 @@ interface PlayerStatus {
 
 function getCardCount(width: number): number {
   if (width <= 768) return 0;
-  if (width <= 1024) return 20;
-  if (width <= 1280) return 30;
-  return 42;
+  const cardWidth = 78;
+  const cardHeight = 110;
+  const gap = 4;
+  const panelWidth = width * 0.35 - 24;
+  const panelHeight = window.innerHeight - 24;
+  const cols = Math.floor((panelWidth + gap) / (cardWidth + gap));
+  const rows = Math.floor((panelHeight + gap) / (cardHeight + gap));
+  return Math.min(cols * rows, 42);
 }
 
 function shuffleGridCards(): GridCard[] {
@@ -64,6 +69,7 @@ function WaitingRoom() {
   const [playerReady, setPlayerReady] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(42);
+  const [hostId, setHostId] = useState<string>("");
 
   // Always-fresh ref to avoid stale closure issues in socket callbacks
   const readySetRef = useRef<Set<string>>(new Set());
@@ -90,6 +96,7 @@ function WaitingRoom() {
         const data = await res.json();
 
         if (data.success && data.data.players) {
+          if (data.data.host) setHostId(data.data.host);
           const seededSet = new Set<string>();
           const rawReady = data.data.readyPlayers;
 
@@ -119,7 +126,7 @@ function WaitingRoom() {
 
       // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
       if (gameCode && playerId) {
-        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
+        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
       }
     };
 
@@ -287,7 +294,7 @@ function WaitingRoom() {
                   <img src={backCardImage} alt="Card back" />
                 </div>
                 <div className="flip-card-back">
-                  <img src={allCards[card.cardIndex].small} alt={allCards[card.cardIndex].name} />
+                  <img src={allCards[card.cardIndex].image} alt={allCards[card.cardIndex].name} />
                 </div>
               </div>
             </div>
@@ -315,8 +322,8 @@ function WaitingRoom() {
                 <span className="wr-player-name">{p.name}</span>
                 <div className="wr-badges">
                   {p.isReady && <span className="wr-ready-badge">✓ READY</span>}
-                  {p.id === playerId && isHost && <span className="wr-host-badge">HOST</span>}
-                  {p.id === playerId && !isHost && <span className="wr-you-badge">YOU</span>}
+                  {p.id === hostId && <span className="wr-host-badge">HOST</span>}
+
                   {isHost && p.id !== playerId && (
                     <button className="wr-kick-btn" onClick={() => handleKick(p.id)}>
                       KICK
@@ -339,7 +346,6 @@ function WaitingRoom() {
               </button>
             </>
           )}
-          {!isHost && <p className="wr-waiting-text">Waiting for host to start...</p>}
           <button className={`wr-ready-btn ${playerReady ? "wr-ready-btn--active" : ""}`} onClick={handleReady}>
             {playerReady ? "✓ READY" : "READY"}
           </button>

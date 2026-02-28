@@ -37,8 +37,8 @@ export const characters: CharacterData[] = [
     name: "Werewolf",
     team: "villain",
     title: "The Beast Among Us",
-    description: "A creature of the night hiding in plain sight. When darkness falls, the werewolf reveals its true nature — hunting alongside its pack to devour the innocent.",
-    ability: "During the night, all Werewolves open their eyes and identify each other. If you are the only Werewolf, you may peek at one ground card.",
+    description: "A creature of the night hiding in plain sight. When darkness falls, the beast awakens and hunts with its pack.",
+    ability: "At night, Werewolves open eyes, see each other, if alone, you may peek one center card once.",
     square: werewolfSquare,
     fullBody: werewolf2d,
   },
@@ -47,8 +47,8 @@ export const characters: CharacterData[] = [
     name: "Minion",
     team: "villain",
     title: "The Shadow Servant",
-    description: "A loyal servant who would die for the wolves. Knows who they are, yet remains invisible to them.",
-    ability: "You see who the Werewolves are, but they don't know you exist. If you die, the Werewolves win.",
+    description: "A devoted servant sworn to the wolves. He knows their faces in the dark, yet remains unseen.",
+    ability: "You know the Werewolves, but they don't know you, if you die, their team just wins instantly.",
     square: minionSquare,
     fullBody: minion2d,
   },
@@ -57,8 +57,8 @@ export const characters: CharacterData[] = [
     name: "Seer",
     team: "village",
     title: "The All-Seeing Eye",
-    description: "Gifted with visions beyond mortal sight. The Seer peers into the souls of others to uncover the truth.",
-    ability: "Look at one player's role, or two of the ground cards.",
+    description: "Gifted with visions beyond mortal sight. The Seer peers into hidden souls, seeking truth in whispers and shadows.",
+    ability: "You have two options either view one player's role or instead view two center cards.",
     square: seerSquare,
     fullBody: seer2d,
   },
@@ -67,18 +67,18 @@ export const characters: CharacterData[] = [
     name: "Robber",
     team: "village",
     title: "The Night Thief",
-    description: "Takes what isn't his including identities. By morning, even he doesn't know who he truly is.",
-    ability: "Steal another player's role and see what you become.",
+    description: "A sly thief who steals more than gold. In the silence of night, he trades identities and wakes unsure of the face he now wears.",
+    ability: "Steal a role from another player then look at it, you become that role for the rest of play.",
     square: robberSquare,
     fullBody: robber2d,
   },
   {
     id: "troublemaker",
-    name: "Troublemaker",
+    name: "T.M",
     team: "village",
     title: "The Chaos Weaver",
-    description: "Sows confusion by swapping others' fates. Nobody is safe from her meddling hands.",
-    ability: "Swap the roles of two other players without looking.",
+    description: "She thrives in confusion and delight. With careless hands she twists fate, swapping destinies while laughter echoes in the dark.",
+    ability: "Swap two other players' roles at night without looking, their roles change, they won't know.",
     square: troublemakerSquare,
     fullBody: troublemaker2d,
   },
@@ -87,8 +87,8 @@ export const characters: CharacterData[] = [
     name: "Mason",
     team: "village",
     title: "The Sworn Brother",
-    description: "Bound by oath, Masons know their own. Their trust is unbreakable a rare gift in a village of lies.",
-    ability: "Wake up and see who the other Mason is.",
+    description: "Bound by oath and silent trust, Masons recognize their own. In a village filled with lies, their shared loyalty never breaks.",
+    ability: "Wake with the other Mason and recognize each other the mason bond can never break",
     square: masonSquare,
     fullBody: mason2d,
   },
@@ -97,8 +97,8 @@ export const characters: CharacterData[] = [
     name: "Drunk",
     team: "village",
     title: "The Lost Soul",
-    description: "Too deep in the bottle to remember who they are. Stumbles through the night, swapping fates unknowingly.",
-    ability: "Swap your role with a ground card — but you don't get to see it.",
+    description: "Lost in haze and heavy drink, the Drunk stumbles through fate. By morning, the role once held may be gone without notice.",
+    ability: "At night, swap your role with a random ground card and do not look",
     square: drunkSquare,
     fullBody: drunk2d,
   },
@@ -107,8 +107,8 @@ export const characters: CharacterData[] = [
     name: "Insomniac",
     team: "village",
     title: "The Sleepless Watcher",
-    description: "Can never quite fall asleep. While others scheme in darkness, the Insomniac watches and waits.",
-    ability: "Wake up last and check if your role has changed.",
+    description: "Sleep never comes to this soul. While others scheme in darkness, the Insomniac waits to see what remains by dawn.",
+    ability: "Wake last and check your current role card to see whether it changed during the night.",
     square: insomniacSquare,
     fullBody: insomniac2d,
   },
@@ -117,8 +117,8 @@ export const characters: CharacterData[] = [
     name: "Clone",
     team: "village",
     title: "The Mimic",
-    description: "Becomes whoever it chooses to copy. A blank slate that takes on the identity of another.",
-    ability: "Copy another player's role and become that role.",
+    description: "A blank reflection seeking identity. The Clone mirrors another's fate, becoming what it sees and living that borrowed truth.",
+    ability: "At night, choose a player and copy their role, you become that role and do its night action.",
     square: cloneSquare,
     fullBody: clone2d,
   },
@@ -127,8 +127,8 @@ export const characters: CharacterData[] = [
     name: "Joker",
     team: "neutral",
     title: "The Wild Card",
-    description: "Chaos incarnate. Wants nothing more than to be eliminated. A madman who wins by losing.",
-    ability: "You win if the village votes to eliminate you. You are on your own team.",
+    description: "Madness wrapped in a grin. The Joker thrives on chaos, claiming victory only through chosen defeat.",
+    ability: "You win if the village votes to eliminate you, act suspicious, but never admit your goal",
     square: jokerSquare,
     fullBody: joker2d,
   },
@@ -136,17 +136,17 @@ export const characters: CharacterData[] = [
 
 // ===== CARD IMAGES =====
 
-import backCard from "./assets/back_card.webp";
-import werewolfCard from "./assets/werewolf_card.webp";
-import minionCard from "./assets/minion_card.webp";
-import seerCard from "./assets/Seer_card.webp";
-import robberCard from "./assets/robber_card.webp";
-import troublemakerCard from "./assets/troublemaker_card.webp";
-import masonCard from "./assets/mason_card.webp";
-import drunkCard from "./assets/drunk_card.webp";
-import insomniacCard from "./assets/insomaniac_card.webp";
-import cloneCard from "./assets/clone_card.webp";
-import jokerCard from "./assets/joker_card.webp";
+import backCard from "./assets/back_card.jpg";
+import werewolfCard from "./assets/werewolf_card.jpg";
+import minionCard from "./assets/minion_card.jpg";
+import seerCard from "./assets/Seer_card.jpg";
+import robberCard from "./assets/robber_card.jpg";
+import troublemakerCard from "./assets/troublemaker_card.jpg";
+import masonCard from "./assets/mason_card.jpg";
+import drunkCard from "./assets/drunk_card.jpg";
+import insomniacCard from "./assets/insomaniac_card.jpg";
+import cloneCard from "./assets/clone_card.jpg";
+import jokerCard from "./assets/joker_card.jpg";
 
 import werewolfCardSmall from "./assets/werewolf_card_small.webp";
 import minionCardSmall from "./assets/minion_card_small.webp";

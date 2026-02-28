@@ -50,7 +50,7 @@ function HomePage() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(() => localStorage.getItem("werewolf_playerName") || "");
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ function HomePage() {
     setShowJoinModal(false);
     setShowHowToPlay(false);
     setError("");
-    setPlayerName("");
+    setPlayerName(localStorage.getItem("werewolf_playerName") || "");
     setGameCode("");
   }, []);
 
@@ -69,6 +69,8 @@ function HomePage() {
       setError("Name must be at least 2 characters");
       return;
     }
+    localStorage.setItem("werewolf_playerName", playerName.trim());
+
     setLoading(true);
     setError("");
     try {
@@ -118,6 +120,7 @@ function HomePage() {
       setError("Game code must be 6 characters");
       return;
     }
+    localStorage.setItem("werewolf_playerName", playerName.trim());
     setLoading(true);
     setError("");
     const code = gameCode.trim().toLowerCase();
@@ -221,9 +224,9 @@ function HomePage() {
                 style={
                   isActive
                     ? {
-                      borderColor: color,
-                      boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                    }
+                        borderColor: color,
+                        boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                      }
                     : undefined
                 }
                 onClick={() => setSelectedChar(char)}
