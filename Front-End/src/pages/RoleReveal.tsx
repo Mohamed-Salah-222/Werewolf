@@ -59,6 +59,8 @@ function RoleReveal() {
   const pendingActiveRoleRef = useRef<string | null>(null);
   const pendingGroundCardsRef = useRef<Array<{ id: string; label: string }> | null>(null);
 
+  const [playerStatuses, setPlayerStatuses] = useState<Array<{ id: string; name: string; confirmed: boolean }>>([]);
+
   // Keep roleNameRef in sync
   useEffect(() => {
     roleNameRef.current = role?.roleName ?? null;
@@ -118,6 +120,7 @@ function RoleReveal() {
 
   const handleConfirm = useCallback(() => {
     setConfirmed(true);
+    setPlayerStatuses((prev) => prev.map((p) => (p.id === playerId ? { ...p, confirmed: true } : p)));
     socket.emit("confirmRoleReveal", { gameCode, playerId });
   }, [gameCode, playerId]);
 
@@ -141,7 +144,7 @@ function RoleReveal() {
 
       <div className="rr-content">
         {/* Voice Chat */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px", width: "clamp(200px, 60vw, 300px)" }}>
           <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
         </div>
 
@@ -153,6 +156,16 @@ function RoleReveal() {
               <h1 className="rr-heading">YOUR FATE AWAITS</h1>
               <p className="rr-sub-text">Tap the card to reveal your role</p>
             </>
+          )}
+
+          {flipped && (
+            <div className="rr-player-status-list">
+              {playerStatuses.map((p) => (
+                <span key={p.id} className={`rr-player-dot ${p.confirmed ? "rr-player-dot--ready" : ""}`} title={p.name}>
+                  {p.name.charAt(0).toUpperCase()}
+                </span>
+              ))}
+            </div>
           )}
 
           {flipped && (

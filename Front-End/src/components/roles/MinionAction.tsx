@@ -1,11 +1,85 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./MinionAction.css";
+
+// ===== TYPES =====
+
+interface MinionResult {
+  werewolves: Array<{ id: string; name: string }>;
+  message?: string;
+}
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  playerId: string;
+  players: Array<{ id: string; name: string }>;
+  actionResult?: MinionResult | null;
 }
 
-function MinionAction({ onAction }: Props) {
-  const [submitted, setSubmitted] = useState(false);
+// ===== HELPERS =====
+
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
+}
+
+function getMinionCardImage(): string {
+  return getCardImage("minion");
+}
+
+function getWerewolfCardImage(): string {
+  return getCardImage("werewolf");
+}
+
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
+
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
+    });
+  }
+
+  return positions;
+}
+
+// ===== COMPONENT =====
+
+function MinionAction({ onAction, playerId, players, actionResult }: Props) {
+  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [showNoWolves, setShowNoWolves] = useState(false);
+  const hasProcessedResult = useRef(false);
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    hasProcessedResult.current = true;
+
+    if (actionResult.werewolves.length > 0) {
+      const wwIds = actionResult.werewolves.map((w) => w.id);
+      wwIds.forEach((id, i) => {
+        setTimeout(
+          () => {
+            setRevealedIds((prev) => new Set([...prev, id]));
+          },
+          500 + i * 400,
+        );
+      });
+    } else {
+      setTimeout(() => {
+        setShowNoWolves(true);
+      }, 500);
+    }
+  }, [actionResult]);
 
   const handleAction = () => {
     setSubmitted(true);
@@ -13,64 +87,67 @@ function MinionAction({ onAction }: Props) {
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#c41e1e" }}>MINION</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>You serve the Werewolves. Tap below to see who they are.</p>
-      <button style={submitted ? styles.buttonDisabled : styles.button} onClick={handleAction} disabled={submitted}>
-        {submitted ? "LOOKING..." : "SEE WEREWOLVES"}
-      </button>
+    <div className="mn-action">
+      <div className="mn-circle-area">
+        {/* Player cards around the circle */}
+        {players.map((player, i) => {
+          const pos = positions[i];
+          const isSelf = player.id === playerId;
+          const isRevealed = revealedIds.has(player.id);
+
+          return (
+            <div key={player.id} className={`mn-slot ${isSelf ? "mn-slot--self" : ""} ${isRevealed ? "mn-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <span className={`mn-name ${isSelf ? "mn-name--self" : ""} ${isRevealed ? "mn-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+
+              <div className={`mn-flip ${isSelf || isRevealed ? "mn-flip--up" : ""}`}>
+                <div className="mn-flip-inner">
+                  <div className="mn-flip-face mn-flip-face--back">
+                    <img src={backCardImage} alt="Card back" draggable={false} />
+                  </div>
+                  <div className="mn-flip-face mn-flip-face--front">
+                    <img src={isSelf ? getMinionCardImage() : isRevealed ? getWerewolfCardImage() : backCardImage} alt={isSelf ? "Minion" : isRevealed ? "Werewolf" : "Card"} draggable={false} />
+                  </div>
+                </div>
+              </div>
+
+              {isRevealed && <div className="mn-glow mn-glow--red" />}
+              {isSelf && <div className="mn-glow mn-glow--red mn-glow--subtle" />}
+            </div>
+          );
+        })}
+
+        {/* Center message — no werewolves */}
+        {showNoWolves && (
+          <div className="mn-center-message">
+            <span className="mn-no-wolves-icon">☽</span>
+            <span className="mn-no-wolves-text">NO WEREWOLVES</span>
+            <span className="mn-no-wolves-sub">You're on your own</span>
+          </div>
+        )}
+
+        {/* Center message — wolves found */}
+        {revealedIds.size > 0 && (
+          <div className="mn-center-message">
+            <span className="mn-found-text">YOUR MASTERS</span>
+          </div>
+        )}
+      </div>
+
+      {/* Button — below the circle */}
+      <div className="mn-bottom">
+        {!submitted ? (
+          <button className="mn-btn" onClick={handleAction}>
+            <span className="mn-btn-icon">👁</span>
+            <span className="mn-btn-text">SEE WEREWOLVES</span>
+          </button>
+        ) : !actionResult ? (
+          <span className="mn-bottom-status">LOOKING...</span>
+        ) : (
+          <span className="mn-bottom-status mn-bottom-status--done">{actionResult.werewolves.length > 0 ? "Serve them well" : "No wolves to serve"}</span>
+        )}
+      </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default MinionAction;

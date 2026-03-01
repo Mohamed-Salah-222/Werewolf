@@ -123,27 +123,32 @@ function HomePage() {
     localStorage.setItem("werewolf_playerName", playerName.trim());
     setLoading(true);
     setError("");
-    const code = gameCode.trim().toLowerCase();
-    const name = playerName.trim();
-    const response = await emitJoinGame(code, name);
-    setLoading(false);
-    if (response.success) {
-      setSession({
-        gameCode: code,
-        playerId: response.playerId || "",
-        playerName: response.playerName || "",
-        isHost: false,
-      });
-      setShowJoinModal(false);
-      navigate(`/waiting/${code}`, {
-        state: {
-          playerName: response.playerName,
-          playerId: response.playerId,
+    try {
+      const code = gameCode.trim().toLowerCase();
+      const name = playerName.trim();
+      const response = await emitJoinGame(code, name);
+      setLoading(false);
+      if (response.success) {
+        setSession({
+          gameCode: code,
+          playerId: response.playerId || "",
+          playerName: response.playerName || "",
           isHost: false,
-        },
-      });
-    } else {
-      setError(response.error || "Failed to join game");
+        });
+        setShowJoinModal(false);
+        navigate(`/waiting/${code}`, {
+          state: {
+            playerName: response.playerName,
+            playerId: response.playerId,
+            isHost: false,
+          },
+        });
+      } else {
+        setError(response.error || "Failed to join game");
+      }
+    } catch {
+      setError("Could not connect to server");
+      setLoading(false);
     }
   }, [playerName, gameCode, navigate, setSession]);
 

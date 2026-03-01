@@ -260,6 +260,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         // Remove player from game
         game.players = game.players.filter((p) => p.id !== player.id);
 
+        game.readyPlayers.delete(kickedPlayerId);
+
         // Notify others
         io.to(gameCode).emit("playerKicked", {
           kickedPlayerId,
@@ -293,6 +295,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
 
         // Remove player from game
         game.players = game.players.filter((p) => p.id !== playerId);
+
+        game.readyPlayers.delete(playerId);
 
         // Leave socket room
         socket.leave(gameCode);
@@ -394,8 +398,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         game.readyPlayers.set(playerId, ready);
         if (game.readyPlayers.size === game.players.length) {
           let allReady = true;
-          for (const [, r] of game.readyPlayers) {
-            if (!r) {
+          for (const p of game.players) {
+            if (!game.readyPlayers.get(p.id)) {
               allReady = false;
               break;
             }
@@ -417,6 +421,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         if (!game) return;
 
         game.confirmPlayerRoleReveal(playerId);
+        io.to(gameCode).emit("playerRoleConfirmed", { playerId });
 
         // Check if all players confirmed
         if (game.confirmedPlayerRoleReveal.length === game.players.length) {
@@ -559,6 +564,8 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
             // Only remove player if game hasn't started yet
             if (game.phase === Phase.Waiting) {
               game.players = game.players.filter((p) => p.id !== currentPlayerId);
+
+              game.readyPlayers.delete(currentPlayerId);
 
               io.to(currentGameCode).emit("playerLeft", {
                 playerId: currentPlayerId,

@@ -1,0 +1,184 @@
+/* ===== NIGHT ROLE PROGRESS — STACKED CARD ===== */
+.nrp-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: clamp(64px, 8vw, 90px);
+  flex-shrink: 0;
+}
+
+/* ===== CARD ===== */
+.nrp-card {
+  position: relative;
+  width: clamp(56px, 7vw, 80px);
+  height: clamp(78px, 9.8vw, 112px);
+  border-radius: 4px;
+  overflow: visible;
+  z-index: 3;
+}
+
+.nrp-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  border: 1px solid var(--color-border-dark);
+}
+
+/* Active card entrance */
+.nrp-card--active {
+  animation: cardEnter 0.4s ease-out;
+}
+
+.nrp-card--active .nrp-card-img {
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+.nrp-card--mine .nrp-card-img {
+  border-color: rgba(201, 168, 76, 0.5);
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.2);
+}
+
+/* Exit animation — slide up and fade */
+.nrp-card--exit {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  animation: cardExit 0.5s ease-in forwards;
+  pointer-events: none;
+}
+
+@keyframes cardEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardExit {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-24px) scale(0.9);
+  }
+}
+
+/* ===== TIMER BAR (bottom of card) ===== */
+.nrp-timer-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 4px 4px;
+  overflow: hidden;
+}
+
+.nrp-timer-fill {
+  height: 100%;
+  transform-origin: left;
+  transition:
+    transform 1s linear,
+    background-color 0.3s ease;
+  background-color: var(--color-gold);
+  box-shadow: 0 0 6px rgba(201, 168, 76, 0.5);
+}
+
+.nrp-timer-fill--urgent {
+  background-color: var(--color-villain);
+  box-shadow: 0 0 6px rgba(196, 30, 30, 0.6);
+}
+
+/* ===== ROLE NAME LABEL ===== */
+.nrp-role-name {
+  display: block;
+  text-align: center;
+  margin-top: 6px;
+  font-size: clamp(7px, 0.75vw, 10px);
+  font-family: var(--font-display);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #5a4a30;
+  white-space: nowrap;
+}
+
+.nrp-role-name--mine {
+  color: var(--color-gold);
+}
+
+.nrp-you-tag {
+  font-size: clamp(6px, 0.6vw, 8px);
+  letter-spacing: 1px;
+  color: var(--color-gold);
+}
+
+/* ===== SHADOW CARDS (stack depth) ===== */
+.nrp-shadow {
+  position: absolute;
+  width: clamp(56px, 7vw, 80px);
+  height: clamp(78px, 9.8vw, 112px);
+  border-radius: 4px;
+  background-color: #0d0a08;
+  border: 1px solid var(--color-border-dark);
+  pointer-events: none;
+}
+
+.nrp-shadow--1 {
+  top: 4px;
+  left: 50%;
+  transform: translateX(calc(-50% + 3px));
+  z-index: 1;
+  opacity: 0.4;
+}
+
+.nrp-shadow--2 {
+  top: 8px;
+  left: 50%;
+  transform: translateX(calc(-50% + 6px));
+  z-index: 0;
+  opacity: 0.2;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .nrp-card {
+    width: clamp(48px, 14vw, 64px);
+    height: clamp(67px, 19.6vw, 90px);
+  }
+
+  .nrp-shadow {
+    width: clamp(48px, 14vw, 64px);
+    height: clamp(67px, 19.6vw, 90px);
+  }
+
+  .nrp-role-name {
+    font-size: clamp(7px, 2.2vw, 9px);
+  }
+}
+
+@media (max-width: 480px) {
+  .nrp-card {
+    width: clamp(44px, 12vw, 56px);
+    height: clamp(62px, 16.8vw, 78px);
+  }
+
+  .nrp-shadow {
+    width: clamp(44px, 12vw, 56px);
+    height: clamp(62px, 16.8vw, 78px);
+  }
+}

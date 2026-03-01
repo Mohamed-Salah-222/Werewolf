@@ -1,196 +1,247 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./SeerAction.css";
+
+// ===== TYPES =====
+
+interface SeerResult {
+  actionType: "player" | "ground";
+  playerName?: string;
+  role?: string;
+  team?: string;
+  groundRole1?: string;
+  groundRole2?: string;
+  message?: string;
+}
 
 interface Props {
+  onAction: (action: Record<string, unknown>) => void;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   groundCards: Array<{ id: string; label: string }>;
-  onAction: (action: { type: string; targetPlayer?: { id: string }; groundRole1?: { id: string }; groundRole2?: { id: string } }) => void;
+  actionResult?: SeerResult | null;
 }
 
-function SeerAction({ playerId, players, groundCards, onAction }: Props) {
-  const [mode, setMode] = useState<"choose" | "player" | "ground">("choose");
-  const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
-  const [selectedGround, setSelectedGround] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+// ===== HELPERS =====
 
-  const others = players.filter((p) => p.id !== playerId);
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
+}
 
-  const handleSeePlayer = () => {
-    if (!selectedPlayer) return;
-    setSubmitted(true);
-    onAction({
-      type: "seer_player_role",
-      targetPlayer: { id: selectedPlayer },
+function getSeerCardImage(): string {
+  return getCardImage("seer");
+}
+
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
+
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
     });
-  };
-
-  const handleSeeGround = () => {
-    if (selectedGround.length !== 2) return;
-    setSubmitted(true);
-    onAction({
-      type: "seer_ground_roles",
-      groundRole1: { id: selectedGround[0] },
-      groundRole2: { id: selectedGround[1] },
-    });
-  };
-
-  const toggleGround = (id: string) => {
-    if (submitted) return;
-    setSelectedGround((prev) => {
-      if (prev.includes(id)) return prev.filter((g) => g !== id);
-      if (prev.length >= 2) return prev;
-      return [...prev, id];
-    });
-  };
-
-  if (mode === "choose") {
-    return (
-      <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>SEER</h2>
-        <div style={styles.divider} />
-        <p style={styles.description}>Choose what to look at:</p>
-        <button style={styles.choiceButton} onClick={() => setMode("player")}>
-          <span style={styles.choiceText}>LOOK AT ONE PLAYER'S ROLE</span>
-        </button>
-        <button style={styles.choiceButton} onClick={() => setMode("ground")}>
-          <span style={styles.choiceText}>LOOK AT TWO GROUND CARDS</span>
-        </button>
-      </div>
-    );
   }
 
-  if (mode === "player") {
-    return (
-      <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>SEER</h2>
-        <div style={styles.divider} />
-        <p style={styles.description}>Choose a player to see their role:</p>
-        <div style={styles.list}>
-          {others.map((p) => (
-            <button key={p.id} style={selectedPlayer === p.id ? styles.selectedItem : styles.item} onClick={() => !submitted && setSelectedPlayer(p.id)} disabled={submitted}>
-              {p.name}
-            </button>
-          ))}
-        </div>
-        <button style={!selectedPlayer || submitted ? styles.buttonDisabled : styles.button} onClick={handleSeePlayer} disabled={!selectedPlayer || submitted}>
-          {submitted ? "LOOKING..." : "SEE ROLE"}
-        </button>
-      </div>
-    );
-  }
+  return positions;
+}
+
+// ===== COMPONENT =====
+
+function SeerAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+  // Selection mode: null = choosing, "player" = locked to player, "ground" = locked to ground
+  const [mode, setMode] = useState<"player" | "ground" | null>(null);
+  const [submitted, setSubmitted] = useState(!!actionResult);
+
+  // Player selection
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [revealedPlayerId, setRevealedPlayerId] = useState<string | null>(null);
+  const [revealedPlayerRole, setRevealedPlayerRole] = useState<string>("");
+
+  // Ground selection
+  const [selectedGroundIds, setSelectedGroundIds] = useState<string[]>([]);
+  const [revealedGroundMap, setRevealedGroundMap] = useState<Record<string, string>>({});
+
+  const hasProcessedResult = useRef(false);
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  // Process action result
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    hasProcessedResult.current = true;
+
+    if (actionResult.actionType === "player" && actionResult.role) {
+      setMode("player");
+      setRevealedPlayerRole(actionResult.role);
+      // Find the player by name to reveal their card
+      const target = players.find((p) => p.name === actionResult.playerName);
+      if (target) {
+        setTimeout(() => {
+          setRevealedPlayerId(target.id);
+        }, 400);
+      }
+    } else if (actionResult.actionType === "ground") {
+      setMode("ground");
+      // Reveal both ground cards with stagger
+      const map: Record<string, string> = {};
+      const gc = groundCards;
+
+      // We need to figure out which ground card indices were selected
+      // Since we might be rejoining, reveal the first two ground cards
+      if (actionResult.groundRole1 && gc[0]) {
+        map[gc[0].id] = actionResult.groundRole1;
+      }
+      if (actionResult.groundRole2 && gc[1]) {
+        map[gc[1].id] = actionResult.groundRole2;
+      }
+
+      // Stagger the reveals
+      const entries = Object.entries(map);
+      entries.forEach(([id, role], i) => {
+        setTimeout(
+          () => {
+            setRevealedGroundMap((prev) => ({ ...prev, [id]: role }));
+          },
+          400 + i * 400,
+        );
+      });
+    }
+  }, [actionResult, players, groundCards]);
+
+  // Click a player card
+  const handlePlayerClick = useCallback(
+    (targetId: string) => {
+      if (submitted || mode === "ground" || targetId === playerId) return;
+
+      setMode("player");
+      setSelectedPlayerId(targetId);
+      setSubmitted(true);
+
+      onAction({
+        type: "seer_player_role",
+        targetPlayer: { id: targetId },
+      });
+    },
+    [submitted, mode, playerId, onAction],
+  );
+
+  // Click a ground card
+  const handleGroundClick = useCallback(
+    (groundId: string) => {
+      if (submitted || mode === "player") return;
+      if (selectedGroundIds.includes(groundId)) return;
+
+      setMode("ground");
+
+      const newSelected = [...selectedGroundIds, groundId];
+      setSelectedGroundIds(newSelected);
+
+      // If we now have 2 selected, submit
+      if (newSelected.length === 2) {
+        setSubmitted(true);
+        onAction({
+          type: "seer_ground_roles",
+          groundRole1: { id: newSelected[0] },
+          groundRole2: { id: newSelected[1] },
+        });
+      }
+    },
+    [submitted, mode, selectedGroundIds, onAction],
+  );
+
+  // Determine interactivity states
+  const canClickPlayers = !submitted && mode !== "ground";
+  const canClickGround = !submitted && mode !== "player";
 
   return (
-    <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#2a8a4a" }}>SEER</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>Pick exactly 2 ground cards:</p>
-      <div style={styles.list}>
-        {groundCards.map((card) => (
-          <button key={card.id} style={selectedGround.includes(card.id) ? styles.selectedItem : styles.item} onClick={() => toggleGround(card.id)} disabled={submitted}>
-            {card.label}
-          </button>
-        ))}
+    <div className="sr-action">
+      <div className="sr-circle-area">
+        {/* Player cards around the circle */}
+        {players.map((player, i) => {
+          const pos = positions[i];
+          const isSelf = player.id === playerId;
+          const isRevealed = revealedPlayerId === player.id;
+          const isClickable = canClickPlayers && !isSelf;
+
+          return (
+            <div key={player.id} className={`sr-slot ${isSelf ? "sr-slot--self" : ""} ${isRevealed ? "sr-slot--revealed" : ""} ${isClickable ? "sr-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && handlePlayerClick(player.id)}>
+              <span className={`sr-name ${isSelf ? "sr-name--self" : ""} ${isRevealed ? "sr-name--revealed" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+
+              <div className={`sr-flip ${isSelf || isRevealed ? "sr-flip--up" : ""}`}>
+                <div className="sr-flip-inner">
+                  <div className="sr-flip-face sr-flip-face--back">
+                    <img src={backCardImage} alt="Card back" draggable={false} />
+                  </div>
+                  <div className="sr-flip-face sr-flip-face--front">
+                    <img src={isSelf ? getSeerCardImage() : isRevealed ? getCardImage(revealedPlayerRole) : backCardImage} alt={isSelf ? "Seer" : isRevealed ? revealedPlayerRole : "Card"} draggable={false} />
+                  </div>
+                </div>
+              </div>
+
+              {isRevealed && <div className="sr-glow sr-glow--green" />}
+              {isSelf && <div className="sr-glow sr-glow--green sr-glow--subtle" />}
+            </div>
+          );
+        })}
+
+        {/* Ground cards in the center */}
+        <div className="sr-ground">
+          {groundCards.slice(0, 3).map((gc) => {
+            const isRevealed = !!revealedGroundMap[gc.id];
+            const isSelected = selectedGroundIds.includes(gc.id);
+            const isClickable = canClickGround && !isRevealed;
+            const revealedRole = revealedGroundMap[gc.id] || "";
+
+            return (
+              <div key={gc.id} className={`sr-ground-card ${isSelected ? "sr-ground-card--selected" : ""} ${isRevealed ? "sr-ground-card--revealed" : ""} ${isClickable ? "sr-ground-card--clickable" : ""}`} onClick={() => isClickable && handleGroundClick(gc.id)}>
+                <div className={`sr-flip sr-flip--ground ${isRevealed ? "sr-flip--up" : ""}`}>
+                  <div className="sr-flip-inner">
+                    <div className="sr-flip-face sr-flip-face--back">
+                      <img src={backCardImage} alt="Ground card" draggable={false} />
+                    </div>
+                    <div className="sr-flip-face sr-flip-face--front">
+                      <img src={isRevealed ? getCardImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
+                    </div>
+                  </div>
+                </div>
+                {isRevealed && <div className="sr-glow sr-glow--green" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Instruction / status in center (above ground cards) */}
+        {!submitted && !mode && (
+          <div className="sr-center-hint">
+            <span className="sr-hint-text">TAP A PLAYER OR GROUND CARD</span>
+          </div>
+        )}
+        {!submitted && mode === "ground" && selectedGroundIds.length === 1 && (
+          <div className="sr-center-hint">
+            <span className="sr-hint-text">PICK ONE MORE</span>
+          </div>
+        )}
       </div>
-      <button style={selectedGround.length !== 2 || submitted ? styles.buttonDisabled : styles.button} onClick={handleSeeGround} disabled={selectedGround.length !== 2 || submitted}>
-        {submitted ? "LOOKING..." : "SEE CARDS"}
-      </button>
+
+      {/* Bottom status */}
+      <div className="sr-bottom">
+        {!submitted ? (
+          <span className="sr-bottom-hint">{mode === "ground" ? `${selectedGroundIds.length}/2 ground cards selected` : "Choose a player's card or two ground cards"}</span>
+        ) : !actionResult ? (
+          <span className="sr-bottom-status">REVEALING...</span>
+        ) : (
+          <span className="sr-bottom-status sr-bottom-status--done">{actionResult.actionType === "player" ? `You saw ${actionResult.playerName}'s role` : "You peeked at the ground"}</span>
+        )}
+      </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginBottom: "24px",
-  },
-  item: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c9a84c",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-    boxShadow: "0 0 16px rgba(201,168,76,0.15), inset 0 0 12px rgba(201,168,76,0.05)",
-  },
-  choiceButton: {
-    display: "block",
-    width: "100%",
-    padding: "18px 16px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    border: "1px solid #2a2019",
-    borderRadius: "4px",
-    marginBottom: "12px",
-    cursor: "pointer",
-  },
-  choiceText: {
-    fontSize: "13px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    color: "#c9a84c",
-    fontFamily: "'Creepster', cursive",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default SeerAction;

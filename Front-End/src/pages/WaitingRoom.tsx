@@ -8,6 +8,10 @@ import { allCards, backCardImage } from "../characters";
 import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
+// ===== CONSTANTS =====
+
+const MIN_PLAYERS = 6;
+
 // ===== TYPES =====
 
 interface LocationState {
@@ -74,9 +78,21 @@ function WaitingRoom() {
   // Always-fresh ref to avoid stale closure issues in socket callbacks
   const readySetRef = useRef<Set<string>>(new Set());
 
+  // Timeout refs for cleanup on unmount
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
 
   useLeaveWarning(true);
+
+  // Clear timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+      if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
+    };
+  }, []);
 
   // Responsive card count
   useEffect(() => {
@@ -120,13 +136,13 @@ function WaitingRoom() {
 
           if (seededSet.has(playerId)) setPlayerReady(true);
         }
+
+        // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
+        if (gameCode && playerId) {
+          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+        }
       } catch (err) {
         console.error("Failed to fetch players", err);
-      }
-
-      // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
-      if (gameCode && playerId) {
-        socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
       }
     };
 
@@ -181,6 +197,10 @@ function WaitingRoom() {
       if (data.playerId === playerId) setPlayerReady(data.ready);
     });
 
+    socket.on("hostChanged", (data: { newHostId: string }) => {
+      setHostId(data.newHostId);
+    });
+
     socket.on("gameStarted", () => {
       navigate(`/role-reveal/${gameCode}`, { state: { playerName, playerId, isHost } });
     });
@@ -205,6 +225,7 @@ function WaitingRoom() {
       socket.off("playerLeft");
       socket.off("playerListUpdate");
       socket.off("playerReady");
+      socket.off("hostChanged");
       socket.off("gameStarted");
       socket.off("roleReveal");
       socket.off("playerKicked");
@@ -216,22 +237,25 @@ function WaitingRoom() {
   const handleCopyCode = useCallback(() => {
     navigator.clipboard.writeText(gameCode || "");
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   }, [gameCode]);
 
   const handleStartGame = useCallback(() => {
-    const allReady = players.length >= 6 && players.every((p) => p.isReady);
+    const allReady = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
     if (!allReady) {
       const notReadyCount = players.filter((p) => !p.isReady).length;
       setStartError(`${notReadyCount} player(s) not ready yet`);
-      setTimeout(() => setStartError(null), 3000);
+      if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
+      startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
       return;
     }
     setStartError(null);
     socket.emit("startGame", { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
       if (response && !response.success) {
         setStartError(response.error || "Failed to start game");
-        setTimeout(() => setStartError(null), 3000);
+        if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
+        startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
       }
     });
   }, [players, gameCode, playerId]);
@@ -272,9 +296,9 @@ function WaitingRoom() {
 
   // ===== DERIVED =====
 
-  const canStart = players.length >= 6 && players.every((p) => p.isReady);
+  const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
   const notReadyCount = players.filter((p) => !p.isReady).length;
-  const needMore = 6 - players.length;
+  const needMore = MIN_PLAYERS - players.length;
 
   const startButtonText = needMore > 0 ? `NEED ${needMore} MORE` : canStart ? "START GAME" : `${notReadyCount} NOT READY`;
 

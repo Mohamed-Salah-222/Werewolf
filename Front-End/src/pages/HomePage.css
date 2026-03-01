@@ -1,5 +1,3 @@
-
-
 /* ===== PAGE ===== */
 .home-page {
   position: relative;
@@ -232,6 +230,7 @@
 .home-char-desc {
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   color: var(--color-text-dim);
@@ -294,6 +293,15 @@
   transition: all 0.3s ease;
 }
 
+.home-grid-slot:hover:not(.home-grid-slot--active) {
+  border-color: #3d2e1a;
+  transform: translateY(-2px);
+}
+
+.home-grid-slot:hover:not(.home-grid-slot--active) .home-grid-label {
+  color: var(--color-text-dim);
+}
+
 .home-grid-slot--active {
   /* border-color and box-shadow set via inline style for dynamic team color */
 }
@@ -330,6 +338,7 @@
   text-transform: uppercase;
   font-family: var(--font-display);
   text-align: center;
+  transition: color 0.3s ease;
 }
 
 /* ===== OVERLAY & MODAL ===== */
@@ -376,10 +385,14 @@
   font-family: var(--font-body);
   outline: none;
   box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .home-input:focus {
-  border-color: #3d2e1a;
+  border-color: var(--color-gold);
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.15);
 }
 
 .home-error {
@@ -429,7 +442,7 @@
   transition: background-color 0.2s ease;
 }
 
-.home-confirm-btn:hover {
+.home-confirm-btn:hover:not(:disabled) {
   background-color: #d4b255;
 }
 

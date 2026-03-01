@@ -1,115 +1,159 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./JokerAction.css";
 
-interface Props {
-  groundCards: Array<{ id: string; label: string }>;
-  onAction: (action: Record<string, unknown>) => void;
+// ===== TYPES =====
+
+interface JokerResult {
+  groundRole: string;
+  message?: string;
 }
 
-function JokerAction({ groundCards, onAction }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+interface Props {
+  onAction: (action: Record<string, unknown>) => void;
+  playerId: string;
+  players: Array<{ id: string; name: string }>;
+  groundCards: Array<{ id: string; label: string }>;
+  actionResult?: JokerResult | null;
+}
 
-  const handleAction = () => {
-    if (!selected) return;
+// ===== HELPERS =====
+
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
+}
+
+function getJokerCardImage(): string {
+  return getCardImage("joker");
+}
+
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
+
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
+    });
+  }
+
+  return positions;
+}
+
+// ===== COMPONENT =====
+
+function JokerAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
+  const [revealedRole, setRevealedRole] = useState<string>("");
+  const hasProcessedResult = useRef(!!actionResult);
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  // Process result
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    hasProcessedResult.current = true;
+
+    if (actionResult.groundRole) {
+      setRevealedRole(actionResult.groundRole);
+    }
+  }, [actionResult]);
+
+  // On rejoin, set revealed role immediately
+  useEffect(() => {
+    if (actionResult?.groundRole && !revealedRole) {
+      setRevealedRole(actionResult.groundRole);
+    }
+  }, [actionResult, revealedRole]);
+
+  const handleGroundClick = (groundId: string) => {
+    if (submitted) return;
+
+    setSelectedGroundId(groundId);
     setSubmitted(true);
-    onAction({ type: "joker", targetRoleId: selected });
+    onAction({ type: "joker", targetRoleId: groundId });
   };
 
+  const isClickable = !submitted;
+
   return (
-    <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#d4a017" }}>JOKER</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>Pick one ground card to peek at.</p>
-      <div style={styles.list}>
-        {groundCards.map((card) => (
-          <button key={card.id} style={selected === card.id ? styles.selectedItem : styles.item} onClick={() => !submitted && setSelected(card.id)} disabled={submitted}>
-            {card.label}
-          </button>
-        ))}
+    <div className="jk-action">
+      <div className="jk-circle-area">
+        {/* Player cards around the circle */}
+        {players.map((player, i) => {
+          const isSelf = player.id === playerId;
+          const pos = positions[i];
+
+          return (
+            <div key={player.id} className={`jk-slot ${isSelf ? "jk-slot--self" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <span className={`jk-name ${isSelf ? "jk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+
+              <div className={`jk-flip ${isSelf ? "jk-flip--up" : ""}`}>
+                <div className="jk-flip-inner">
+                  <div className="jk-flip-face jk-flip-face--back">
+                    <img src={backCardImage} alt="Card back" draggable={false} />
+                  </div>
+                  <div className="jk-flip-face jk-flip-face--front">
+                    <img src={isSelf ? getJokerCardImage() : backCardImage} alt={isSelf ? "Joker" : "Card"} draggable={false} />
+                  </div>
+                </div>
+              </div>
+
+              {isSelf && <div className="jk-glow jk-glow--gold jk-glow--subtle" />}
+            </div>
+          );
+        })}
+
+        {/* Ground cards in the center */}
+        <div className="jk-ground">
+          {groundCards.slice(0, 3).map((gc) => {
+            const isSelected = gc.id === selectedGroundId;
+            const isRevealed = isSelected && !!revealedRole;
+            const canClick = isClickable;
+
+            return (
+              <div key={gc.id} className={`jk-ground-card ${canClick ? "jk-ground-card--clickable" : ""} ${isRevealed ? "jk-ground-card--revealed" : ""}`} onClick={() => canClick && handleGroundClick(gc.id)}>
+                <div className={`jk-flip jk-flip--ground ${isRevealed ? "jk-flip--up" : ""}`}>
+                  <div className="jk-flip-inner">
+                    <div className="jk-flip-face jk-flip-face--back">
+                      <img src={backCardImage} alt="Ground card" draggable={false} />
+                    </div>
+                    <div className="jk-flip-face jk-flip-face--front">
+                      <img src={isRevealed ? getCardImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
+                    </div>
+                  </div>
+                </div>
+                {isRevealed && <div className="jk-glow jk-glow--gold" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Center hints */}
+        {!submitted && (
+          <div className="jk-center-hint">
+            <span className="jk-hint-text">PEEK AT A GROUND CARD</span>
+          </div>
+        )}
+        {submitted && !revealedRole && (
+          <div className="jk-center-hint">
+            <span className="jk-hint-text">PEEKING...</span>
+          </div>
+        )}
       </div>
-      <button style={!selected || submitted ? styles.buttonDisabled : styles.button} onClick={handleAction} disabled={!selected || submitted}>
-        {submitted ? "PEEKING..." : "PEEK AT CARD"}
-      </button>
+
+      {/* Bottom */}
+      <div className="jk-bottom">{!submitted ? <span className="jk-bottom-hint">Tap a ground card to see what it is</span> : !revealedRole ? <span className="jk-bottom-status">PEEKING...</span> : <span className="jk-bottom-status jk-bottom-status--done">You saw a {revealedRole}</span>}</div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginBottom: "24px",
-  },
-  item: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c9a84c",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-    boxShadow: "0 0 16px rgba(201,168,76,0.15), inset 0 0 12px rgba(201,168,76,0.05)",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default JokerAction;

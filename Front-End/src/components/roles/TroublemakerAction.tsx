@@ -1,131 +1,237 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./TroublemakerAction.css";
 
-interface Props {
-  playerId: string;
-  players: Array<{ id: string; name: string }>;
-  onAction: (action: { type: string; player1: { id: string }; player2: { id: string } }) => void;
+// ===== TYPES =====
+
+interface TroublemakerResult {
+  player1Name: string;
+  player2Name: string;
+  message?: string;
 }
 
-function TroublemakerAction({ playerId, players, onAction }: Props) {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [submitted, setSubmitted] = useState(false);
+interface Props {
+  onAction: (action: { type: string; player1: { id: string }; player2: { id: string } }) => void;
+  playerId: string;
+  players: Array<{ id: string; name: string }>;
+  actionResult?: TroublemakerResult | null;
+}
 
-  const others = players.filter((p) => p.id !== playerId);
+// ===== HELPERS =====
 
-  const togglePlayer = (id: string) => {
-    if (submitted) return;
-    setSelected((prev) => {
-      if (prev.includes(id)) return prev.filter((p) => p !== id);
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
+}
+
+function getTroublemakerCardImage(): string {
+  return getCardImage("troublemaker");
+}
+
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
+
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
+    });
+  }
+
+  return positions;
+}
+
+type Phase = "picking" | "submitted" | "swap" | "done";
+
+// ===== COMPONENT =====
+
+function TroublemakerAction({ onAction, playerId, players, actionResult }: Props) {
+  const isRejoin = !!actionResult;
+
+  const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "picking");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [target1Id, setTarget1Id] = useState<string | null>(null);
+  const [target2Id, setTarget2Id] = useState<string | null>(null);
+  const hasProcessedResult = useRef(isRejoin);
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  // Resolve targets on rejoin
+  useEffect(() => {
+    if (!isRejoin || !actionResult) return;
+    const p1 = players.find((p) => p.name === actionResult.player1Name);
+    const p2 = players.find((p) => p.name === actionResult.player2Name);
+    if (p1) setTarget1Id(p1.id);
+    if (p2) setTarget2Id(p2.id);
+  }, [isRejoin, actionResult, players]);
+
+  // Process result and run animation
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    hasProcessedResult.current = true;
+
+    let t1Id = target1Id;
+    let t2Id = target2Id;
+
+    if (!t1Id && actionResult.player1Name) {
+      const p = players.find((pl) => pl.name === actionResult.player1Name);
+      if (p) {
+        t1Id = p.id;
+        setTarget1Id(p.id);
+      }
+    }
+    if (!t2Id && actionResult.player2Name) {
+      const p = players.find((pl) => pl.name === actionResult.player2Name);
+      if (p) {
+        t2Id = p.id;
+        setTarget2Id(p.id);
+      }
+    }
+
+    if (phase === "done") return;
+    if (!t1Id || !t2Id) return;
+
+    setPhase("swap");
+    const t = setTimeout(() => setPhase("done"), 900);
+    return () => clearTimeout(t);
+  }, [actionResult, players]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handlePlayerClick = (clickedId: string) => {
+    if (phase !== "picking" || clickedId === playerId) return;
+
+    setSelectedIds((prev) => {
+      if (prev.includes(clickedId)) return prev.filter((id) => id !== clickedId);
       if (prev.length >= 2) return prev;
-      return [...prev, id];
+      return [...prev, clickedId];
     });
   };
 
-  const handleAction = () => {
-    if (selected.length !== 2) return;
-    setSubmitted(true);
+  const handleConfirm = () => {
+    if (selectedIds.length !== 2) return;
+
+    setTarget1Id(selectedIds[0]);
+    setTarget2Id(selectedIds[1]);
+    setPhase("submitted");
+
     onAction({
       type: "troublemaker",
-      player1: { id: selected[0] },
-      player2: { id: selected[1] },
+      player1: { id: selectedIds[0] },
+      player2: { id: selectedIds[1] },
     });
   };
 
+  // Position logic: during swap and done, targets exchange positions
+  const getSlotPosition = (playerIndex: number): { x: number; y: number } => {
+    const t1Idx = target1Id ? players.findIndex((p) => p.id === target1Id) : -1;
+    const t2Idx = target2Id ? players.findIndex((p) => p.id === target2Id) : -1;
+
+    const shouldSwap = phase === "swap" || phase === "done";
+    if (shouldSwap && t1Idx >= 0 && t2Idx >= 0) {
+      if (playerIndex === t1Idx) return positions[t2Idx];
+      if (playerIndex === t2Idx) return positions[t1Idx];
+    }
+    return positions[playerIndex];
+  };
+
+  const hasTargets = target1Id !== null && target2Id !== null;
+
   return (
-    <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#2a8a4a" }}>TROUBLEMAKER</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>Pick exactly 2 players to swap their roles. You won't see what they are.</p>
-      <div style={styles.list}>
-        {others.map((p) => (
-          <button key={p.id} style={selected.includes(p.id) ? styles.selectedItem : styles.item} onClick={() => togglePlayer(p.id)} disabled={submitted}>
-            {p.name}
-          </button>
-        ))}
+    <div className="tm-action">
+      <div className="tm-circle-area">
+        {players.map((player, i) => {
+          const isSelf = player.id === playerId;
+          const isTarget = player.id === target1Id || player.id === target2Id;
+          const isSelected = selectedIds.includes(player.id);
+          const isClickable = phase === "picking" && !isSelf;
+          const pos = getSlotPosition(i);
+          const isAnimating = phase === "swap" && isTarget;
+
+          // Swap name labels so names stay at original positions
+          const displayName = (() => {
+            const shouldSwap = phase === "swap" || phase === "done";
+            if (shouldSwap && isTarget) {
+              if (player.id === target1Id) {
+                const other = players.find((p) => p.id === target2Id);
+                return other?.id === playerId ? "YOU" : other?.name || player.name;
+              }
+              if (player.id === target2Id) {
+                const other = players.find((p) => p.id === target1Id);
+                return other?.id === playerId ? "YOU" : other?.name || player.name;
+              }
+            }
+            return isSelf ? "YOU" : player.name;
+          })();
+
+          return (
+            <div
+              key={player.id}
+              className={`tm-slot ${isSelf ? "tm-slot--self" : ""} ${isSelected ? "tm-slot--selected" : ""} ${isTarget && phase !== "picking" ? "tm-slot--target" : ""} ${isClickable ? "tm-slot--clickable" : ""} ${isAnimating ? "tm-slot--swapping" : ""}`}
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+              }}
+              onClick={() => isClickable && handlePlayerClick(player.id)}
+            >
+              <span className={`tm-name ${isSelf ? "tm-name--self" : ""} ${isSelected || isTarget ? "tm-name--highlight" : ""}`}>{displayName}</span>
+
+              <div className={`tm-flip ${isSelf ? "tm-flip--up" : ""}`}>
+                <div className="tm-flip-inner">
+                  <div className="tm-flip-face tm-flip-face--back">
+                    <img src={backCardImage} alt="Card back" draggable={false} />
+                  </div>
+                  <div className="tm-flip-face tm-flip-face--front">
+                    <img src={isSelf ? getTroublemakerCardImage() : backCardImage} alt={isSelf ? "Troublemaker" : "Card"} draggable={false} />
+                  </div>
+                </div>
+              </div>
+
+              {isSelf && <div className="tm-glow tm-glow--green tm-glow--subtle" />}
+              {isSelected && !isSelf && <div className="tm-select-ring" />}
+              {isTarget && (phase === "swap" || phase === "done") && <div className="tm-glow tm-glow--gold" />}
+            </div>
+          );
+        })}
+
+        {phase === "picking" && selectedIds.length === 0 && (
+          <div className="tm-center-hint">
+            <span className="tm-hint-text">PICK TWO PLAYERS</span>
+          </div>
+        )}
+        {phase === "picking" && selectedIds.length === 1 && (
+          <div className="tm-center-hint">
+            <span className="tm-hint-text">PICK ONE MORE</span>
+          </div>
+        )}
+        {phase === "swap" && (
+          <div className="tm-center-message">
+            <span className="tm-msg-text">SWAPPING...</span>
+          </div>
+        )}
+        {phase === "done" && hasTargets && (
+          <div className="tm-center-message">
+            <span className="tm-msg-text">SWAPPED</span>
+          </div>
+        )}
       </div>
-      <button style={selected.length !== 2 || submitted ? styles.buttonDisabled : styles.button} onClick={handleAction} disabled={selected.length !== 2 || submitted}>
-        {submitted ? "SWAPPING..." : "SWAP ROLES"}
-      </button>
+
+      <div className="tm-bottom">
+        {phase === "picking" && selectedIds.length < 2 && <span className="tm-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
+        {phase === "picking" && selectedIds.length === 2 && (
+          <button className="tm-btn" onClick={handleConfirm}>
+            <span className="tm-btn-text">SWAP ROLES</span>
+          </button>
+        )}
+        {(phase === "submitted" || phase === "swap") && <span className="tm-bottom-status">SWAPPING...</span>}
+        {phase === "done" && <span className="tm-bottom-status tm-bottom-status--done">Roles have been swapped</span>}
+      </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginBottom: "24px",
-  },
-  item: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c9a84c",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-    boxShadow: "0 0 16px rgba(201,168,76,0.15), inset 0 0 12px rgba(201,168,76,0.05)",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default TroublemakerAction;

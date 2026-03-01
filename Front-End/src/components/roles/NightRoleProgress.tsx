@@ -1,5 +1,8 @@
-import { useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { allCards, backCardImage } from "../../characters";
+import "./NightRoleProgress.css";
+
+// ===== TYPES =====
 
 interface RoleQueueItem {
   roleName: string;
@@ -13,81 +16,77 @@ interface Props {
   myRole: string;
 }
 
-type CardState = "completed" | "active" | "upcoming";
+// ===== HELPERS =====
 
-/** Map role names to their small card images */
 const cardImageMap: Record<string, string> = Object.fromEntries(allCards.map((c) => [c.id.toLowerCase(), c.small]));
 
 function getSmallCard(roleName: string): string {
   return cardImageMap[roleName.toLowerCase()] || backCardImage;
 }
 
-/**
- * Card-based journey tracker for the night phase.
- * Active role card is face-up revealing the role art.
- * Completed roles flip back face-down.
- * Upcoming roles stay face-down until their turn.
- */
+// ===== COMPONENT =====
+
 function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
-  const activeIndex = useMemo(() => {
-    return roleQueue.findIndex((r) => r.roleName.toLowerCase() === activeRole.toLowerCase());
-  }, [roleQueue, activeRole]);
+  const [exitingRole, setExitingRole] = useState<string | null>(null);
+  const prevActiveRef = useRef<string>(activeRole);
 
-  const getCardState = (index: number): CardState => {
-    if (activeIndex < 0) return "upcoming";
-    if (index < activeIndex) return "completed";
-    if (index === activeIndex) return "active";
-    return "upcoming";
-  };
+  // Detect when active role changes → trigger exit animation on the previous one
+  useEffect(() => {
+    const prev = prevActiveRef.current;
+    if (prev && prev !== activeRole) {
+      setExitingRole(prev);
+      // Clear exiting state after animation completes
+      const timeout = setTimeout(() => setExitingRole(null), 500);
+      return () => clearTimeout(timeout);
+    }
+    prevActiveRef.current = activeRole;
+  }, [activeRole]);
 
-  // Perimeter of the card rect for stroke-dasharray (approx 2*(w+h) for rounded rect)
-  const rectPerimeter = 356;
+  const activeIndex = roleQueue.findIndex((r) => r.roleName.toLowerCase() === activeRole.toLowerCase());
+
+  const activeItem = activeIndex >= 0 ? roleQueue[activeIndex] : null;
+  const isMine = activeItem ? myRole.toLowerCase() === activeItem.roleName.toLowerCase() : false;
+  const timerMax = activeItem?.seconds || 0;
+  const timerFraction = timerMax > 0 ? timer / timerMax : 0;
+  const isUrgent = timer <= 5 && timer > 0;
+
+  // Count remaining (including active)
+  const remaining = activeIndex >= 0 ? roleQueue.length - activeIndex : 0;
 
   return (
-    <div className="nrp-container">
-      <div className="nrp-track">
-        {roleQueue.map((item, i) => {
-          const state = getCardState(i);
-          const isMine = myRole.toLowerCase() === item.roleName.toLowerCase();
-          const isActive = state === "active";
-          const isCompleted = state === "completed";
-          const timerMax = item.seconds;
-          const timerFraction = isActive && timerMax > 0 ? timer / timerMax : 0;
-          const isUrgent = isActive && timer <= 5;
+    <div className="nrp-stack">
+      {/* Exiting card (previous role sliding away) */}
+      {exitingRole && (
+        <div className="nrp-card nrp-card--exit" key={`exit-${exitingRole}`}>
+          <img src={getSmallCard(exitingRole)} alt={exitingRole} className="nrp-card-img" draggable={false} />
+        </div>
+      )}
 
-          // Only active card is face-up
-          const isFaceUp = isActive;
+      {/* Active card */}
+      {activeItem && (
+        <div className={`nrp-card nrp-card--active ${isMine ? "nrp-card--mine" : ""}`} key={`active-${activeItem.roleName}`}>
+          <img src={getSmallCard(activeItem.roleName)} alt={activeItem.roleName} className="nrp-card-img" draggable={false} />
 
-          return (
-            <div key={item.roleName} className="nrp-step">
-              <div className={["nrp-card-slot", isActive && "nrp-card-slot--active", isCompleted && "nrp-card-slot--completed", isMine && !isActive && "nrp-card-slot--mine"].filter(Boolean).join(" ")}>
-                {/* Timer ring border — active card only */}
-                {isActive && (
-                  <div className="nrp-card-ring">
-                    <svg viewBox="0 0 78 108" preserveAspectRatio="none">
-                      <rect className="nrp-card-ring-bg" x="2" y="2" width="74" height="104" rx="5" ry="5" />
-                      <rect className={`nrp-card-ring-progress ${isUrgent ? "nrp-card-ring-progress--urgent" : ""}`} x="2" y="2" width="74" height="104" rx="5" ry="5" strokeDasharray={rectPerimeter} strokeDashoffset={rectPerimeter - timerFraction * rectPerimeter} />
-                    </svg>
-                  </div>
-                )}
+          {/* Timer bar overlay at the bottom of the card */}
+          <div className="nrp-timer-bar">
+            <div className={`nrp-timer-fill ${isUrgent ? "nrp-timer-fill--urgent" : ""}`} style={{ transform: `scaleX(${timerFraction})` }} />
+          </div>
 
-                {/* Flip card */}
-                <div className={`nrp-flip ${isFaceUp ? "nrp-flip--up" : ""}`}>
-                  <div className="nrp-flip-side nrp-flip-side--back">
-                    <img src={backCardImage} alt="Card back" className="nrp-flip-img" />
-                  </div>
-                  <div className="nrp-flip-side nrp-flip-side--front">
-                    <img src={getSmallCard(item.roleName)} alt={item.roleName} className="nrp-flip-img" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+          {/* Role name label */}
+          <span className={`nrp-role-name ${isMine ? "nrp-role-name--mine" : ""}`}>
+            {activeItem.roleName}
+            {isMine && <span className="nrp-you-tag"> (YOU)</span>}
+          </span>
+        </div>
+      )}
 
-      {/* Timer readout below */}
-      {activeIndex >= 0 && timer > 0 && <div className={`nrp-timer-display ${timer <= 5 ? "nrp-timer-display--urgent" : ""}`}>{roleQueue[activeIndex]?.roleName}</div>}
+      {/* Stack depth indicator — subtle shadow cards behind */}
+      {remaining > 1 && (
+        <>
+          <div className="nrp-shadow nrp-shadow--1" />
+          {remaining > 2 && <div className="nrp-shadow nrp-shadow--2" />}
+        </>
+      )}
     </div>
   );
 }

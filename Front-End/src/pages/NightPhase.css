@@ -441,3 +441,9 @@
     margin: 4px 0;
   }
 }
+
+.np-progress-below {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(8px, 1.2vw, 16px);
+}

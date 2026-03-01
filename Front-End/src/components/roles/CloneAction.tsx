@@ -1,9 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./CloneAction.css";
 
+import WerewolfAction from "./WerewolfAction";
 import SeerAction from "./SeerAction";
+import MasonAction from "./MasonAction";
 import RobberAction from "./RobberAction";
 import TroublemakerAction from "./TroublemakerAction";
 import DrunkAction from "./DrunkAction";
+import JokerAction from "./JokerAction";
+import InsomniacAction from "./InsomniacAction";
+
+// ===== TYPES =====
+
+interface CloneResult {
+  clonedRole: string;
+  clonedRoleTeam: string;
+  needsSecondAction: boolean;
+  autoResult: Record<string, unknown> | null;
+  groundCards: Array<{ id: string; label: string }> | null;
+  otherPlayers: Array<{ id: string; name: string }> | null;
+  message: string;
+}
 
 interface Props {
   playerId: string;
@@ -12,176 +30,242 @@ interface Props {
   onAction: (action: Record<string, unknown>) => void;
   onCloneFirstAction: (action: Record<string, unknown>) => void;
   cloneResult: CloneResult | null;
+  actionResult?: Record<string, unknown> | null;
 }
 
-interface CloneResult {
-  clonedRole: string;
-  clonedRoleTeam: string;
-  needsSecondAction: boolean;
-  autoResult: { message: string } | null;
-  groundCards: Array<{ id: string; label: string }> | null;
-  otherPlayers: Array<{ id: string; name: string }> | null;
-  message: string;
+// ===== HELPERS =====
+
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
-function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAction, cloneResult }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+function getCloneCardImage(): string {
+  return getCardImage("clone");
+}
 
-  const others = players.filter((p) => p.id !== playerId);
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
 
-  const handleClone = () => {
-    if (!selected) return;
-    setSubmitted(true);
-    onCloneFirstAction({ type: "clone", targetPlayer: { id: selected } });
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
+    });
+  }
+
+  return positions;
+}
+
+const ACTIVE_CLONE_ROLES = new Set(["seer", "robber", "troublemaker", "drunk", "joker"]);
+
+type ClonePhase = "pick" | "cloning" | "morph" | "phase2";
+
+// ===== COMPONENT =====
+
+function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAction, cloneResult, actionResult }: Props) {
+  const initialClonedRole = cloneResult?.clonedRole || "";
+
+  const [phase, setPhase] = useState<ClonePhase>(cloneResult ? "phase2" : "pick");
+  const [targetId, setTargetId] = useState<string | null>(null);
+  const [clonedRoleName, setClonedRoleName] = useState<string>(initialClonedRole);
+  const hasProcessedCloneResult = useRef(!!cloneResult);
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  useEffect(() => {
+    if (!cloneResult || hasProcessedCloneResult.current) return;
+    hasProcessedCloneResult.current = true;
+
+    queueMicrotask(() => {
+      setClonedRoleName(cloneResult.clonedRole);
+      setPhase("morph");
+    });
+
+    const timer = setTimeout(() => {
+      setPhase("phase2");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [cloneResult]);
+
+  const handlePlayerClick = (clickedId: string) => {
+    if (phase !== "pick" || clickedId === playerId) return;
+
+    setTargetId(clickedId);
+    setPhase("cloning");
+    onCloneFirstAction({ type: "clone", targetPlayer: { id: clickedId } });
   };
 
-  // Phase 1: Pick a target
-  if (!cloneResult) {
-    return (
-      <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>CLONE</h2>
-        <div style={styles.divider} />
-        <p style={styles.description}>Choose a player to copy their role.</p>
-        <div style={styles.list}>
-          {others.map((p) => (
-            <button key={p.id} style={selected === p.id ? styles.selectedItem : styles.item} onClick={() => !submitted && setSelected(p.id)} disabled={submitted}>
-              {p.name}
-            </button>
-          ))}
+  const isClickable = phase === "pick";
+
+  const buildPlayerListForPhase2 = (): Array<{ id: string; name: string }> => {
+    const selfPlayer = players.find((p) => p.id === playerId);
+    const selfEntry = selfPlayer || { id: playerId, name: "Player" };
+    const others = cloneResult?.otherPlayers || players.filter((p) => p.id !== playerId);
+
+    const hasId = others.some((p) => p.id === playerId);
+    if (hasId) return others;
+    return [selfEntry, ...others];
+  };
+
+  // ===== PHASE 2 RENDER =====
+
+  if (phase === "phase2" && cloneResult) {
+    const roleLower = cloneResult.clonedRole.toLowerCase();
+
+    const phase2Players = buildPlayerListForPhase2();
+    const secondaryGroundCards = cloneResult.groundCards || groundCards;
+
+    // Active roles — render their full action component
+    if (ACTIVE_CLONE_ROLES.has(roleLower)) {
+      return (
+        <div className="cl-phase2">
+          <div className="cl-banner">
+            <span className="cl-banner-text">CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
+          </div>
+          {roleLower === "seer" && <SeerAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "robber" && <RobberAction onAction={onAction} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
+          {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
+          {roleLower === "drunk" && <DrunkAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "joker" && <JokerAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
         </div>
-        <button style={!selected || submitted ? styles.buttonDisabled : styles.button} onClick={handleClone} disabled={!selected || submitted}>
-          {submitted ? "CLONING..." : "CLONE ROLE"}
-        </button>
-      </div>
-    );
-  }
+      );
+    }
 
-  // Phase 2a: Passive role — show result
-  if (!cloneResult.needsSecondAction) {
+    // Werewolf
+    if (roleLower === "werewolf") {
+      return (
+        <div className="cl-phase2">
+          <div className="cl-banner">
+            <span className="cl-banner-text">CLONED → WEREWOLF</span>
+          </div>
+          <WerewolfAction onAction={onAction} playerId={playerId} players={players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
+        </div>
+      );
+    }
+
+    // Mason
+    if (roleLower === "mason") {
+      return (
+        <div className="cl-phase2">
+          <div className="cl-banner">
+            <span className="cl-banner-text">CLONED → MASON</span>
+          </div>
+          <MasonAction onAction={onAction} playerId={playerId} players={players} actionResult={cloneResult.autoResult as never} />
+        </div>
+      );
+    }
+
+    // Insomniac — autoSubmitted so it waits for cloneInsomniacResult
+    if (roleLower === "insomniac") {
+      return (
+        <div className="cl-phase2">
+          <div className="cl-banner">
+            <span className="cl-banner-text">CLONED → INSOMNIAC</span>
+          </div>
+          <InsomniacAction onAction={onAction} actionResult={actionResult as never} autoSubmitted />
+        </div>
+      );
+    }
+
+    // Minion / other passive — show message
+    const autoMessage = cloneResult.autoResult ? (cloneResult.autoResult as { message?: string }).message || cloneResult.message : cloneResult.message;
+
     return (
-      <div style={styles.container}>
-        <h2 style={{ ...styles.title, color: "#2a8a4a" }}>CLONE → {cloneResult.clonedRole.toUpperCase()}</h2>
-        <div style={styles.divider} />
-        <p style={styles.resultText}>{cloneResult.message}</p>
+      <div className="cl-phase2">
+        <div className="cl-banner">
+          <span className="cl-banner-text">CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
+        </div>
+        <div className="cl-passive-result">
+          <div className="cl-passive-card">
+            <img src={getCardImage(cloneResult.clonedRole)} alt={cloneResult.clonedRole} draggable={false} />
+          </div>
+          <p className="cl-passive-text">{autoMessage}</p>
+        </div>
       </div>
     );
   }
 
-  // Phase 2b: Active role — show the cloned role's action UI
-  const clonedRoleLower = cloneResult.clonedRole.toLowerCase();
-  const secondaryPlayers = cloneResult.otherPlayers || others;
-  const secondaryGroundCards = cloneResult.groundCards || groundCards;
+  // ===== PHASE 1 RENDER (pick / cloning / morph) =====
 
   return (
-    <div style={styles.container}>
-      <div style={styles.cloneBanner}>
-        <span style={styles.cloneBannerText}>CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
+    <div className="cl-action">
+      <div className="cl-circle-area">
+        {players.map((player, i) => {
+          const isSelf = player.id === playerId;
+          const isTarget = player.id === targetId;
+          const pos = positions[i];
+
+          const showTargetFace = isTarget && (phase === "morph" || phase === "phase2") && !!clonedRoleName;
+
+          const isMorphing = isSelf && phase === "morph";
+          const isMorphed = isSelf && phase === "phase2";
+
+          return (
+            <div key={player.id} className={`cl-slot ${isSelf ? "cl-slot--self" : ""} ${showTargetFace ? "cl-slot--revealed" : ""} ${isClickable && !isSelf ? "cl-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>
+              <span className={`cl-name ${isSelf ? "cl-name--self" : ""} ${showTargetFace ? "cl-name--target" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+
+              {isSelf ? (
+                <div className={`cl-morph-container ${isMorphing ? "cl-morph-container--morphing" : ""}`}>
+                  <div className={`cl-morph-card cl-morph-card--clone ${isMorphing ? "cl-morph-card--fade-out" : ""} ${isMorphed ? "cl-morph-card--hidden" : ""}`}>
+                    <img src={getCloneCardImage()} alt="Clone" draggable={false} />
+                  </div>
+                  {clonedRoleName && (
+                    <div className={`cl-morph-card cl-morph-card--role ${isMorphing ? "cl-morph-card--fade-in" : ""} ${isMorphed ? "cl-morph-card--visible" : ""} ${!isMorphing && !isMorphed ? "cl-morph-card--hidden" : ""}`}>
+                      <img src={getCardImage(clonedRoleName)} alt={clonedRoleName} draggable={false} />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className={`cl-flip ${showTargetFace ? "cl-flip--up" : ""}`}>
+                  <div className="cl-flip-inner">
+                    <div className="cl-flip-face cl-flip-face--back">
+                      <img src={backCardImage} alt="Card back" draggable={false} />
+                    </div>
+                    <div className="cl-flip-face cl-flip-face--front">
+                      <img src={showTargetFace ? getCardImage(clonedRoleName) : backCardImage} alt={showTargetFace ? clonedRoleName : "Card"} draggable={false} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {showTargetFace && <div className="cl-glow cl-glow--green" />}
+              {isSelf && <div className="cl-glow cl-glow--green cl-glow--subtle" />}
+            </div>
+          );
+        })}
+
+        {phase === "pick" && (
+          <div className="cl-center-hint">
+            <span className="cl-hint-text">PICK A PLAYER TO CLONE</span>
+          </div>
+        )}
+        {phase === "cloning" && (
+          <div className="cl-center-hint">
+            <span className="cl-hint-text">CLONING...</span>
+          </div>
+        )}
+        {phase === "morph" && clonedRoleName && (
+          <div className="cl-center-message">
+            <span className="cl-msg-text">CLONED → {clonedRoleName.toUpperCase()}</span>
+          </div>
+        )}
       </div>
-      {clonedRoleLower === "seer" && <SeerAction playerId={playerId} players={secondaryPlayers} groundCards={secondaryGroundCards} onAction={onAction} />}
-      {clonedRoleLower === "robber" && <RobberAction playerId={playerId} players={secondaryPlayers} onAction={onAction} />}
-      {clonedRoleLower === "troublemaker" && <TroublemakerAction playerId={playerId} players={secondaryPlayers} onAction={onAction} />}
-      {clonedRoleLower === "drunk" && <DrunkAction groundCards={secondaryGroundCards} onAction={onAction} />}
+
+      <div className="cl-bottom">
+        {phase === "pick" && <span className="cl-bottom-hint">Tap a player to copy their role</span>}
+        {phase === "cloning" && <span className="cl-bottom-status">CLONING...</span>}
+        {phase === "morph" && <span className="cl-bottom-status cl-bottom-status--morph">Becoming {clonedRoleName}...</span>}
+      </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "20px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginBottom: "24px",
-  },
-  item: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c9a84c",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-    boxShadow: "0 0 16px rgba(201,168,76,0.15), inset 0 0 12px rgba(201,168,76,0.05)",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-  resultText: {
-    color: "#c9b896",
-    fontSize: "14px",
-    lineHeight: "1.8",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  cloneBanner: {
-    padding: "8px 16px",
-    backgroundColor: "rgba(42,138,74,0.1)",
-    border: "1px solid rgba(42,138,74,0.3)",
-    borderRadius: "4px",
-    marginBottom: "16px",
-  },
-  cloneBannerText: {
-    fontSize: "11px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    color: "#2a8a4a",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default CloneAction;

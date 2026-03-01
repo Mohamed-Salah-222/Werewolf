@@ -59,6 +59,9 @@ const ROLE_COMPONENTS: Record<string, ComponentType<any>> = {
   joker: JokerAction,
 };
 
+// Roles that show their action component in the "done" state
+const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mason", "robber", "troublemaker", "drunk", "joker", "clone", "insomniac"]);
+
 // ===== COMPONENT =====
 
 function NightPhase() {
@@ -176,7 +179,12 @@ function NightPhase() {
   // Clone insomniac result listener
   useEffect(() => {
     const handler = (data: { message: string; originalRole: string; currentRole: string; hasChanged: boolean }) => {
-      const result = { message: data.message };
+      const result = {
+        message: data.message,
+        originalRole: data.originalRole,
+        currentRole: data.currentRole,
+        hasChanged: data.hasChanged,
+      };
       setActionResult(result);
       actionResultRef.current = result;
     };
@@ -243,7 +251,8 @@ function NightPhase() {
       actionResultRef.current = result;
       setActionDone(true);
       setIsMyTurn(false);
-      setCloneResult(null);
+      // Don't null cloneResult — CloneAction needs it to stay in Phase 2
+      // setCloneResult(null);
       setRoleTimer(0);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
@@ -362,16 +371,26 @@ function NightPhase() {
     const baseProps = { onAction: handleAction };
 
     switch (roleLower) {
+      case "werewolf":
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+      case "minion":
+        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
       case "clone":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} onCloneFirstAction={handleCloneFirstAction} cloneResult={cloneResult} />;
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} onCloneFirstAction={handleCloneFirstAction} cloneResult={cloneResult} actionResult={actionResult} />;
       case "seer":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} />;
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+      case "mason":
+        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
       case "robber":
+        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
       case "troublemaker":
-        return <Component {...baseProps} playerId={playerId} players={players} />;
+        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
       case "drunk":
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
       case "joker":
-        return <Component {...baseProps} groundCards={groundCards} />;
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+      case "insomniac":
+        return <Component {...baseProps} actionResult={actionResult} />;
       default:
         return <Component {...baseProps} />;
     }
@@ -380,6 +399,19 @@ function NightPhase() {
   const timerMax = timerMaxRef.current || roleTimer;
   const timerFraction = timerMax > 0 ? roleTimer / timerMax : 0;
   const isUrgent = roleTimer <= 5;
+
+  // Determine if this role uses a persistent action component (visual post-action state)
+  const roleLower = myRole.toLowerCase();
+  const hasPersistentAction = ROLES_WITH_PERSISTENT_ACTION.has(roleLower);
+
+  // Should we show the action component? Yes if:
+  // - It's our turn (active play), OR
+  // - Action is done AND this role has a persistent visual
+  const showActionComponent = isMyTurn || (actionDone && actionResult && hasPersistentAction);
+
+  // Should we show the generic ActionComplete waiting text?
+  // Only if action is done but the role does NOT have a persistent action visual
+  const showGenericResult = actionDone && actionResult && !hasPersistentAction;
 
   // ===== RENDER =====
 
@@ -414,13 +446,25 @@ function NightPhase() {
 
       {/* Content */}
       <div className="np-content">
-        {isMyTurn ? (
+        {showActionComponent ? (
+          /*
+           * IMPORTANT: This single branch handles BOTH "isMyTurn" and "actionDone"
+           * states for roles with persistent visuals. This prevents React from
+           * unmounting/remounting the action component when the state transitions,
+           * which preserves local state (like targetId in RobberAction) and allows
+           * animations to run uninterrupted.
+           */
           <div className="np-content-inner">
             <div className="np-action-enter">{renderActionComponent()}</div>
+            {roleQueue.length > 0 && (
+              <div className="np-progress-below">
+                <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />
+              </div>
+            )}
           </div>
         ) : (
           <div className="np-waiting-layout">
-            {actionDone && actionResult && (
+            {showGenericResult && (
               <div className="np-result-section">
                 <ActionComplete result={actionResult} />
               </div>

@@ -48,6 +48,7 @@ export interface ServerToClientEvents {
   voiceIce: (data: { from: PlayerId; candidate: any }) => void;
   voiceLeave: (data: { playerId: PlayerId }) => void;
   voiceExistingPeers: (data: { players: PlayerId[] }) => void;
+  playerRoleConfirmed: (data: { playerId: PlayerId }) => void;
 }
 
 // Data structures

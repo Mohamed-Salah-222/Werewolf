@@ -1,128 +1,238 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { allCards, backCardImage } from "../../characters";
+import "./DrunkAction.css";
 
-interface Props {
-  groundCards: Array<{ id: string; label: string }>;
-  onAction: (action: Record<string, unknown>) => void;
+// ===== TYPES =====
+
+interface DrunkResult {
+  success: boolean;
+  message?: string;
 }
 
-function DrunkAction({ groundCards, onAction }: Props) {
-  const [selected, setSelected] = useState<string | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+interface Props {
+  onAction: (action: Record<string, unknown>) => void;
+  playerId: string;
+  players: Array<{ id: string; name: string }>;
+  groundCards: Array<{ id: string; label: string }>;
+  actionResult?: DrunkResult | null;
+}
 
-  const handleAction = () => {
-    if (!selected) return;
-    setSubmitted(true);
-    onAction({ type: "drunk", targetRoleId: selected });
+// ===== HELPERS =====
+
+function getCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
+}
+
+function getDrunkCardImage(): string {
+  return getCardImage("drunk");
+}
+
+function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
+  const positions: Array<{ x: number; y: number }> = [];
+  const angleStep = 360 / count;
+
+  for (let i = 0; i < count; i++) {
+    const offset = (i - selfIndex + count) % count;
+    const angleDeg = 270 + offset * angleStep;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    positions.push({
+      x: 50 + 39 * Math.cos(angleRad),
+      y: 50 + 37 * Math.sin(angleRad),
+    });
+  }
+
+  return positions;
+}
+
+type Phase = "idle" | "submitted" | "swap" | "done";
+
+// ===== COMPONENT =====
+
+function DrunkAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+  const isRejoin = !!actionResult;
+
+  const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "idle");
+  const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
+  const hasProcessedResult = useRef(isRejoin);
+
+  // Refs for swap animation
+  const selfSlotRef = useRef<HTMLDivElement | null>(null);
+  const groundRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
+  // Process result
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    hasProcessedResult.current = true;
+
+    if (phase === "done") return;
+
+    // Start swap animation
+    setPhase("swap");
+    setTimeout(() => setPhase("done"), 1000);
+  }, [actionResult, phase]);
+
+  const handleGroundClick = (groundId: string) => {
+    if (phase !== "idle") return;
+
+    setSelectedGroundId(groundId);
+    setPhase("submitted");
+    onAction({ type: "drunk", targetRoleId: groundId });
+  };
+
+  const isClickable = phase === "idle";
+
+  // For swap animation: self card gets offset toward the selected ground card,
+  // and the ground card gets offset toward self's position.
+  // We use the same getBoundingClientRect approach that works for robber/troublemaker.
+  const [selfOffset, setSelfOffset] = useState<{ x: number; y: number } | null>(null);
+  const [groundOffset, setGroundOffset] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (phase !== "swap" || !selectedGroundId) return;
+
+    const selfEl = selfSlotRef.current;
+    const groundEl = groundRefs.current[selectedGroundId];
+    if (!selfEl || !groundEl) return;
+
+    requestAnimationFrame(() => {
+      const selfRect = selfEl.getBoundingClientRect();
+      const groundRect = groundEl.getBoundingClientRect();
+
+      const dx = groundRect.left - selfRect.left;
+      const dy = groundRect.top - selfRect.top;
+
+      // Don't set offsets yet — set them on next frame so transition fires
+      requestAnimationFrame(() => {
+        setSelfOffset({ x: dx, y: dy });
+        setGroundOffset({ x: -dx, y: -dy });
+      });
+    });
+  }, [phase, selectedGroundId]);
+
+  // Get transform for self slot during swap
+  const getSelfSwapStyle = (): React.CSSProperties => {
+    if (phase === "swap" && selfOffset) {
+      return {
+        transform: `translate(calc(-50% + ${selfOffset.x}px), calc(-50% + ${selfOffset.y}px))`,
+      };
+    }
+    return {};
+  };
+
+  // Get transform for ground card during swap
+  const getGroundSwapStyle = (groundId: string): React.CSSProperties => {
+    if (phase === "swap" && groundId === selectedGroundId && groundOffset) {
+      return {
+        transform: `translate(${groundOffset.x}px, ${groundOffset.y}px)`,
+      };
+    }
+    return {};
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={{ ...styles.title, color: "#2a8a4a" }}>DRUNK</h2>
-      <div style={styles.divider} />
-      <p style={styles.description}>
-        Choose a ground card to swap with your role. You won't know what you
-        became.
-      </p>
-      <div style={styles.list}>
-        {groundCards.map((card) => (
-          <button
-            key={card.id}
-            style={selected === card.id ? styles.selectedItem : styles.item}
-            onClick={() => !submitted && setSelected(card.id)}
-            disabled={submitted}
-          >
-            {card.label}
-          </button>
-        ))}
+    <div className="dk-action">
+      <div className="dk-circle-area">
+        {/* Player cards around the circle */}
+        {players.map((player, i) => {
+          const isSelf = player.id === playerId;
+          const pos = positions[i];
+          const isSwapping = phase === "swap" && isSelf;
+
+          return (
+            <div
+              key={player.id}
+              ref={isSelf ? selfSlotRef : undefined}
+              className={`dk-slot ${isSelf ? "dk-slot--self" : ""} ${isSwapping ? "dk-slot--swapping" : ""}`}
+              style={{
+                left: `${pos.x}%`,
+                top: `${pos.y}%`,
+                ...(isSelf ? getSelfSwapStyle() : {}),
+              }}
+            >
+              <span className={`dk-name ${isSelf ? "dk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+
+              <div className={`dk-flip ${isSelf && phase !== "done" ? "dk-flip--up" : ""}`}>
+                <div className="dk-flip-inner">
+                  <div className="dk-flip-face dk-flip-face--back">
+                    <img src={backCardImage} alt="Card back" draggable={false} />
+                  </div>
+                  <div className="dk-flip-face dk-flip-face--front">
+                    <img src={isSelf ? getDrunkCardImage() : backCardImage} alt={isSelf ? "Drunk" : "Card"} draggable={false} />
+                  </div>
+                </div>
+              </div>
+
+              {isSelf && phase !== "done" && <div className="dk-glow dk-glow--green dk-glow--subtle" />}
+            </div>
+          );
+        })}
+
+        {/* Ground cards in the center */}
+        <div className="dk-ground">
+          {groundCards.slice(0, 3).map((gc) => {
+            const isSelected = gc.id === selectedGroundId;
+            const isSwapping = phase === "swap" && isSelected;
+            const canClick = isClickable;
+
+            return (
+              <div
+                key={gc.id}
+                ref={(el) => {
+                  groundRefs.current[gc.id] = el;
+                }}
+                className={`dk-ground-card ${canClick ? "dk-ground-card--clickable" : ""} ${isSelected ? "dk-ground-card--selected" : ""} ${isSwapping ? "dk-ground-card--swapping" : ""}`}
+                style={getGroundSwapStyle(gc.id)}
+                onClick={() => canClick && handleGroundClick(gc.id)}
+              >
+                <div className="dk-flip dk-flip--ground">
+                  <div className="dk-flip-inner">
+                    <div className="dk-flip-face dk-flip-face--back">
+                      <img src={backCardImage} alt="Ground card" draggable={false} />
+                    </div>
+                    <div className="dk-flip-face dk-flip-face--front">
+                      <img src={backCardImage} alt="Ground card" draggable={false} />
+                    </div>
+                  </div>
+                </div>
+
+                {isSelected && (phase === "swap" || phase === "done") && <div className="dk-glow dk-glow--gold" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Center messages */}
+        {phase === "idle" && (
+          <div className="dk-center-hint">
+            <span className="dk-hint-text">PICK A GROUND CARD</span>
+          </div>
+        )}
+        {phase === "swap" && (
+          <div className="dk-center-message">
+            <span className="dk-msg-text">SWAPPING...</span>
+          </div>
+        )}
+        {phase === "done" && (
+          <div className="dk-center-message">
+            <span className="dk-msg-text">SWAPPED</span>
+          </div>
+        )}
       </div>
-      <button
-        style={!selected || submitted ? styles.buttonDisabled : styles.button}
-        onClick={handleAction}
-        disabled={!selected || submitted}
-      >
-        {submitted ? "SWAPPING..." : "SWAP WITH CARD"}
-      </button>
+
+      {/* Bottom */}
+      <div className="dk-bottom">
+        {phase === "idle" && <span className="dk-bottom-hint">Tap a ground card to swap your role</span>}
+        {phase === "submitted" && <span className="dk-bottom-status">SWAPPING...</span>}
+        {phase === "swap" && <span className="dk-bottom-status">SWAPPING...</span>}
+        {phase === "done" && <span className="dk-bottom-status dk-bottom-status--done">You swapped with a ground card</span>}
+      </div>
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: { textAlign: "center", padding: "40px 20px" },
-  title: {
-    fontSize: "28px",
-    fontWeight: 400,
-    letterSpacing: "6px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    textShadow: "0 0 20px currentColor",
-  },
-  divider: {
-    width: "60px",
-    height: "1px",
-    backgroundColor: "#3d2e1a",
-    margin: "0 auto 20px",
-  },
-  description: {
-    color: "#8a7a60",
-    fontSize: "14px",
-    marginBottom: "24px",
-    lineHeight: "1.7",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    marginBottom: "24px",
-  },
-  item: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    padding: "14px 16px",
-    fontSize: "14px",
-    backgroundColor: "rgba(201,168,76,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c9a84c",
-    borderRadius: "4px",
-    textAlign: "left" as const,
-    cursor: "pointer",
-    fontFamily: "'Trade Winds', cursive",
-    boxShadow:
-      "0 0 16px rgba(201,168,76,0.15), inset 0 0 12px rgba(201,168,76,0.05)",
-  },
-  button: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c9a84c",
-    color: "#0a0a0a",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-  },
-  buttonDisabled: {
-    padding: "14px 48px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-};
 
 export default DrunkAction;
