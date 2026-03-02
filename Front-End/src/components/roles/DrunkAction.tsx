@@ -156,7 +156,7 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
             >
               <span className={`dk-name ${isSelf ? "dk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`dk-flip ${isSelf && phase !== "done" ? "dk-flip--up" : ""}`}>
+              <div className={`dk-flip ${isSelf ? "dk-flip--up" : ""}`}>
                 <div className="dk-flip-inner">
                   <div className="dk-flip-face dk-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />

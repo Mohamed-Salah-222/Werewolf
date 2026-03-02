@@ -89,20 +89,15 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
       }
     } else if (actionResult.actionType === "ground") {
       setMode("ground");
-      // Reveal both ground cards with stagger
       const map: Record<string, string> = {};
-      const gc = groundCards;
 
-      // We need to figure out which ground card indices were selected
-      // Since we might be rejoining, reveal the first two ground cards
-      if (actionResult.groundRole1 && gc[0]) {
-        map[gc[0].id] = actionResult.groundRole1;
+      if (actionResult.groundRole1 && selectedGroundIds[0]) {
+        map[selectedGroundIds[0]] = actionResult.groundRole1;
       }
-      if (actionResult.groundRole2 && gc[1]) {
-        map[gc[1].id] = actionResult.groundRole2;
+      if (actionResult.groundRole2 && selectedGroundIds[1]) {
+        map[selectedGroundIds[1]] = actionResult.groundRole2;
       }
 
-      // Stagger the reveals
       const entries = Object.entries(map);
       entries.forEach(([id, role], i) => {
         setTimeout(
@@ -113,7 +108,7 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
         );
       });
     }
-  }, [actionResult, players, groundCards]);
+  }, [actionResult, players, groundCards, selectedGroundIds]);
 
   // Click a player card
   const handlePlayerClick = useCallback(

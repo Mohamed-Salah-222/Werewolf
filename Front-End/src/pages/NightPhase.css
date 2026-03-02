@@ -447,3 +447,13 @@
   justify-content: center;
   margin-top: clamp(8px, 1.2vw, 16px);
 }
+
+@media (max-width: 768px) {
+  .np-page {
+    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+}
