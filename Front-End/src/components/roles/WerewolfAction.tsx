@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { allCards, backCardImage } from "../../characters";
-import "./WerewolfAction.css";
+import "./werewolfAction.css";
 
 // ===== TYPES =====
 
