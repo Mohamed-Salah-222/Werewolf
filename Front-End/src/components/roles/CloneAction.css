@@ -429,6 +429,27 @@
   .cl-name {
     font-size: clamp(8px, 2.8vw, 12px);
     max-width: clamp(44px, 14vw, 72px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .cl-name--self {
+    color: #6dd66d;
+  }
+
+  .cl-name--target {
+    color: var(--color-gold);
+  }
+
+  .cl-hint-text {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .cl-bottom-hint {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .cl-bottom-status {
+    color: rgba(240, 230, 208, 0.45);
   }
 }
 

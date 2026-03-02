@@ -306,6 +306,24 @@
   .mn-name {
     font-size: clamp(8px, 2.8vw, 12px);
     max-width: clamp(44px, 14vw, 72px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .mn-name--self {
+    color: #e87070;
+  }
+
+  .mn-name--wolf {
+    color: #e87070;
+    text-shadow: 0 0 10px rgba(232, 112, 112, 0.5);
+  }
+
+  .mn-bottom-status {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .mn-bottom-status--done {
+    color: rgba(240, 230, 208, 0.5);
   }
 }
 

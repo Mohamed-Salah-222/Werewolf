@@ -307,6 +307,24 @@
   .ms-name {
     font-size: clamp(8px, 2.8vw, 12px);
     max-width: clamp(44px, 14vw, 72px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .ms-name--self {
+    color: #6dd66d;
+  }
+
+  .ms-name--mason {
+    color: #6dd66d;
+    text-shadow: 0 0 10px rgba(109, 214, 109, 0.5);
+  }
+
+  .ms-bottom-status {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .ms-bottom-status--done {
+    color: rgba(240, 230, 208, 0.5);
   }
 }
 

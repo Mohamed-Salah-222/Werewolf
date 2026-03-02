@@ -272,6 +272,14 @@
   .in-card {
     width: clamp(70px, 22vw, 100px);
     height: clamp(98px, 30.8vw, 140px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+  .in-status-text--pulse {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .in-done-sub {
+    color: rgba(240, 230, 208, 0.45);
   }
 }
 

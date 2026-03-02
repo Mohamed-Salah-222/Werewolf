@@ -85,53 +85,52 @@ function Vote() {
   const totalVoted = votedPlayers.size + (hasVoted ? 1 : 0);
 
   return (
-    <div style={styles.page}>
-      <div style={styles.vignette} />
-      <div style={styles.content} className="vote-content">
-        <h1 style={styles.title}>THE VOTE</h1>
-        <p style={styles.subtitle}>Who do you think is the Werewolf?</p>
-        <p style={styles.voteCount}>
+    <div className="vote-page">
+      <div className="vote-vignette" />
+      <div className="vote-content">
+        <h1 className="vote-title">THE VOTE</h1>
+        <p className="vote-subtitle">Who do you think is the Werewolf?</p>
+        <p className="vote-count">
           {totalVoted} / {totalPlayers} voted
         </p>
 
-        {/* Voice Chat */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+        <div className="vote-voice">
           <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
         </div>
 
         {!hasVoted ? (
           <>
-            <div style={styles.list}>
+            <div className="vote-list">
               {others.map((p) => (
-                <button key={p.id} style={selected === p.id ? styles.selectedItem : styles.item} onClick={() => setSelected(p.id)}>
-                  <span style={styles.playerName}>{p.name}</span>
-                  {votedPlayers.has(p.id) && <span style={styles.votedBadge}>VOTED</span>}
+                <button key={p.id} className={selected === p.id ? "vote-item--selected" : "vote-item"} onClick={() => setSelected(p.id)}>
+                  <span className="vote-player-name">{p.name}</span>
+                  {votedPlayers.has(p.id) && <span className="vote-voted-badge">VOTED</span>}
                 </button>
               ))}
-              <button style={selected === "noWerewolf" ? styles.noWerewolfSelected : styles.noWerewolfItem} onClick={() => setSelected("noWerewolf")}>
-                <span style={styles.playerName}>No Werewolf</span>
-                <span style={styles.noWerewolfHint}>All werewolves are on the ground</span>
+              <button className={selected === "noWerewolf" ? "vote-no-wolf--selected" : "vote-no-wolf"} onClick={() => setSelected("noWerewolf")}>
+                <span className="vote-player-name">No Werewolf</span>
+                <span className="vote-no-wolf-hint">All werewolves are on the ground</span>
               </button>
             </div>
-            <button style={!selected ? styles.buttonDisabled : styles.button} onClick={handleVote} disabled={!selected}>
+            <button className="vote-btn" onClick={handleVote} disabled={!selected}>
               CONFIRM VOTE
             </button>
           </>
         ) : (
-          <div style={styles.waitingContainer}>
+          <div className="vote-waiting">
             {selected ? (
-              <p style={styles.votedText}>
-                You voted for <strong style={styles.votedStrong}>{selected === "noWerewolf" ? "No Werewolf" : players.find((p) => p.id === selected)?.name}</strong>
+              <p className="vote-voted-text">
+                You voted for <strong className="vote-voted-strong">{selected === "noWerewolf" ? "No Werewolf" : players.find((p) => p.id === selected)?.name}</strong>
               </p>
             ) : (
-              <p style={styles.votedText}>Your vote has been cast</p>
+              <p className="vote-voted-text">Your vote has been cast</p>
             )}
-            <p style={styles.waitingText}>Waiting for other players...</p>
-            <div style={styles.voterList}>
+            <p className="vote-waiting-text">Waiting for other players...</p>
+            <div className="vote-voter-list">
               {players.map((p) => (
-                <div key={p.id} style={styles.voterRow}>
-                  <span style={styles.voterName}>{p.name}</span>
-                  <span style={votedPlayers.has(p.id) || p.id === playerId ? styles.doneTag : styles.pendingTag}>{votedPlayers.has(p.id) || p.id === playerId ? "✓" : "..."}</span>
+                <div key={p.id} className="vote-voter-row">
+                  <span className="vote-voter-name">{p.name}</span>
+                  <span className={votedPlayers.has(p.id) || p.id === playerId ? "vote-done-tag" : "vote-pending-tag"}>{votedPlayers.has(p.id) || p.id === playerId ? "✓" : "..."}</span>
                 </div>
               ))}
             </div>
@@ -141,211 +140,5 @@ function Vote() {
     </div>
   );
 }
-
-const styles: { [key: string]: React.CSSProperties } = {
-  page: {
-    position: "relative",
-    width: "100vw",
-    minHeight: "100vh",
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    background: "radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%)",
-    fontFamily: "'Trade Winds', cursive",
-    color: "#e8dcc8",
-  },
-  vignette: {
-    position: "absolute",
-    inset: 0,
-    pointerEvents: "none",
-    background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.7) 100%)",
-    zIndex: 1,
-  },
-  content: {
-    position: "relative",
-    zIndex: 10,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    width: "100%",
-    maxWidth: "420px",
-    padding: "32px 20px 40px",
-  },
-  title: {
-    fontSize: "36px",
-    fontWeight: 400,
-    letterSpacing: "8px",
-    margin: "0 0 8px 0",
-    fontFamily: "'Creepster', cursive",
-    color: "#c9a84c",
-    textShadow: "0 0 30px rgba(201,168,76,0.2)",
-  },
-  subtitle: {
-    fontSize: "14px",
-    color: "#5a4a30",
-    marginBottom: "4px",
-    fontStyle: "italic",
-  },
-  voteCount: {
-    fontSize: "12px",
-    color: "#5a4a30",
-    letterSpacing: "2px",
-    marginBottom: "24px",
-    fontFamily: "'Creepster', cursive",
-  },
-  list: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "8px",
-    width: "100%",
-    marginBottom: "24px",
-  },
-  item: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "14px 16px",
-    fontSize: "15px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px solid #2a2019",
-    borderRadius: "4px",
-    cursor: "pointer",
-    transition: "all 0.2s ease",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  selectedItem: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "14px 16px",
-    fontSize: "15px",
-    backgroundColor: "rgba(196,30,30,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #c41e1e",
-    borderRadius: "4px",
-    cursor: "pointer",
-    boxShadow: "0 0 15px rgba(196,30,30,0.2)",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  playerName: {
-    fontSize: "15px",
-  },
-  votedBadge: {
-    fontSize: "10px",
-    color: "#2a8a4a",
-    fontWeight: 400,
-    letterSpacing: "2px",
-    fontFamily: "'Creepster', cursive",
-  },
-  noWerewolfItem: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "flex-start",
-    padding: "14px 16px",
-    fontSize: "15px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    color: "#c9b896",
-    border: "1px dashed #3d2e1a",
-    borderRadius: "4px",
-    cursor: "pointer",
-    marginTop: "4px",
-    gap: "4px",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  noWerewolfSelected: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "flex-start",
-    padding: "14px 16px",
-    fontSize: "15px",
-    backgroundColor: "rgba(212,160,23,0.08)",
-    color: "#e8dcc8",
-    border: "2px solid #d4a017",
-    borderRadius: "4px",
-    cursor: "pointer",
-    marginTop: "4px",
-    gap: "4px",
-    boxShadow: "0 0 15px rgba(212,160,23,0.2)",
-    fontFamily: "'Trade Winds', cursive",
-  },
-  noWerewolfHint: {
-    fontSize: "11px",
-    color: "#5a4a30",
-  },
-  button: {
-    width: "100%",
-    padding: "14px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "#c41e1e",
-    color: "#e8dcc8",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    fontFamily: "'Creepster', cursive",
-    transition: "all 0.3s ease",
-  },
-  buttonDisabled: {
-    width: "100%",
-    padding: "14px",
-    fontSize: "14px",
-    fontWeight: 400,
-    letterSpacing: "3px",
-    backgroundColor: "transparent",
-    color: "#3d2e1a",
-    border: "1px solid #1a1510",
-    borderRadius: "4px",
-    cursor: "not-allowed",
-    fontFamily: "'Creepster', cursive",
-  },
-  waitingContainer: {
-    width: "100%",
-    textAlign: "center" as const,
-  },
-  votedText: {
-    fontSize: "15px",
-    color: "#9a8a70",
-    marginBottom: "8px",
-  },
-  votedStrong: {
-    color: "#c9a84c",
-    fontFamily: "'Creepster', cursive",
-  },
-  waitingText: {
-    color: "#5a4a30",
-    fontSize: "13px",
-    fontStyle: "italic",
-    marginBottom: "24px",
-  },
-  voterList: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: "6px",
-    width: "100%",
-  },
-  voterRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 14px",
-    backgroundColor: "rgba(201,168,76,0.03)",
-    borderRadius: "4px",
-    border: "1px solid #1a1510",
-  },
-  voterName: {
-    fontSize: "14px",
-    color: "#9a8a70",
-  },
-  doneTag: {
-    color: "#2a8a4a",
-    fontFamily: "'Creepster', cursive",
-    letterSpacing: "1px",
-  },
-  pendingTag: {
-    color: "#3d2e1a",
-  },
-};
 
 export default Vote;

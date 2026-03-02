@@ -427,10 +427,9 @@
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE — TABLET
    ============================================================ */
 
-/* ===== TABLET (1024px) ===== */
 @media (max-width: 1024px) {
   .wr-cards {
     flex: 0 0 30%;
@@ -445,7 +444,11 @@
   }
 }
 
-/* ===== MOBILE (768px) — single column, hide side panels ===== */
+/* ============================================================
+   RESPONSIVE — MOBILE (768px)
+   Colors only — no size/padding/font-size changes
+   ============================================================ */
+
 @media (max-width: 768px) {
   .wr-page {
     flex-direction: column;
@@ -453,42 +456,6 @@
     min-height: 100dvh;
     overflow-y: auto;
     background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
-  }
-
-  .wr-vignette {
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.7) 50%, rgba(0, 0, 0, 0.9) 100%);
-  }
-
-  .wr-code-label {
-    color: var(--color-text);
-  }
-
-  .wr-copy-hint {
-    color: var(--color-text-muted);
-  }
-
-  .wr-player-count {
-    color: var(--color-text);
-  }
-
-  .wr-code-button {
-    background-color: rgba(0, 0, 0, 0.6);
-    border-color: var(--color-gold-dark);
-  }
-
-  .wr-player-row {
-    background-color: rgba(0, 0, 0, 0.6);
-    border-color: rgba(201, 168, 76, 0.2);
-  }
-
-  .wr-ready-btn,
-  .wr-leave-btn {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  .wr-start-btn:disabled {
-    background-color: rgba(0, 0, 0, 0.5);
-    color: var(--color-text-dim);
   }
 
   .wr-cards {
@@ -506,6 +473,130 @@
     padding: 24px 20px 40px;
     min-height: 100dvh;
     justify-content: flex-start;
+  }
+
+  /* Title */
+  .wr-title {
+    color: #f0e6d0;
+    text-shadow:
+      0 2px 16px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(201, 168, 76, 0.3);
+  }
+
+  /* Code section */
+  .wr-code-label {
+    color: rgba(240, 230, 208, 0.65);
+  }
+
+  .wr-code-button {
+    background-color: rgba(0, 0, 0, 0.55);
+    border-color: rgba(201, 168, 76, 0.3);
+  }
+
+  .wr-code-text {
+    text-shadow: 0 0 14px rgba(201, 168, 76, 0.3);
+  }
+
+  .wr-copy-hint {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  /* Player section */
+  .wr-player-count {
+    color: rgba(240, 230, 208, 0.65);
+  }
+
+  .wr-player-row {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: rgba(201, 168, 76, 0.12);
+  }
+
+  .wr-player-name {
+    color: #e8dcc8;
+  }
+
+  /* Badges */
+  .wr-host-badge {
+    color: var(--color-gold);
+    border-color: rgba(201, 168, 76, 0.35);
+    background-color: rgba(201, 168, 76, 0.1);
+  }
+
+  .wr-ready-badge {
+    color: #6dd66d;
+    border-color: rgba(109, 214, 109, 0.35);
+    background-color: rgba(109, 214, 109, 0.08);
+  }
+
+  .wr-kick-btn {
+    color: #e87070;
+    border-color: rgba(232, 112, 112, 0.3);
+    background-color: rgba(232, 112, 112, 0.06);
+  }
+
+  .wr-kick-btn:hover {
+    background-color: rgba(232, 112, 112, 0.15);
+    color: #f08080;
+  }
+
+  /* Start button */
+  .wr-start-btn {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  }
+
+  .wr-start-btn:hover:not(:disabled) {
+    box-shadow: 0 0 28px rgba(201, 168, 76, 0.3);
+  }
+
+  .wr-start-btn:disabled {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: rgba(201, 168, 76, 0.25);
+    color: rgba(240, 230, 208, 0.55);
+  }
+
+  /* Ready button */
+  .wr-ready-btn {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: rgba(240, 230, 208, 0.2);
+    color: rgba(240, 230, 208, 0.65);
+  }
+
+  .wr-ready-btn:hover {
+    border-color: rgba(109, 214, 109, 0.3);
+    color: rgba(240, 230, 208, 0.65);
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .wr-ready-btn--active {
+    background-color: rgba(109, 214, 109, 0.1);
+    color: #6dd66d;
+    border-color: rgba(109, 214, 109, 0.4);
+  }
+
+  .wr-ready-btn--active:hover {
+    background-color: rgba(109, 214, 109, 0.18);
+    color: #80e680;
+    border-color: rgba(109, 214, 109, 0.55);
+  }
+
+  /* Leave button */
+  .wr-leave-btn {
+    background-color: rgba(0, 0, 0, 0.35);
+    border-color: rgba(232, 112, 112, 0.2);
+    color: rgba(232, 112, 112, 0.55);
+  }
+
+  .wr-leave-btn:hover {
+    border-color: rgba(232, 112, 112, 0.45);
+    color: #e87070;
+    background-color: rgba(232, 112, 112, 0.06);
+  }
+
+  /* Error message */
+  .wr-error-message {
+    background-color: rgba(180, 70, 70, 0.2);
+    border-color: rgba(232, 112, 112, 0.35);
+    color: #f09090;
   }
 }
 

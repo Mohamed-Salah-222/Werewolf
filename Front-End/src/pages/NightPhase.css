@@ -456,4 +456,46 @@
     background-repeat: no-repeat;
     background-attachment: fixed;
   }
+
+  @media (max-width: 768px) {
+    .np-page {
+      background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    /* Header text */
+    .np-role-label {
+      color: rgba(240, 230, 208, 0.6);
+    }
+
+    /* Night role progress labels */
+    .nrp-card-label {
+      color: rgba(240, 230, 208, 0.3);
+    }
+
+    .nrp-card-label--completed {
+      color: rgba(240, 230, 208, 0.35);
+    }
+
+    .nrp-card-label--active {
+      color: var(--color-gold);
+    }
+
+    .nrp-card-label--mine {
+      color: rgba(240, 230, 208, 0.6);
+    }
+
+    /* Connector lines */
+    .nrp-connector {
+      background-color: rgba(240, 230, 208, 0.08);
+    }
+
+    /* Timer display */
+    .nrp-timer-display {
+      opacity: 1;
+    }
+  }
 }

@@ -198,7 +198,6 @@
    RESPONSIVE
    ============================================================ */
 
-/* ===== SHORT SCREENS (landscape phones) ===== */
 @media (max-height: 500px) {
   .rr-card-container {
     width: 160px;
@@ -215,15 +214,59 @@
     background-attachment: fixed;
   }
 
+  /* Title / headings */
+  .rr-heading {
+    color: #f0e6d0;
+    text-shadow:
+      0 2px 16px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(201, 168, 76, 0.3);
+  }
+
+  .rr-loading-title {
+    color: #f0e6d0;
+    text-shadow:
+      0 2px 16px rgba(0, 0, 0, 0.6),
+      0 0 30px rgba(201, 168, 76, 0.3);
+  }
+
+  /* Subtitle / helper text */
   .rr-sub-text {
-    color: var(--color-text-muted);
+    color: rgba(240, 230, 208, 0.6);
   }
 
   .rr-loading-text {
-    color: var(--color-text-muted);
+    color: rgba(240, 230, 208, 0.55);
   }
 
   .rr-waiting-text {
-    color: #6abf6a;
+    color: #6dd66d;
+  }
+
+  /* Warning */
+  .rr-warning {
+    color: #e87070;
+    text-shadow: 0 0 12px rgba(232, 112, 112, 0.2);
+  }
+
+  /* Confirm button */
+  .rr-confirm-btn {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+  }
+
+  .rr-confirm-btn:hover {
+    box-shadow: 0 0 28px rgba(201, 168, 76, 0.3);
+  }
+
+  /* Player dots */
+  .rr-player-dot {
+    color: rgba(240, 230, 208, 0.4);
+    border-color: rgba(201, 168, 76, 0.15);
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  .rr-player-dot--ready {
+    color: #6dd66d;
+    border-color: rgba(109, 214, 109, 0.4);
+    background-color: rgba(109, 214, 109, 0.1);
   }
 }

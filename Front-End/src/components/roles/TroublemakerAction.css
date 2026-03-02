@@ -378,6 +378,22 @@
   .tm-name {
     font-size: clamp(8px, 2.8vw, 12px);
     max-width: clamp(44px, 14vw, 72px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+  .tm-name--self {
+    color: #6dd66d;
+  }
+
+  .tm-name--target {
+    color: var(--color-gold);
+  }
+
+  .tm-bottom-hint {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .tm-bottom-status {
+    color: rgba(240, 230, 208, 0.45);
   }
 }
 

@@ -1,60 +1,330 @@
-/* ===== TABLET (768px and below) ===== */
+/* ===== PAGE ===== */
+.res-page {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%);
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+.res-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 1;
+}
+
+/* ===== CONTENT ===== */
+.res-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 20px 40px;
+}
+
+/* ===== WINNER BANNER ===== */
+.res-banner {
+  width: 100%;
+  text-align: center;
+  padding: 28px 20px;
+  border-radius: 4px;
+  border: 2px solid #2a2019;
+  background-color: rgba(201, 168, 76, 0.03);
+  margin-bottom: 24px;
+}
+
+.res-winner-text {
+  font-size: 32px;
+  font-weight: 400;
+  letter-spacing: 6px;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  text-shadow: 0 0 20px currentColor;
+}
+
+.res-personal-result {
+  font-size: 16px;
+  color: #9a8a70;
+  font-style: italic;
+  font-family: var(--font-body);
+}
+
+/* ===== VOICE CHAT ===== */
+.res-voice {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* ===== ELIMINATED SECTION ===== */
+.res-eliminated {
+  width: 100%;
+  text-align: center;
+  padding: 20px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border-radius: 4px;
+  border: 1px solid #2a2019;
+  margin-bottom: 24px;
+}
+
+.res-eliminated-label {
+  font-size: 10px;
+  color: #5a4a30;
+  letter-spacing: 3px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+}
+
+.res-eliminated-name {
+  font-size: 24px;
+  font-weight: 400;
+  margin-bottom: 4px;
+  font-family: var(--font-display);
+  letter-spacing: 3px;
+  color: var(--color-text);
+}
+
+.res-eliminated-role {
+  font-size: 14px;
+  margin-bottom: 6px;
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+}
+
+.res-eliminated-votes {
+  font-size: 12px;
+  color: #5a4a30;
+  font-family: var(--font-body);
+}
+
+/* ===== SECTIONS ===== */
+.res-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.res-section-title {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  margin-bottom: 12px;
+  font-family: var(--font-display);
+  color: var(--color-gold);
+}
+
+/* ===== ROLE LIST ===== */
+.res-role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.res-role-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border-radius: 4px;
+  border: 1px solid #1a1510;
+}
+
+.res-role-name {
+  font-size: 14px;
+  color: #9a8a70;
+  font-family: var(--font-body);
+}
+
+.res-you-tag {
+  font-size: 11px;
+  color: #5a4a30;
+}
+
+.res-role-value {
+  font-size: 13px;
+  font-weight: 400;
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+/* ===== VOTE TOGGLE ===== */
+.res-toggle-btn {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 12px;
+  background-color: transparent;
+  color: #6b5a3a;
+  border: 1px solid #2a2019;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.res-toggle-btn:hover {
+  color: var(--color-text-dim);
+  border-color: var(--color-border);
+}
+
+.res-toggle-arrow {
+  font-size: 10px;
+  color: #5a4a30;
+}
+
+/* ===== VOTE LIST ===== */
+.res-vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.res-vote-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border-radius: 4px;
+  border: 1px solid #1a1510;
+  font-size: 13px;
+}
+
+.res-voter-name {
+  color: #9a8a70;
+  flex: 1;
+  font-family: var(--font-body);
+}
+
+.res-arrow {
+  color: #3d2e1a;
+}
+
+.res-voted-name {
+  color: #c9b896;
+  font-weight: 400;
+  flex: 1;
+  text-align: right;
+  font-family: var(--font-body);
+}
+
+/* ===== ACTION BUTTONS ===== */
+.res-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.res-restart-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  background-color: var(--color-gold);
+  color: #0a0a0a;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: all 0.3s ease;
+}
+
+.res-restart-btn:hover {
+  background-color: #d4b050;
+}
+
+.res-restart-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.res-home-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  background-color: transparent;
+  color: #6b5a3a;
+  border: 1px solid #2a2019;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: all 0.3s ease;
+}
+
+.res-home-btn:hover {
+  border-color: var(--color-border);
+  color: var(--color-text-dim);
+}
+
+/* ===== TEAM COLORS ===== */
+.res-color--villain {
+  color: var(--color-villain);
+}
+
+.res-color--village {
+  color: var(--color-village);
+}
+
+.res-color--neutral {
+  color: var(--color-neutral);
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
 @media (max-width: 768px) {
-  .res-content {
-    padding: 24px 20px 32px !important;
-    max-width: 100% !important;
+  .np-page {
+    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
   }
 
-  .res-content h1 {
-    font-size: 26px !important;
-    letter-spacing: 4px !important;
-  }
-}
-
-/* ===== PHONE (480px and below) ===== */
-@media (max-width: 480px) {
-  .res-content {
-    padding: 20px 16px 28px !important;
+  /* Header text */
+  .np-role-label {
+    color: rgba(240, 230, 208, 0.6);
   }
 
-  .res-content h1 {
-    font-size: 22px !important;
-    letter-spacing: 3px !important;
+  /* Night role progress labels */
+  .nrp-card-label {
+    color: rgba(240, 230, 208, 0.3);
   }
 
-  .res-content p {
-    font-size: 12px !important;
+  .nrp-card-label--completed {
+    color: rgba(240, 230, 208, 0.35);
   }
 
-  .res-content h2 {
-    font-size: 14px !important;
-    letter-spacing: 3px !important;
+  .nrp-card-label--active {
+    color: var(--color-gold);
   }
 
-  .res-content button {
-    padding: 12px !important;
-    font-size: 12px !important;
-    letter-spacing: 2px !important;
+  .nrp-card-label--mine {
+    color: rgba(240, 230, 208, 0.6);
   }
 
-  .res-content span {
-    font-size: 12px !important;
-  }
-}
-
-/* ===== SMALL PHONE (360px and below) ===== */
-@media (max-width: 360px) {
-  .res-content {
-    padding: 16px 12px 24px !important;
+  /* Connector lines */
+  .nrp-connector {
+    background-color: rgba(240, 230, 208, 0.08);
   }
 
-  .res-content h1 {
-    font-size: 18px !important;
-    letter-spacing: 2px !important;
-  }
-
-  .res-content button {
-    padding: 10px !important;
-    font-size: 11px !important;
+  /* Timer display */
+  .nrp-timer-display {
+    opacity: 1;
   }
 }

@@ -152,8 +152,6 @@ function RoleReveal() {
         <div className="rr-top-section">
           {!flipped && (
             <>
-              <p className="rr-warning">MAKE SURE NO ONE IS LOOKING</p>
-              <h1 className="rr-heading">YOUR FATE AWAITS</h1>
               <p className="rr-sub-text">Tap the card to reveal your role</p>
             </>
           )}

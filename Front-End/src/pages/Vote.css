@@ -1,54 +1,343 @@
-/* ===== TABLET (768px and below) ===== */
+/* ===== PAGE ===== */
+.vote-page {
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 30%, #1a0a0a 0%, #0a0a0a 50%, #000 100%);
+  font-family: var(--font-body);
+  color: var(--color-text);
+}
+
+.vote-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.7) 100%);
+  z-index: 1;
+}
+
+/* ===== CONTENT ===== */
+.vote-content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 420px;
+  padding: 32px 20px 40px;
+}
+
+.vote-title {
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: 8px;
+  margin: 0 0 8px 0;
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  text-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
+  text-align: center;
+}
+
+.vote-subtitle {
+  font-size: 14px;
+  color: #5a4a30;
+  margin-bottom: 4px;
+
+  font-family: var(--font-body);
+}
+
+.vote-count {
+  font-size: 12px;
+  color: #5a4a30;
+  letter-spacing: 2px;
+  margin-bottom: 24px;
+  font-family: var(--font-display);
+}
+
+/* ===== VOICE CHAT WRAPPER ===== */
+.vote-voice {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* ===== PLAYER LIST ===== */
+.vote-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.vote-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 15px;
+  background-color: rgba(201, 168, 76, 0.03);
+  color: #c9b896;
+  border: 1px solid #2a2019;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--font-body);
+}
+
+.vote-item:hover {
+  border-color: var(--color-border);
+  background-color: rgba(201, 168, 76, 0.05);
+}
+
+.vote-item--selected {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  font-size: 15px;
+  background-color: rgba(196, 30, 30, 0.08);
+  color: var(--color-text);
+  border: 2px solid var(--color-villain);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(196, 30, 30, 0.2);
+  font-family: var(--font-body);
+}
+
+.vote-player-name {
+  font-size: 15px;
+}
+
+.vote-voted-badge {
+  font-size: 10px;
+  color: var(--color-village);
+  font-weight: 400;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+}
+
+/* ===== NO WEREWOLF OPTION ===== */
+.vote-no-wolf {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px 16px;
+  font-size: 15px;
+  background-color: rgba(201, 168, 76, 0.03);
+  color: #c9b896;
+  border: 1px dashed #3d2e1a;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 4px;
+  gap: 4px;
+  font-family: var(--font-body);
+  transition: all 0.2s ease;
+}
+
+.vote-no-wolf:hover {
+  border-color: var(--color-border);
+}
+
+.vote-no-wolf--selected {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 14px 16px;
+  font-size: 15px;
+  background-color: rgba(212, 160, 23, 0.08);
+  color: var(--color-text);
+  border: 2px solid var(--color-neutral);
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 4px;
+  gap: 4px;
+  box-shadow: 0 0 15px rgba(212, 160, 23, 0.2);
+  font-family: var(--font-body);
+}
+
+.vote-no-wolf-hint {
+  font-size: 11px;
+  color: #5a4a30;
+}
+
+/* ===== CONFIRM BUTTON ===== */
+.vote-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  background-color: var(--color-villain);
+  color: var(--color-text);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: all 0.3s ease;
+}
+
+.vote-btn:hover {
+  background-color: #d42a2a;
+}
+
+.vote-btn:disabled {
+  background-color: transparent;
+  color: #3d2e1a;
+  border: 1px solid #1a1510;
+  cursor: not-allowed;
+}
+
+/* ===== WAITING STATE ===== */
+.vote-waiting {
+  width: 100%;
+  text-align: center;
+}
+
+.vote-voted-text {
+  font-size: 15px;
+  color: #9a8a70;
+  margin-bottom: 8px;
+  font-family: var(--font-body);
+}
+
+.vote-voted-strong {
+  color: var(--color-gold);
+  font-family: var(--font-display);
+}
+
+.vote-waiting-text {
+  color: #5a4a30;
+  font-size: 13px;
+  font-style: italic;
+  margin-bottom: 24px;
+  font-family: var(--font-body);
+}
+
+/* ===== VOTER LIST ===== */
+.vote-voter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.vote-voter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border-radius: 4px;
+  border: 1px solid #1a1510;
+}
+
+.vote-voter-name {
+  font-size: 14px;
+  color: #9a8a70;
+  font-family: var(--font-body);
+}
+
+.vote-done-tag {
+  color: var(--color-village);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+}
+
+.vote-pending-tag {
+  color: #3d2e1a;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
 @media (max-width: 768px) {
-  .vote-content {
-    padding: 24px 20px 32px !important;
-    max-width: 100% !important;
+  .vote-page {
+    background:
+      url("../assets/bg_waiting.png") center center / cover no-repeat fixed,
+      #0a0a0a;
   }
 
-  .vote-content h1 {
-    font-size: 28px !important;
-    letter-spacing: 6px !important;
+  .vote-content {
+    padding: 24px 20px 32px;
+    max-width: 100%;
+  }
+
+  .vote-title {
+    font-size: 28px;
+    letter-spacing: 6px;
+  }
+  .vote-subtitle {
+    color: rgba(240, 230, 208, 0.55);
+  }
+
+  .vote-count {
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .vote-no-wolf-hint {
+    color: rgba(240, 230, 208, 0.45);
   }
 }
 
-/* ===== PHONE (480px and below) ===== */
 @media (max-width: 480px) {
   .vote-content {
-    padding: 20px 16px 28px !important;
+    padding: 20px 16px 28px;
   }
 
-  .vote-content h1 {
-    font-size: 24px !important;
-    letter-spacing: 4px !important;
+  .vote-title {
+    font-size: 24px;
+    letter-spacing: 4px;
   }
 
-  .vote-content p {
-    font-size: 12px !important;
+  .vote-subtitle,
+  .vote-count {
+    font-size: 12px;
   }
 
-  .vote-content button {
-    padding: 12px 14px !important;
-    font-size: 13px !important;
+  .vote-item,
+  .vote-item--selected,
+  .vote-no-wolf,
+  .vote-no-wolf--selected {
+    padding: 12px 14px;
+    font-size: 13px;
   }
 
-  .vote-content span {
-    font-size: 13px !important;
+  .vote-btn {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .vote-player-name {
+    font-size: 13px;
   }
 }
 
-/* ===== SMALL PHONE (360px and below) ===== */
 @media (max-width: 360px) {
   .vote-content {
-    padding: 16px 12px 24px !important;
+    padding: 16px 12px 24px;
   }
 
-  .vote-content h1 {
-    font-size: 20px !important;
-    letter-spacing: 3px !important;
+  .vote-title {
+    font-size: 20px;
+    letter-spacing: 3px;
   }
 
-  .vote-content button {
-    padding: 10px 12px !important;
-    font-size: 12px !important;
+  .vote-item,
+  .vote-item--selected,
+  .vote-no-wolf,
+  .vote-no-wolf--selected {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .vote-btn {
+    padding: 10px;
+    font-size: 12px;
   }
 }

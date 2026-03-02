@@ -313,6 +313,23 @@
   .sr-name {
     font-size: clamp(8px, 2.8vw, 12px);
     max-width: clamp(44px, 14vw, 72px);
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .sr-name--self {
+    color: #6dd66d;
+  }
+
+  .sr-name--target {
+    color: var(--color-gold);
+  }
+
+  .sr-bottom-hint {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .sr-bottom-status {
+    color: rgba(240, 230, 208, 0.45);
   }
 }
 
