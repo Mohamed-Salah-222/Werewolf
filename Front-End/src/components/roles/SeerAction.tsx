@@ -60,7 +60,7 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
 
   // Player selection
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [_selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [revealedPlayerId, setRevealedPlayerId] = useState<string | null>(null);
   const [revealedPlayerRole, setRevealedPlayerRole] = useState<string>("");
 
