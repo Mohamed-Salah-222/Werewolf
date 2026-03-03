@@ -46,7 +46,7 @@
   font-size: clamp(12px, 1.1vw, 14px);
   color: #5a4a30;
   margin-bottom: clamp(20px, 2.5vw, 32px);
-  font-style: italic;
+
   font-family: var(--font-body);
 }
 
@@ -291,7 +291,8 @@
     background-attachment: fixed;
   }
   .disc-subtitle {
-    color: rgba(240, 230, 208, 0.55);
+    color: var(--color-gold);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
   }
 
   .disc-recap-toggle {
@@ -311,8 +312,9 @@
   }
 
   .disc-skip-btn {
-    color: rgba(240, 230, 208, 0.55);
-    border-color: rgba(240, 230, 208, 0.2);
+    color: var(--color-gold);
+    border-color: rgba(201, 168, 76, 0.35);
+    background-color: rgba(0, 0, 0, 0.5);
   }
 
   .disc-skip-btn:hover:not(:disabled) {

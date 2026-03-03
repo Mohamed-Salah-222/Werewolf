@@ -42,7 +42,6 @@
   font-size: 14px;
   color: #5a4a30;
   font-family: var(--font-body);
-  font-style: italic;
 }
 
 /* ===== CONTENT ===== */
@@ -82,7 +81,7 @@
   font-size: 13px;
   color: #5a4a30;
   font-family: var(--font-body);
-  font-style: italic;
+
   margin-top: 8px;
 }
 
@@ -90,7 +89,7 @@
   font-size: 13px;
   color: #4a8a4a;
   font-family: var(--font-body);
-  font-style: italic;
+
   margin-top: 8px;
 }
 

@@ -88,7 +88,6 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
 
   // For swap animation: self card gets offset toward the selected ground card,
   // and the ground card gets offset toward self's position.
-  // We use the same getBoundingClientRect approach that works for robber/troublemaker.
   const [selfOffset, setSelfOffset] = useState<{ x: number; y: number } | null>(null);
   const [groundOffset, setGroundOffset] = useState<{ x: number; y: number } | null>(null);
 

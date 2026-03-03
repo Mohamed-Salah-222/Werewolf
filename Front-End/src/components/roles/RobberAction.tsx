@@ -7,6 +7,8 @@ import "./RobberAction.css";
 interface RobberResult {
   newRole: string;
   newTeam: string;
+  targetPlayerId?: string;
+  targetPlayerName?: string;
   message?: string;
 }
 
@@ -63,9 +65,17 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
 
   const targetIndex = targetId ? players.findIndex((p) => p.id === targetId) : -1;
 
+  // Auto-submit: if actionResult arrives while still idle, extract targetId
+  useEffect(() => {
+    if (actionResult && phase === "idle" && actionResult.targetPlayerId) {
+      setTargetId(actionResult.targetPlayerId);
+    }
+  }, [actionResult, phase]);
+
   // Animation sequencer: reveal target card → swap positions → done
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
+    if (!targetId) return;
     hasProcessedResult.current = true;
 
     setNewRole(actionResult.newRole);

@@ -53,6 +53,11 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 function MinionAction({ onAction, playerId, players, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
+  useEffect(() => {
+    if (actionResult && !submitted) {
+      setSubmitted(true);
+    }
+  }, [actionResult]);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [showNoWolves, setShowNoWolves] = useState(false);
   const hasProcessedResult = useRef(false);

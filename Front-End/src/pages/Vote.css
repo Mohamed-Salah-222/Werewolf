@@ -213,7 +213,7 @@
 .vote-waiting-text {
   color: #5a4a30;
   font-size: 13px;
-  font-style: italic;
+
   margin-bottom: 24px;
   font-family: var(--font-body);
 }

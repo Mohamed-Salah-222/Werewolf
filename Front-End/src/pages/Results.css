@@ -54,7 +54,6 @@
 .res-personal-result {
   font-size: 16px;
   color: #9a8a70;
-  font-style: italic;
   font-family: var(--font-body);
 }
 
@@ -292,43 +291,116 @@
    ============================================================ */
 
 @media (max-width: 768px) {
-  .np-page {
-    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+  .res-page {
+    background: url("../assets/bg_waiting.png") center center / cover no-repeat fixed;
   }
 
-  /* Header text */
-  .np-role-label {
+  .res-content {
+    padding: 24px 20px 32px;
+    max-width: 100%;
+  }
+
+  .res-winner-text {
+    font-size: 26px;
+    letter-spacing: 4px;
+  }
+
+  /* Brighten text over background */
+  .res-personal-result {
     color: rgba(240, 230, 208, 0.6);
   }
 
-  /* Night role progress labels */
-  .nrp-card-label {
+  .res-eliminated-label {
+    color: rgba(240, 230, 208, 0.5);
+  }
+
+  .res-eliminated-votes {
+    color: rgba(240, 230, 208, 0.45);
+  }
+
+  .res-role-name {
+    color: rgba(240, 230, 208, 0.6);
+  }
+
+  .res-you-tag {
+    color: rgba(240, 230, 208, 0.4);
+  }
+
+  .res-toggle-btn {
+    color: rgba(240, 230, 208, 0.55);
+    border-color: rgba(240, 230, 208, 0.15);
+  }
+
+  .res-toggle-btn:hover {
+    color: rgba(240, 230, 208, 0.75);
+    border-color: rgba(240, 230, 208, 0.25);
+  }
+
+  .res-toggle-arrow {
+    color: rgba(240, 230, 208, 0.4);
+  }
+
+  .res-voter-name {
+    color: rgba(240, 230, 208, 0.6);
+  }
+
+  .res-arrow {
     color: rgba(240, 230, 208, 0.3);
   }
 
-  .nrp-card-label--completed {
-    color: rgba(240, 230, 208, 0.35);
+  .res-voted-name {
+    color: rgba(240, 230, 208, 0.7);
   }
 
-  .nrp-card-label--active {
-    color: var(--color-gold);
+  .res-home-btn {
+    color: rgba(240, 230, 208, 0.5);
+    border-color: rgba(240, 230, 208, 0.15);
   }
 
-  .nrp-card-label--mine {
-    color: rgba(240, 230, 208, 0.6);
+  .res-home-btn:hover {
+    color: rgba(240, 230, 208, 0.7);
+    border-color: rgba(240, 230, 208, 0.25);
   }
 
-  /* Connector lines */
-  .nrp-connector {
-    background-color: rgba(240, 230, 208, 0.08);
+  .res-banner {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-color: rgba(201, 168, 76, 0.15);
   }
 
-  /* Timer display */
-  .nrp-timer-display {
-    opacity: 1;
+  .res-eliminated {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-color: rgba(201, 168, 76, 0.12);
+  }
+
+  .res-role-row {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-color: rgba(201, 168, 76, 0.1);
+  }
+
+  .res-vote-row {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-color: rgba(201, 168, 76, 0.1);
+  }
+}
+
+@media (max-width: 480px) {
+  .res-content {
+    padding: 20px 16px 28px;
+  }
+
+  .res-winner-text {
+    font-size: 22px;
+    letter-spacing: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .res-content {
+    padding: 16px 12px 24px;
+  }
+
+  .res-winner-text {
+    font-size: 18px;
+    letter-spacing: 2px;
   }
 }

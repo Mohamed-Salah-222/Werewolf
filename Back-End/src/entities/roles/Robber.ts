@@ -52,6 +52,8 @@ export class Robber implements Role {
       return {
         newRole: stolenRole.name,
         newTeam: stolenRole.team,
+        targetPlayerId: targetPlayer.id,
+        targetPlayerName: targetPlayer.name,
         message: `You stole the ${stolenRole.name} role`,
       };
     };

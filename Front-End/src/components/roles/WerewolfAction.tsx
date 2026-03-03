@@ -57,6 +57,12 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 function WerewolfAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
+  // Auto-submit: if actionResult arrives from server (timer expired), mark as submitted
+  useEffect(() => {
+    if (actionResult && !submitted) {
+      setSubmitted(true);
+    }
+  }, [actionResult]);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [revealedGroundIdx, setRevealedGroundIdx] = useState<number | null>(null);
   const [groundCardName, setGroundCardName] = useState<string>("");

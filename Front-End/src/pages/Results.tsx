@@ -164,10 +164,7 @@ function Results() {
           <div className="res-role-list">
             {playerRoles.map((p) => (
               <div key={p.playerId} className="res-role-row">
-                <span className="res-role-name">
-                  {p.name}
-                  {p.playerId === playerId && <span className="res-you-tag"> (You)</span>}
-                </span>
+                <span className="res-role-name">{p.name}</span>
                 <span className={`res-role-value ${getColorClass(p.role)}`}>{p.role}</span>
               </div>
             ))}
