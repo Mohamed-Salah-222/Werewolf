@@ -627,7 +627,7 @@
 @media (max-width: 768px) {
   .home-showcase {
     flex-direction: column;
-    padding: 6px;
+    padding: 2px;
     flex: none;
   }
 
@@ -689,7 +689,8 @@
     flex-wrap: nowrap;
     overflow-x: auto;
     justify-content: flex-start;
-    padding-bottom: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
     -webkit-overflow-scrolling: touch;
   }
 
