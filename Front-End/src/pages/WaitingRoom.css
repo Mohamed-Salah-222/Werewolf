@@ -251,6 +251,7 @@
   width: 100%;
   flex: 1;
   margin-bottom: 20px;
+  min-height: 0;
 }
 
 .wr-player-count {
@@ -267,6 +268,9 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  overflow-y: auto;
+  max-height: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wr-player-row {
@@ -525,9 +529,8 @@
 @media (max-width: 768px) {
   .wr-page {
     flex-direction: column;
-    height: auto;
-    min-height: 100dvh;
-    overflow-y: auto;
+    height: 100dvh;
+    overflow: hidden;
     background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
   }
 
@@ -538,14 +541,15 @@
   .wr-reveal {
     display: none;
   }
-
   .wr-center {
     flex: 1;
     border-left: none;
     border-right: none;
     padding: 24px 20px 40px;
-    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
     justify-content: flex-start;
+    overflow: hidden;
   }
 
   /* Title */
