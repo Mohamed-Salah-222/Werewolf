@@ -627,7 +627,7 @@
 @media (max-width: 768px) {
   .home-showcase {
     flex-direction: column;
-    padding: 16px;
+    padding: 12px;
     flex: none;
   }
 
@@ -679,6 +679,9 @@
 
   /* Hide ability box on mobile */
   .home-ability-box {
+  }
+
+  .home-char-title {
     display: none;
   }
 
