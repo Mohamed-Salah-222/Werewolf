@@ -2,8 +2,8 @@
 .home-page {
   position: relative;
   width: 100vw;
-  min-height: 100dvh;
-  overflow-y: auto;
+  height: 100dvh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: radial-gradient(ellipse at 30% 50%, var(--color-bg-warm) 0%, var(--color-bg) 50%, var(--color-bg-dark) 100%);
@@ -627,14 +627,15 @@
 @media (max-width: 768px) {
   .home-showcase {
     flex-direction: column;
-    padding: 2px;
-    flex: none;
+    padding: 2px 2px 0;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .home-page {
-    min-height: 100dvh;
-    height: auto;
-    overflow: visible;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .home-char-display {
@@ -647,14 +648,15 @@
   .home-fullbody-img {
     max-height: 240px;
   }
-
   .home-info-panel {
-    flex: none;
+    flex: 1;
+    min-height: 0;
     max-width: 100%;
     width: 100%;
     text-align: center;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-
   .home-divider {
     margin-left: auto;
     margin-right: auto;
