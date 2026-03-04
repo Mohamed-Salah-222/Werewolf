@@ -627,7 +627,7 @@
 @media (max-width: 768px) {
   .home-showcase {
     flex-direction: column;
-    padding: 2px;
+    padding: 6px;
     flex: none;
   }
 
