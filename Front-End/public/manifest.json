@@ -2,7 +2,7 @@
   "name": "Werewolf",
   "short_name": "Werewolf",
   "start_url": "/",
-  "display": "standalone",
+  "display": "fullscreen",
   "background_color": "#020202",
   "theme_color": "#020202",
   "icons": [
