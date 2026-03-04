@@ -3,8 +3,8 @@
   "short_name": "Werewolf",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#040406",
-  "theme_color": "#040406",
+  "background_color": "#020202",
+  "theme_color": "#020202",
   "icons": [
     {
       "src": "/icon-192.png",
