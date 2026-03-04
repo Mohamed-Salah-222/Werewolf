@@ -127,7 +127,7 @@ function Results() {
         {/* Winner banner */}
         <div className={`res-banner`}>
           <h1 className={`res-winner-text ${getWinnerColorClass(winners)}`}>{winnerLabel()}</h1>
-          <p className="res-personal-result">{didIWin() ? "You won!" : "You lost."}</p>
+          <p className="res-personal-result">{didIWin() ? "You won" : "You lost"}</p>
         </div>
 
         {/* Voice Chat */}

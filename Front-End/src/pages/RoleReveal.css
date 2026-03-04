@@ -115,6 +115,8 @@
 
 .rr-card-container--clickable {
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
 }
 
 .rr-card-face {

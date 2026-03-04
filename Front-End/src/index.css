@@ -71,3 +71,9 @@ input {
     overflow-y: auto;
   }
 }
+
+button,
+a,
+[onclick] {
+  -webkit-tap-highlight-color: transparent;
+}

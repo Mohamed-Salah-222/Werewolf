@@ -117,7 +117,6 @@ function Discussion() {
 
       <div className="disc-content">
         <h1 className="disc-title">DISCUSSION</h1>
-        <p className="disc-subtitle">Talk it out. Who's the werewolf?</p>
 
         {/* Voice Chat */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
