@@ -19,6 +19,81 @@
   z-index: 1;
 }
 
+/* ============================================================
+   MOUNT ANIMATIONS
+   ============================================================ */
+
+/* --- Title: fade down --- */
+.wr-anim-title {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition:
+    opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wr-page--mounted .wr-anim-title {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Code section: fade + scale up --- */
+.wr-anim-code {
+  opacity: 0;
+  transform: scale(0.92);
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+}
+
+.wr-page--mounted .wr-anim-code {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- Player section: fade up --- */
+.wr-anim-players {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
+}
+
+.wr-page--mounted .wr-anim-players {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Individual player rows: staggered slide in --- */
+.wr-anim-player-row {
+  opacity: 0;
+  transform: translateX(-16px);
+  transition:
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(0.4s + var(--player-index, 0) * 0.07s);
+}
+
+.wr-page--mounted .wr-anim-player-row {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* --- Actions: fade up --- */
+.wr-anim-actions {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.45s;
+}
+
+.wr-page--mounted .wr-anim-actions {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* ===== LEFT: CARD PILE ===== */
 .wr-cards {
   position: relative;
@@ -445,7 +520,6 @@
 
 /* ============================================================
    RESPONSIVE — MOBILE (768px)
-   Colors only — no size/padding/font-size changes
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -482,29 +556,35 @@
       0 0 30px rgba(201, 168, 76, 0.3);
   }
 
-  /* Code section */
+  /* ===== CODE SECTION — BRIGHTER ON MOBILE ===== */
   .wr-code-label {
-    color: rgba(240, 230, 208, 0.65);
+    color: rgba(201, 168, 76, 0.85);
+    text-shadow: 0 0 10px rgba(201, 168, 76, 0.2);
   }
 
   .wr-code-button {
     background-color: rgba(0, 0, 0, 0.55);
-    border-color: rgba(201, 168, 76, 0.3);
+    border-color: rgba(201, 168, 76, 0.4);
   }
 
   .wr-code-text {
-    text-shadow: 0 0 14px rgba(201, 168, 76, 0.3);
+    color: #ffc800;
+    text-shadow: 0 0 18px rgba(201, 168, 76, 0.4);
   }
 
   .wr-copy-hint {
-    color: rgba(240, 230, 208, 0.45);
+    color: rgba(201, 168, 76, 0.65);
+    text-shadow: 0 0 8px rgba(201, 168, 76, 0.15);
+  }
+
+  /* ===== PLAYER COUNT — BRIGHT GOLD ===== */
+  .wr-player-count {
+    color: #ffc800;
+    font-size: 80%;
+    text-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
   }
 
   /* Player section */
-  .wr-player-count {
-    color: rgba(240, 230, 208, 0.65);
-  }
-
   .wr-player-row {
     background-color: rgba(0, 0, 0, 0.5);
     border-color: rgba(201, 168, 76, 0.12);
@@ -610,5 +690,18 @@
 @media (max-width: 360px) {
   .wr-center {
     padding: 16px 12px 28px;
+  }
+}
+
+/* ===== REDUCE MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .wr-anim-title,
+  .wr-anim-code,
+  .wr-anim-players,
+  .wr-anim-player-row,
+  .wr-anim-actions {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }

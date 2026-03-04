@@ -75,6 +75,9 @@ function WaitingRoom() {
   const [cardCount, setCardCount] = useState(42);
   const [hostId, setHostId] = useState<string>("");
 
+  // Mount animation state
+  const [mounted, setMounted] = useState(false);
+
   // Always-fresh ref to avoid stale closure issues in socket callbacks
   const readySetRef = useRef<Set<string>>(new Set());
 
@@ -85,6 +88,14 @@ function WaitingRoom() {
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
 
   useLeaveWarning(true);
+
+  // Trigger mount animation
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Clear timeouts on unmount
   useEffect(() => {
@@ -137,7 +148,6 @@ function WaitingRoom() {
           if (seededSet.has(playerId)) setPlayerReady(true);
         }
 
-        // Rejoin AFTER fetch so readySetRef is seeded before playerListUpdate fires
         if (gameCode && playerId) {
           socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
         }
@@ -275,10 +285,7 @@ function WaitingRoom() {
 
   const handleReady = useCallback(() => {
     const newReady = !playerReady;
-    // Send explicit ready value — don't let the server toggle, avoids desync
     socket.emit("playerReady", { gameCode, playerId, ready: newReady });
-    // Don't optimistically set local state — wait for server acknowledgment via the
-    // "playerReady" socket event to avoid the rare bug where client/server desync
   }, [playerReady, gameCode, playerId]);
 
   const handleCardClick = useCallback(
@@ -305,7 +312,7 @@ function WaitingRoom() {
   // ===== RENDER =====
 
   return (
-    <div className="wr-page">
+    <div className={`wr-page ${mounted ? "wr-page--mounted" : ""}`}>
       <div className="wr-vignette" />
 
       {/* ===== LEFT: CARD GRID ===== */}
@@ -328,9 +335,9 @@ function WaitingRoom() {
 
       {/* ===== MIDDLE: WAITING ROOM ===== */}
       <div className="wr-center">
-        <h1 className="wr-title">WAITING ROOM</h1>
+        <h1 className="wr-title wr-anim-title">WAITING ROOM</h1>
 
-        <div className="wr-code-section">
+        <div className="wr-code-section wr-anim-code">
           <span className="wr-code-label">GAME CODE</span>
           <button className="wr-code-button" onClick={handleCopyCode}>
             <span className="wr-code-text">{gameCode?.toUpperCase()}</span>
@@ -338,11 +345,11 @@ function WaitingRoom() {
           </button>
         </div>
 
-        <div className="wr-player-section">
+        <div className="wr-player-section wr-anim-players">
           <span className="wr-player-count">PLAYERS {players.length}/10</span>
           <div className="wr-player-list">
-            {players.map((p) => (
-              <div key={p.id} className="wr-player-row">
+            {players.map((p, index) => (
+              <div key={p.id} className="wr-player-row wr-anim-player-row" style={{ "--player-index": index } as React.CSSProperties}>
                 <span className="wr-player-name">{p.name}</span>
                 <div className="wr-badges">
                   {p.isReady && <span className="wr-ready-badge">✓ READY</span>}
@@ -359,7 +366,7 @@ function WaitingRoom() {
           </div>
         </div>
 
-        <div className="wr-actions">
+        <div className="wr-actions wr-anim-actions">
           <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
 
           {isHost && (

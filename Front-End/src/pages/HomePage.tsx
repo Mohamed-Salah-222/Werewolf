@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
@@ -28,10 +28,6 @@ function teamLabel(team: string): string {
   return "VILLAGE TEAM";
 }
 
-/**
- * Connects the socket (if needed) and emits a joinGame event.
- * Returns a promise that resolves with the server's response.
- */
 function emitJoinGame(gameCode: string, playerName: string): Promise<JoinResponse> {
   if (!socket.connected) socket.connect();
   return new Promise((resolve) => {
@@ -54,6 +50,52 @@ function HomePage() {
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // === ANIMATION STATE ===
+  const [mounted, setMounted] = useState(false);
+  const [charSwitching, setCharSwitching] = useState(false);
+  const [displayedChar, setDisplayedChar] = useState<CharacterData>(characters[0]);
+  const switchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Trigger mount animation
+  useEffect(() => {
+    // Small delay so the browser paints the initial state first
+    const raf = requestAnimationFrame(() => {
+      setMounted(true);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  // Character switch with crossfade
+  const handleCharSwitch = useCallback(
+    (char: CharacterData) => {
+      if (char.id === selectedChar.id) return;
+
+      // Clear any pending switch
+      if (switchTimeoutRef.current) clearTimeout(switchTimeoutRef.current);
+
+      // Start exit animation
+      setCharSwitching(true);
+
+      // After exit animation completes, swap character and enter
+      switchTimeoutRef.current = setTimeout(() => {
+        setSelectedChar(char);
+        setDisplayedChar(char);
+        // Force reflow then remove switching class to trigger enter
+        requestAnimationFrame(() => {
+          setCharSwitching(false);
+        });
+      }, 250); // matches CSS exit duration
+    },
+    [selectedChar.id],
+  );
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (switchTimeoutRef.current) clearTimeout(switchTimeoutRef.current);
+    };
+  }, []);
 
   const closeModals = useCallback(() => {
     setShowCreateModal(false);
@@ -153,15 +195,15 @@ function HomePage() {
   }, [playerName, gameCode, navigate, setSession]);
 
   return (
-    <div className="home-page">
+    <div className={`home-page ${mounted ? "home-page--mounted" : ""}`}>
       <div className="home-vignette" />
 
       {/* ===== TOP: TITLE + BUTTONS ===== */}
       <div className="home-topbar">
-        <h1 className="home-title">WEREWOLF</h1>
+        <h1 className="home-title anim-title">{`WEREWOLF`}</h1>
         <div className="home-button-row">
           <button
-            className="action-btn"
+            className="action-btn anim-btn anim-btn--1"
             onClick={() => {
               closeModals();
               setShowCreateModal(true);
@@ -170,7 +212,7 @@ function HomePage() {
             CREATE GAME
           </button>
           <button
-            className="action-btn"
+            className="action-btn anim-btn anim-btn--2"
             onClick={() => {
               closeModals();
               setShowJoinModal(true);
@@ -179,7 +221,7 @@ function HomePage() {
             JOIN GAME
           </button>
           <button
-            className="action-btn"
+            className="action-btn anim-btn anim-btn--3"
             onClick={() => {
               closeModals();
               setShowHowToPlay(true);
@@ -192,9 +234,9 @@ function HomePage() {
 
       {/* ===== MIDDLE: CHARACTER SHOWCASE ===== */}
       <div className="home-showcase">
-        <div className="home-char-display">
-          {selectedChar.fullBody ? (
-            <img src={selectedChar.fullBody} alt={selectedChar.name} className="home-fullbody-img" key={selectedChar.id} />
+        <div className={`home-char-display anim-char-display ${charSwitching ? "char-exit" : "char-enter"}`}>
+          {displayedChar.fullBody ? (
+            <img src={displayedChar.fullBody} alt={displayedChar.name} className="home-fullbody-img" />
           ) : (
             <div className="home-placeholder-body">
               <span className="home-placeholder-icon">?</span>
@@ -203,38 +245,41 @@ function HomePage() {
           )}
         </div>
 
-        <div className="home-info-panel">
-          <div className={`home-team-badge home-team-badge--${selectedChar.team}`}>{teamLabel(selectedChar.team)}</div>
-          <h2 className="home-char-name">{selectedChar.name.toUpperCase()}</h2>
-          <p className="home-char-title">{selectedChar.title}</p>
+        <div className={`home-info-panel anim-info-panel ${charSwitching ? "info-exit" : "info-enter"}`}>
+          <div className={`home-team-badge home-team-badge--${displayedChar.team}`}>{teamLabel(displayedChar.team)}</div>
+          <h2 className="home-char-name">{displayedChar.name.toUpperCase()}</h2>
+          <p className="home-char-title">{displayedChar.title}</p>
           <div className="home-divider" />
-          <p className="home-char-desc">{selectedChar.description}</p>
+          <p className="home-char-desc">{displayedChar.description}</p>
           <div className="home-ability-box">
             <span className="home-ability-label">ABILITY</span>
-            <p className="home-ability-text">{selectedChar.ability}</p>
+            <p className="home-ability-text">{displayedChar.ability}</p>
           </div>
         </div>
       </div>
 
       {/* ===== BOTTOM: CHARACTER SELECT GRID ===== */}
-      <div className="home-selectbar">
+      <div className="home-selectbar anim-selectbar">
         <div className="home-select-grid">
-          {characters.map((char) => {
+          {characters.map((char, index) => {
             const isActive = selectedChar.id === char.id;
             const color = teamColor(char.team);
             return (
               <button
                 key={char.id}
-                className={`home-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
+                className={`home-grid-slot anim-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
                 style={
-                  isActive
-                    ? {
-                        borderColor: color,
-                        boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                      }
-                    : undefined
+                  {
+                    "--slot-index": index,
+                    ...(isActive
+                      ? {
+                          borderColor: color,
+                          boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                        }
+                      : undefined),
+                  } as React.CSSProperties
                 }
-                onClick={() => setSelectedChar(char)}
+                onClick={() => handleCharSwitch(char)}
               >
                 {char.square ? (
                   <img src={char.square} alt={char.name} className="home-grid-img" />
