@@ -81,15 +81,13 @@
   font-size: 13px;
   color: #5a4a30;
   font-family: var(--font-body);
-
   margin-top: 8px;
 }
 
 .rr-waiting-text {
   font-size: 13px;
-  color: #4a8a4a;
+  color: rgba(240, 230, 208, 0.6);
   font-family: var(--font-body);
-
   margin-top: 8px;
 }
 
@@ -140,6 +138,19 @@
     0 0 60px rgba(201, 168, 76, 0.15);
 }
 
+/* GameCard inside the flip face */
+.rr-card-face--gamecard {
+  overflow: visible;
+  background: none;
+  box-shadow: none;
+}
+
+.rr-gamecard {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 40px rgba(201, 168, 76, 0.12));
+}
+
 .rr-card-img {
   width: 100%;
   height: 100%;
@@ -153,35 +164,40 @@
   font-size: clamp(11px, 1.1vw, 13px);
   font-weight: 400;
   letter-spacing: clamp(2px, 0.3vw, 4px);
-  background-color: var(--color-gold);
-  color: var(--color-bg);
-  border: none;
+  background-color: transparent;
+  color: var(--color-gold);
+  border: 1px solid var(--color-gold);
   border-radius: 4px;
   cursor: pointer;
   font-family: var(--font-display);
   margin-top: 8px;
-  transition: background-color 0.2s ease;
+  transition:
+    border-color 0.3s ease,
+    color 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .rr-confirm-btn:hover {
-  background-color: #d4b255;
+  color: var(--color-text);
+  border-color: var(--color-gold);
+  box-shadow:
+    0 0 20px rgba(201, 168, 76, 0.2),
+    inset 0 0 20px rgba(201, 168, 76, 0.05);
 }
 
+/* ===== PLAYER STATUS DOTS ===== */
 .rr-player-status-list {
   display: flex;
   gap: 8px;
   justify-content: center;
   flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 
-.rr-player-dot {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.rr-player-tag {
+  padding: 6px 14px;
   font-size: 12px;
+  letter-spacing: 1px;
   font-family: var(--font-display);
   color: var(--color-text-dim);
   border: 1px solid var(--color-border);
@@ -189,7 +205,7 @@
   transition: all 0.3s ease;
 }
 
-.rr-player-dot--ready {
+.rr-player-tag--ready {
   color: #4a7c3f;
   border-color: #2d5a26;
   background-color: rgba(74, 124, 63, 0.15);
@@ -202,7 +218,6 @@
 @media (max-height: 500px) {
   .rr-card-container {
     width: 160px;
-    height: 240px;
   }
 }
 
@@ -215,7 +230,6 @@
     background-attachment: fixed;
   }
 
-  /* Title / headings */
   .rr-heading {
     color: #f0e6d0;
     text-shadow:
@@ -230,7 +244,6 @@
       0 0 30px rgba(201, 168, 76, 0.3);
   }
 
-  /* Subtitle / helper text */
   .rr-sub-text {
     color: rgba(240, 230, 208, 0.6);
   }
@@ -240,25 +253,19 @@
   }
 
   .rr-waiting-text {
-    color: #6dd66d;
+    color: #f0e6d0;
   }
 
-  /* Warning */
   .rr-warning {
     color: #e87070;
     text-shadow: 0 0 12px rgba(232, 112, 112, 0.2);
   }
 
-  /* Confirm button */
   .rr-confirm-btn {
-    box-shadow: 0 0 20px rgba(201, 168, 76, 0.2);
+    border-color: rgba(201, 168, 76, 0.7);
+    text-shadow: 0 0 10px rgba(201, 168, 76, 0.2);
   }
 
-  .rr-confirm-btn:hover {
-    box-shadow: 0 0 28px rgba(201, 168, 76, 0.3);
-  }
-
-  /* Player dots */
   .rr-player-dot {
     color: rgba(240, 230, 208, 0.4);
     border-color: rgba(201, 168, 76, 0.15);
@@ -269,5 +276,26 @@
     color: #6dd66d;
     border-color: rgba(109, 214, 109, 0.4);
     background-color: rgba(109, 214, 109, 0.1);
+  }
+
+  /* Bigger card on mobile, content pushed up */
+  .rr-page {
+    align-items: center;
+  }
+
+  .rr-content {
+    padding-top: 0;
+    gap: clamp(6px, 1.5vh, 16px);
+    width: 100%;
+  }
+
+  .rr-card-container {
+    width: clamp(220px, 65vw, 300px);
+  }
+
+  .rr-player-tag {
+    color: #f0e6d0;
+    padding: 8px 16px;
+    font-size: 13px;
   }
 }

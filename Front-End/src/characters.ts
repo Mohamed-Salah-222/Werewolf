@@ -74,7 +74,7 @@ export const characters: CharacterData[] = [
   },
   {
     id: "troublemaker",
-    name: "T.M",
+    name: "Troublemaker",
     team: "village",
     title: "The Chaos Weaver",
     description: "She thrives in confusion and delight. With careless hands she twists fate, swapping destinies while laughter echoes in the dark.",
@@ -138,14 +138,14 @@ export const characters: CharacterData[] = [
 
 import backCard from "./assets/back_card.jpg";
 import werewolfCard from "./assets/werewolf_card.jpg";
-import minionCard from "./assets/minion_card.jpg";
+import minionCard from "./assets/minion_card.png";
 import seerCard from "./assets/Seer_card.jpg";
 import robberCard from "./assets/robber_card.jpg";
 import troublemakerCard from "./assets/troublemaker_card.jpg";
 import masonCard from "./assets/mason_card.jpg";
 import drunkCard from "./assets/drunk_card.jpg";
 import insomniacCard from "./assets/insomaniac_card.jpg";
-import cloneCard from "./assets/clone_card.jpg";
+import cloneCard from "./assets/clone_card.png";
 import jokerCard from "./assets/joker_card.jpg";
 
 import werewolfCardSmall from "./assets/werewolf_card_small.webp";
