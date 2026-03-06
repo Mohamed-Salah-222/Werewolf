@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./CloneAction.css";
 
 import WerewolfAction from "./WerewolfAction";
@@ -35,13 +36,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getCloneCardImage(): string {
-  return getCardImage("clone");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -54,8 +56,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -75,6 +77,12 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
   const [targetId, setTargetId] = useState<string | null>(null);
   const [clonedRoleName, setClonedRoleName] = useState<string>(initialClonedRole);
   const hasProcessedCloneResult = useRef(!!cloneResult);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -103,6 +111,18 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
     onCloneFirstAction({ type: "clone", targetPlayer: { id: clickedId } });
   };
 
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   const isClickable = phase === "pick";
 
   const buildPlayerListForPhase2 = (): Array<{ id: string; name: string }> => {
@@ -123,7 +143,6 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
     const phase2Players = buildPlayerListForPhase2();
     const secondaryGroundCards = cloneResult.groundCards || groundCards;
 
-    // Active roles — render their full action component
     if (ACTIVE_CLONE_ROLES.has(roleLower)) {
       return (
         <div className="cl-phase2">
@@ -139,7 +158,6 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       );
     }
 
-    // Werewolf
     if (roleLower === "werewolf") {
       return (
         <div className="cl-phase2">
@@ -151,7 +169,6 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       );
     }
 
-    // Mason
     if (roleLower === "mason") {
       return (
         <div className="cl-phase2">
@@ -163,7 +180,6 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       );
     }
 
-    // Insomniac — autoSubmitted so it waits for cloneInsomniacResult
     if (roleLower === "insomniac") {
       return (
         <div className="cl-phase2">
@@ -175,7 +191,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       );
     }
 
-    // Minion / other passive — show message
+    // Minion / other passive
     const autoMessage = cloneResult.autoResult ? (cloneResult.autoResult as { message?: string }).message || cloneResult.message : cloneResult.message;
 
     return (
@@ -184,11 +200,12 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           <span className="cl-banner-text">CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
         </div>
         <div className="cl-passive-result">
-          <div className="cl-passive-card">
-            <img src={getCardImage(cloneResult.clonedRole)} alt={cloneResult.clonedRole} draggable={false} />
+          <div className="cl-passive-card cl-passive-card--tappable" onClick={() => openModal(getFullCardImage(cloneResult.clonedRole), cloneResult.clonedRole)}>
+            <img src={getSquareImage(cloneResult.clonedRole)} alt={cloneResult.clonedRole} draggable={false} />
           </div>
           <p className="cl-passive-text">{autoMessage}</p>
         </div>
+        <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
       </div>
     );
   }
@@ -208,29 +225,48 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           const isMorphing = isSelf && phase === "morph";
           const isMorphed = isSelf && phase === "phase2";
 
+          const isFaceUp = isSelf || showTargetFace;
+
           return (
             <div key={player.id} className={`cl-slot ${isSelf ? "cl-slot--self" : ""} ${showTargetFace ? "cl-slot--revealed" : ""} ${isClickable && !isSelf ? "cl-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>
               <span className={`cl-name ${isSelf ? "cl-name--self" : ""} ${showTargetFace ? "cl-name--target" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
               {isSelf ? (
-                <div className={`cl-morph-container ${isMorphing ? "cl-morph-container--morphing" : ""}`}>
+                <div
+                  className={`cl-morph-container ${isMorphing ? "cl-morph-container--morphing" : ""} cl-morph-container--tappable`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const role = clonedRoleName || "clone";
+                    openModal(getFullCardImage(role), role, "You");
+                  }}
+                >
                   <div className={`cl-morph-card cl-morph-card--clone ${isMorphing ? "cl-morph-card--fade-out" : ""} ${isMorphed ? "cl-morph-card--hidden" : ""}`}>
-                    <img src={getCloneCardImage()} alt="Clone" draggable={false} />
+                    <img src={getSquareImage("clone")} alt="Clone" draggable={false} />
                   </div>
                   {clonedRoleName && (
                     <div className={`cl-morph-card cl-morph-card--role ${isMorphing ? "cl-morph-card--fade-in" : ""} ${isMorphed ? "cl-morph-card--visible" : ""} ${!isMorphing && !isMorphed ? "cl-morph-card--hidden" : ""}`}>
-                      <img src={getCardImage(clonedRoleName)} alt={clonedRoleName} draggable={false} />
+                      <img src={getSquareImage(clonedRoleName)} alt={clonedRoleName} draggable={false} />
                     </div>
                   )}
                 </div>
               ) : (
-                <div className={`cl-flip ${showTargetFace ? "cl-flip--up" : ""}`}>
+                <div
+                  className={`cl-flip ${showTargetFace ? "cl-flip--up" : ""}${showTargetFace ? " cl-flip--tappable" : ""}`}
+                  onClick={
+                    showTargetFace
+                      ? (e) => {
+                          e.stopPropagation();
+                          openModal(getFullCardImage(clonedRoleName), clonedRoleName, player.name);
+                        }
+                      : undefined
+                  }
+                >
                   <div className="cl-flip-inner">
                     <div className="cl-flip-face cl-flip-face--back">
                       <img src={backCardImage} alt="Card back" draggable={false} />
                     </div>
                     <div className="cl-flip-face cl-flip-face--front">
-                      <img src={showTargetFace ? getCardImage(clonedRoleName) : backCardImage} alt={showTargetFace ? clonedRoleName : "Card"} draggable={false} />
+                      <img src={showTargetFace ? getSquareImage(clonedRoleName) : backCardImage} alt={showTargetFace ? clonedRoleName : "Card"} draggable={false} />
                     </div>
                   </div>
                 </div>
@@ -264,6 +300,8 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
         {phase === "cloning" && <span className="cl-bottom-status">CLONING...</span>}
         {phase === "morph" && <span className="cl-bottom-status cl-bottom-status--morph">Becoming {clonedRoleName}...</span>}
       </div>
+
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

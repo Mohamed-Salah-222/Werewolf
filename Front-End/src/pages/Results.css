@@ -292,7 +292,7 @@
 
 @media (max-width: 768px) {
   .res-page {
-    background: url("../assets/bg_waiting.png") center center / cover no-repeat fixed;
+    background: url("../assets/bg_waiting.webp") center center / cover no-repeat fixed;
   }
 
   .res-content {

@@ -531,7 +531,7 @@
     flex-direction: column;
     height: 100dvh;
     overflow: hidden;
-    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+    background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
   }
 
   .wr-cards {

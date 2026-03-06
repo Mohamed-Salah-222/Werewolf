@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./DrunkAction.css";
 
 // ===== TYPES =====
@@ -19,13 +20,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getDrunkCardImage(): string {
-  return getCardImage("drunk");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -38,8 +40,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -57,6 +59,12 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
   const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
   const hasProcessedResult = useRef(isRejoin);
 
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
   // Refs for swap animation
   const selfSlotRef = useRef<HTMLDivElement | null>(null);
   const groundRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -71,7 +79,6 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
 
     if (phase === "done") return;
 
-    // Start swap animation
     setPhase("swap");
     setTimeout(() => setPhase("done"), 1000);
   }, [actionResult, phase]);
@@ -84,10 +91,21 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
     onAction({ type: "drunk", targetRoleId: groundId });
   };
 
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   const isClickable = phase === "idle";
 
-  // For swap animation: self card gets offset toward the selected ground card,
-  // and the ground card gets offset toward self's position.
+  // Swap animation offsets
   const [selfOffset, setSelfOffset] = useState<{ x: number; y: number } | null>(null);
   const [groundOffset, setGroundOffset] = useState<{ x: number; y: number } | null>(null);
 
@@ -105,7 +123,6 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
       const dx = groundRect.left - selfRect.left;
       const dy = groundRect.top - selfRect.top;
 
-      // Don't set offsets yet — set them on next frame so transition fires
       requestAnimationFrame(() => {
         setSelfOffset({ x: dx, y: dy });
         setGroundOffset({ x: -dx, y: -dy });
@@ -113,7 +130,6 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
     });
   }, [phase, selectedGroundId]);
 
-  // Get transform for self slot during swap
   const getSelfSwapStyle = (): React.CSSProperties => {
     if (phase === "swap" && selfOffset) {
       return {
@@ -123,7 +139,6 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
     return {};
   };
 
-  // Get transform for ground card during swap
   const getGroundSwapStyle = (groundId: string): React.CSSProperties => {
     if (phase === "swap" && groundId === selectedGroundId && groundOffset) {
       return {
@@ -155,13 +170,23 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
             >
               <span className={`dk-name ${isSelf ? "dk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`dk-flip ${isSelf ? "dk-flip--up" : ""}`}>
+              <div
+                className={`dk-flip ${isSelf ? "dk-flip--up" : ""}${isSelf ? " dk-flip--tappable" : ""}`}
+                onClick={
+                  isSelf
+                    ? (e) => {
+                        e.stopPropagation();
+                        openModal(getFullCardImage("drunk"), "Drunk", "You");
+                      }
+                    : undefined
+                }
+              >
                 <div className="dk-flip-inner">
                   <div className="dk-flip-face dk-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="dk-flip-face dk-flip-face--front">
-                    <img src={isSelf ? getDrunkCardImage() : backCardImage} alt={isSelf ? "Drunk" : "Card"} draggable={false} />
+                    <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "Drunk" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -230,6 +255,9 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
         {phase === "swap" && <span className="dk-bottom-status">SWAPPING...</span>}
         {phase === "done" && <span className="dk-bottom-status dk-bottom-status--done">You swapped with a ground card</span>}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

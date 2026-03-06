@@ -14,13 +14,12 @@ interface InsomniacResult {
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
   actionResult?: InsomniacResult | null;
-  /** If true, skip the "WAKE UP" button and start in waiting state (used by clone-insomniac) */
   autoSubmitted?: boolean;
 }
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string | undefined): string {
+function getFullCardImage(roleName: string | undefined): string {
   if (!roleName) return backCardImage;
   const card = allCards.find((c) => c.name && c.name.toLowerCase() === roleName.toLowerCase());
   return card?.image || backCardImage;
@@ -38,7 +37,6 @@ function isValidResult(r: unknown): r is InsomniacResult {
 }
 
 function InsomniacAction({ onAction, actionResult, autoSubmitted }: Props) {
-  // Only treat as rejoin if actionResult actually has the right shape
   const validResult = isValidResult(actionResult) ? actionResult : null;
   const isRejoin = !!validResult;
 
@@ -46,11 +44,8 @@ function InsomniacAction({ onAction, actionResult, autoSubmitted }: Props) {
   const [result, setResult] = useState<InsomniacResult | null>(isRejoin ? validResult : null);
   const hasProcessedResult = useRef(isRejoin);
 
-  // Process result when it arrives
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
-
-    // Validate the result has the right shape before processing
     if (!isValidResult(actionResult)) return;
 
     hasProcessedResult.current = true;
@@ -69,7 +64,7 @@ function InsomniacAction({ onAction, actionResult, autoSubmitted }: Props) {
 
   const currentRole = result?.currentRole || "Insomniac";
   const hasChanged = result?.hasChanged || false;
-  const cardImage = result ? getCardImage(result.currentRole) : getCardImage("insomniac");
+  const cardImage = result ? getFullCardImage(result.currentRole) : getFullCardImage("insomniac");
   const showFace = phase === "reveal" || phase === "done";
 
   return (

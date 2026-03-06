@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./SeerAction.css";
 
 // ===== TYPES =====
@@ -24,13 +25,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getSeerCardImage(): string {
-  return getCardImage("seer");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -43,8 +45,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -54,7 +56,6 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 // ===== COMPONENT =====
 
 function SeerAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
-  // Selection mode: null = choosing, "player" = locked to player, "ground" = locked to ground
   const [mode, setMode] = useState<"player" | "ground" | null>(null);
   const [submitted, setSubmitted] = useState(!!actionResult);
 
@@ -70,6 +71,12 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
 
   const hasProcessedResult = useRef(false);
 
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
@@ -81,7 +88,6 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
     if (actionResult.actionType === "player" && actionResult.role) {
       setMode("player");
       setRevealedPlayerRole(actionResult.role);
-      // Find the player by name to reveal their card
       const target = players.find((p) => p.name === actionResult.playerName);
       if (target) {
         setTimeout(() => {
@@ -111,7 +117,6 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
     }
   }, [actionResult, players, groundCards, selectedGroundIds]);
 
-  // Click a player card
   const handlePlayerClick = useCallback(
     (targetId: string) => {
       if (submitted || mode === "ground" || targetId === playerId) return;
@@ -128,7 +133,6 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
     [submitted, mode, playerId, onAction],
   );
 
-  // Click a ground card
   const handleGroundClick = useCallback(
     (groundId: string) => {
       if (submitted || mode === "player") return;
@@ -139,7 +143,6 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
       const newSelected = [...selectedGroundIds, groundId];
       setSelectedGroundIds(newSelected);
 
-      // If we now have 2 selected, submit
       if (newSelected.length === 2) {
         setSubmitted(true);
         onAction({
@@ -152,7 +155,18 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
     [submitted, mode, selectedGroundIds, onAction],
   );
 
-  // Determine interactivity states
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   const canClickPlayers = !submitted && mode !== "ground";
   const canClickGround = !submitted && mode !== "player";
 
@@ -165,18 +179,29 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
           const isSelf = player.id === playerId;
           const isRevealed = revealedPlayerId === player.id;
           const isClickable = canClickPlayers && !isSelf;
+          const isFaceUp = isSelf || isRevealed;
 
           return (
             <div key={player.id} className={`sr-slot ${isSelf ? "sr-slot--self" : ""} ${isRevealed ? "sr-slot--revealed" : ""} ${isClickable ? "sr-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && handlePlayerClick(player.id)}>
               <span className={`sr-name ${isSelf ? "sr-name--self" : ""} ${isRevealed ? "sr-name--revealed" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`sr-flip ${isSelf || isRevealed ? "sr-flip--up" : ""}`}>
+              <div
+                className={`sr-flip ${isFaceUp ? "sr-flip--up" : ""} ${isFaceUp ? "sr-flip--tappable" : ""}`}
+                onClick={
+                  isFaceUp
+                    ? (e) => {
+                        e.stopPropagation();
+                        openModal(isSelf ? getFullCardImage("seer") : getFullCardImage(revealedPlayerRole), isSelf ? "Seer" : revealedPlayerRole, isSelf ? "You" : player.name);
+                      }
+                    : undefined
+                }
+              >
                 <div className="sr-flip-inner">
                   <div className="sr-flip-face sr-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="sr-flip-face sr-flip-face--front">
-                    <img src={isSelf ? getSeerCardImage() : isRevealed ? getCardImage(revealedPlayerRole) : backCardImage} alt={isSelf ? "Seer" : isRevealed ? revealedPlayerRole : "Card"} draggable={false} />
+                    <img src={isSelf ? getSquareImage("seer") : isRevealed ? getSquareImage(revealedPlayerRole) : backCardImage} alt={isSelf ? "Seer" : isRevealed ? revealedPlayerRole : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -197,13 +222,23 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
 
             return (
               <div key={gc.id} className={`sr-ground-card ${isSelected ? "sr-ground-card--selected" : ""} ${isRevealed ? "sr-ground-card--revealed" : ""} ${isClickable ? "sr-ground-card--clickable" : ""}`} onClick={() => isClickable && handleGroundClick(gc.id)}>
-                <div className={`sr-flip sr-flip--ground ${isRevealed ? "sr-flip--up" : ""}`}>
+                <div
+                  className={`sr-flip sr-flip--ground ${isRevealed ? "sr-flip--up" : ""} ${isRevealed ? "sr-flip--tappable" : ""}`}
+                  onClick={
+                    isRevealed
+                      ? (e) => {
+                          e.stopPropagation();
+                          openModal(getFullCardImage(revealedRole), revealedRole);
+                        }
+                      : undefined
+                  }
+                >
                   <div className="sr-flip-inner">
                     <div className="sr-flip-face sr-flip-face--back">
                       <img src={backCardImage} alt="Ground card" draggable={false} />
                     </div>
                     <div className="sr-flip-face sr-flip-face--front">
-                      <img src={isRevealed ? getCardImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
+                      <img src={isRevealed ? getSquareImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
                     </div>
                   </div>
                 </div>
@@ -213,7 +248,7 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
           })}
         </div>
 
-        {/* Instruction / status in center (above ground cards) */}
+        {/* Instruction / status in center */}
         {!submitted && !mode && (
           <div className="sr-center-hint">
             <span className="sr-hint-text">TAP A PLAYER OR GROUND CARD</span>
@@ -236,6 +271,9 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
           <span className="sr-bottom-status sr-bottom-status--done">{actionResult.actionType === "player" ? `You saw ${actionResult.playerName}'s role` : "You peeked at the ground"}</span>
         )}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

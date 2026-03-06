@@ -134,19 +134,56 @@ export const characters: CharacterData[] = [
   },
 ];
 
+// ===== CARD STYLE DATA FOR GAMECARD COMPONENT =====
+
+export interface CardStyleData {
+  frameColor: string;
+  panelColor: string;
+  borderColor: string;
+}
+
+export const cardStyleMap: Record<string, CardStyleData> = {
+  werewolf: { frameColor: "#4a0e0e", panelColor: "#470d0d", borderColor: "#252525" },
+  minion: { frameColor: "#4a0e0e", panelColor: "#470d0d", borderColor: "#252525" },
+  seer: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  robber: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  troublemaker: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  mason: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  drunk: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  insomniac: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  clone: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  joker: { frameColor: "#0e2a1a", panelColor: "#0a2015", borderColor: "#1a3a2a" },
+};
+
+/** Get full GameCard props for a role by name */
+export function getGameCardData(roleName: string) {
+  const key = roleName.toLowerCase();
+  const char = characters.find((c) => c.id === key);
+  const style = cardStyleMap[key] || cardStyleMap["werewolf"];
+
+  return {
+    name: char?.name || roleName,
+    ability: char?.ability || "",
+    image: char?.fullArt || "",
+    frameColor: style.frameColor,
+    panelColor: style.panelColor,
+    borderColor: style.borderColor,
+  };
+}
+
 // ===== CARD IMAGES =====
 
-import backCard from "./assets/back_card.jpg";
-import werewolfCard from "./assets/werewolf_card.jpg";
-import minionCard from "./assets/minion_card.png";
-import seerCard from "./assets/Seer_card.jpg";
-import robberCard from "./assets/robber_card.jpg";
-import troublemakerCard from "./assets/troublemaker_card.jpg";
-import masonCard from "./assets/mason_card.jpg";
-import drunkCard from "./assets/drunk_card.jpg";
-import insomniacCard from "./assets/insomaniac_card.jpg";
-import cloneCard from "./assets/clone_card.png";
-import jokerCard from "./assets/joker_card.jpg";
+import backCard from "./assets/back_card.webp";
+import werewolfCard from "./assets/werewolf_card.webp";
+import minionCard from "./assets/minion_card.webp";
+import seerCard from "./assets/Seer_card.webp";
+import robberCard from "./assets/robber_card.webp";
+import troublemakerCard from "./assets/troublemaker_card.webp";
+import masonCard from "./assets/mason_card.webp";
+import drunkCard from "./assets/drunk_card.webp";
+import insomniacCard from "./assets/insomaniac_card.webp";
+import cloneCard from "./assets/clone_card.webp";
+import jokerCard from "./assets/joker_card.webp";
 
 import werewolfCardSmall from "./assets/werewolf_card_small.webp";
 import minionCardSmall from "./assets/minion_card_small.webp";
@@ -183,7 +220,6 @@ export const allCards: CardData[] = [
 
 // ===== PRELOADING =====
 
-// Preload all characters
 characters.forEach((char) => {
   if (char.fullBody) {
     const img = new Image();
@@ -192,5 +228,9 @@ characters.forEach((char) => {
   if (char.square) {
     const img = new Image();
     img.src = char.square;
+  }
+  if (char.fullArt) {
+    const img = new Image();
+    img.src = char.fullArt;
   }
 });

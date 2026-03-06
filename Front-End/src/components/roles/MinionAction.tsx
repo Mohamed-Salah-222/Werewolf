@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./MinionAction.css";
 
 // ===== TYPES =====
@@ -18,17 +19,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
+}
+
+function getFullCardImage(roleName: string): string {
   const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
   return card?.image || backCardImage;
-}
-
-function getMinionCardImage(): string {
-  return getCardImage("minion");
-}
-
-function getWerewolfCardImage(): string {
-  return getCardImage("werewolf");
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -41,8 +39,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -53,17 +51,24 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 function MinionAction({ onAction, playerId, players, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [showNoWolves, setShowNoWolves] = useState(false);
+  const hasProcessedResult = useRef(false);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
   useEffect(() => {
     if (actionResult && !submitted) {
       setSubmitted(true);
     }
   }, [actionResult]);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
-  const [showNoWolves, setShowNoWolves] = useState(false);
-  const hasProcessedResult = useRef(false);
-
-  const selfIndex = players.findIndex((p) => p.id === playerId);
-  const positions = getCirclePositions(players.length, selfIndex);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -91,6 +96,17 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
     onAction({ type: "minion" });
   };
 
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   return (
     <div className="mn-action">
       <div className="mn-circle-area">
@@ -99,18 +115,19 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
           const pos = positions[i];
           const isSelf = player.id === playerId;
           const isRevealed = revealedIds.has(player.id);
+          const isFaceUp = isSelf || isRevealed;
 
           return (
             <div key={player.id} className={`mn-slot ${isSelf ? "mn-slot--self" : ""} ${isRevealed ? "mn-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`mn-name ${isSelf ? "mn-name--self" : ""} ${isRevealed ? "mn-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`mn-flip ${isSelf || isRevealed ? "mn-flip--up" : ""}`}>
+              <div className={`mn-flip ${isFaceUp ? "mn-flip--up" : ""} ${isFaceUp ? "mn-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(isSelf ? getFullCardImage("minion") : getFullCardImage("werewolf"), isSelf ? "Minion" : "Werewolf", isSelf ? "You" : player.name) : undefined}>
                 <div className="mn-flip-inner">
                   <div className="mn-flip-face mn-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="mn-flip-face mn-flip-face--front">
-                    <img src={isSelf ? getMinionCardImage() : isRevealed ? getWerewolfCardImage() : backCardImage} alt={isSelf ? "Minion" : isRevealed ? "Werewolf" : "Card"} draggable={false} />
+                    <img src={isSelf ? getSquareImage("minion") : isRevealed ? getSquareImage("werewolf") : backCardImage} alt={isSelf ? "Minion" : isRevealed ? "Werewolf" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -151,6 +168,9 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
           <span className="mn-bottom-status mn-bottom-status--done">{actionResult.werewolves.length > 0 ? "Serve them well" : "No wolves to serve"}</span>
         )}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

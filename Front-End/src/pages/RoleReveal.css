@@ -59,14 +59,6 @@
   text-align: center;
 }
 
-.rr-warning {
-  font-size: 11px;
-  letter-spacing: 4px;
-  color: var(--color-villain);
-  margin-bottom: 8px;
-  font-family: var(--font-display);
-}
-
 .rr-heading {
   font-size: clamp(16px, 2.4vw, 28px);
   font-weight: 400;
@@ -99,6 +91,12 @@
   perspective: 1200px;
 }
 
+.rr-card-container--clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
 .rr-card-inner {
   position: relative;
   width: 100%;
@@ -111,12 +109,6 @@
   transform: rotateY(180deg);
 }
 
-.rr-card-container--clickable {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  outline: none;
-}
-
 .rr-card-face {
   position: absolute;
   top: 0;
@@ -124,11 +116,15 @@
   width: 100%;
   height: 100%;
   backface-visibility: hidden;
-  border-radius: 8px;
+  -webkit-backface-visibility: hidden;
   overflow: hidden;
   box-shadow:
     0 10px 40px rgba(0, 0, 0, 0.8),
     0 0 60px rgba(201, 168, 76, 0.1);
+}
+
+.rr-card-face--front {
+  z-index: 2;
 }
 
 .rr-card-face--back {
@@ -138,23 +134,10 @@
     0 0 60px rgba(201, 168, 76, 0.15);
 }
 
-/* GameCard inside the flip face */
-.rr-card-face--gamecard {
-  overflow: visible;
-  background: none;
-  box-shadow: none;
-}
-
-.rr-gamecard {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 40px rgba(201, 168, 76, 0.12));
-}
-
 .rr-card-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -185,7 +168,7 @@
     inset 0 0 20px rgba(201, 168, 76, 0.05);
 }
 
-/* ===== PLAYER STATUS DOTS ===== */
+/* ===== PLAYER STATUS ===== */
 .rr-player-status-list {
   display: flex;
   gap: 8px;
@@ -223,7 +206,7 @@
 
 @media (max-width: 768px) {
   .rr-page {
-    background-image: url("../assets/bg_waiting.png");
+    background-image: url("../assets/bg_waiting.webp");
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
@@ -256,31 +239,21 @@
     color: #f0e6d0;
   }
 
-  .rr-warning {
-    color: #e87070;
-    text-shadow: 0 0 12px rgba(232, 112, 112, 0.2);
-  }
-
   .rr-confirm-btn {
     border-color: rgba(201, 168, 76, 0.7);
     text-shadow: 0 0 10px rgba(201, 168, 76, 0.2);
   }
 
-  .rr-player-dot {
-    color: rgba(240, 230, 208, 0.4);
-    border-color: rgba(201, 168, 76, 0.15);
-    background-color: rgba(0, 0, 0, 0.5);
+  .rr-player-tag {
+    color: #f0e6d0;
+    padding: 8px 16px;
+    font-size: 13px;
   }
 
-  .rr-player-dot--ready {
+  .rr-player-tag--ready {
     color: #6dd66d;
     border-color: rgba(109, 214, 109, 0.4);
     background-color: rgba(109, 214, 109, 0.1);
-  }
-
-  /* Bigger card on mobile, content pushed up */
-  .rr-page {
-    align-items: center;
   }
 
   .rr-content {
@@ -291,11 +264,5 @@
 
   .rr-card-container {
     width: clamp(220px, 65vw, 300px);
-  }
-
-  .rr-player-tag {
-    color: #f0e6d0;
-    padding: 8px 16px;
-    font-size: 13px;
   }
 }

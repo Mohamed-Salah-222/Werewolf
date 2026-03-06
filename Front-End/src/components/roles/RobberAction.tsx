@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./RobberAction.css";
 
 // ===== TYPES =====
@@ -21,13 +22,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getRobberCardImage(): string {
-  return getCardImage("robber");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -40,8 +42,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -59,6 +61,12 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
   const [targetId, setTargetId] = useState<string | null>(null);
   const [newRole, setNewRole] = useState<string>(isRejoin ? actionResult.newRole : "");
   const hasProcessedResult = useRef(isRejoin);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -82,14 +90,11 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
 
     if (phase === "done") return;
 
-    // Step 1: Flip the target card face-up
     setPhase("reveal");
 
-    // Step 2: After flip animation (~800ms), swap positions
     const t1 = setTimeout(() => {
       setPhase("swap");
 
-      // Step 3: After swap animation (~900ms), finalize
       const t2 = setTimeout(() => {
         setPhase("done");
       }, 900);
@@ -108,7 +113,6 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
     onAction({ type: "robber", targetPlayer: { id: clickedId } });
   };
 
-  // Position logic: during swap and done, self and target exchange positions
   const getSlotPosition = (playerIndex: number): { x: number; y: number } => {
     const shouldSwap = phase === "swap" || phase === "done";
     if (shouldSwap && targetIndex >= 0) {
@@ -117,6 +121,18 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
     }
     return positions[playerIndex];
   };
+
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
 
   const isClickable = phase === "idle";
   const hasTarget = targetId !== null;
@@ -133,18 +149,20 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
           const pos = getSlotPosition(i);
           const isSwapping = phase === "swap" && (isSelf || isTarget);
 
-          // Card face image
+          // Square image for board display
           let faceImage = backCardImage;
           let faceAlt = "Card";
+          let faceRole = "";
           if (isSelf) {
-            faceImage = getRobberCardImage();
+            faceImage = getSquareImage("robber");
             faceAlt = "Robber";
+            faceRole = "robber";
           } else if (showTargetFace && newRole) {
-            faceImage = getCardImage(newRole);
+            faceImage = getSquareImage(newRole);
             faceAlt = newRole;
+            faceRole = newRole;
           }
 
-          // Should the card show its face?
           const showFace = isSelf || showTargetFace;
 
           return (
@@ -159,7 +177,17 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
             >
               <span className={`rb-name${isSelf ? " rb-name--self" : ""}${showTargetFace ? " rb-name--target" : ""}`}>{phase === "swap" || phase === "done" ? (isSelf ? players.find((p) => p.id === targetId)?.name || player.name : isTarget ? "YOU" : player.name) : isSelf ? "YOU" : player.name}</span>
 
-              <div className={`rb-flip${showFace ? " rb-flip--up" : ""}`}>
+              <div
+                className={`rb-flip${showFace ? " rb-flip--up" : ""}${showFace ? " rb-flip--tappable" : ""}`}
+                onClick={
+                  showFace
+                    ? (e) => {
+                        e.stopPropagation();
+                        openModal(getFullCardImage(faceRole), faceAlt, isSelf ? "You" : player.name);
+                      }
+                    : undefined
+                }
+              >
                 <div className="rb-flip-inner">
                   <div className="rb-flip-face rb-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
@@ -199,6 +227,9 @@ function RobberAction({ onAction, playerId, players, actionResult }: Props) {
         {(phase === "reveal" || phase === "swap") && <span className="rb-bottom-status">{phase === "reveal" ? "REVEALING..." : "SWAPPING..."}</span>}
         {phase === "done" && <span className="rb-bottom-status rb-bottom-status--done">{newRole ? `You are now the ${newRole}` : "Role stolen"}</span>}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

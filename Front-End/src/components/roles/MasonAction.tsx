@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./MasonAction.css";
 
 // ===== TYPES =====
@@ -18,13 +19,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getMasonCardImage(): string {
-  return getCardImage("mason");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -37,8 +39,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -49,17 +51,24 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 function MasonAction({ onAction, playerId, players, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
+  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
+  const [showAlone, setShowAlone] = useState(false);
+  const hasProcessedResult = useRef(false);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
+  const selfIndex = players.findIndex((p) => p.id === playerId);
+  const positions = getCirclePositions(players.length, selfIndex);
+
   useEffect(() => {
     if (actionResult && !submitted) {
       setSubmitted(true);
     }
   }, [actionResult]);
-  const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
-  const [showAlone, setShowAlone] = useState(false);
-  const hasProcessedResult = useRef(false);
-
-  const selfIndex = players.findIndex((p) => p.id === playerId);
-  const positions = getCirclePositions(players.length, selfIndex);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -87,6 +96,17 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
     onAction({ type: "mason" });
   };
 
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   return (
     <div className="ms-action">
       <div className="ms-circle-area">
@@ -95,18 +115,19 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
           const pos = positions[i];
           const isSelf = player.id === playerId;
           const isRevealed = revealedIds.has(player.id);
+          const isFaceUp = isSelf || isRevealed;
 
           return (
             <div key={player.id} className={`ms-slot ${isSelf ? "ms-slot--self" : ""} ${isRevealed ? "ms-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`ms-name ${isSelf ? "ms-name--self" : ""} ${isRevealed ? "ms-name--mason" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`ms-flip ${isSelf || isRevealed ? "ms-flip--up" : ""}`}>
+              <div className={`ms-flip ${isFaceUp ? "ms-flip--up" : ""} ${isFaceUp ? "ms-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(getFullCardImage("mason"), "Mason", isSelf ? "You" : player.name) : undefined}>
                 <div className="ms-flip-inner">
                   <div className="ms-flip-face ms-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="ms-flip-face ms-flip-face--front">
-                    <img src={isSelf || isRevealed ? getMasonCardImage() : backCardImage} alt={isSelf || isRevealed ? "Mason" : "Card"} draggable={false} />
+                    <img src={isFaceUp ? getSquareImage("mason") : backCardImage} alt={isFaceUp ? "Mason" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -147,6 +168,9 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
           <span className="ms-bottom-status ms-bottom-status--done">{actionResult.masons.length > 0 ? "You found your brothers" : "You stand alone"}</span>
         )}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

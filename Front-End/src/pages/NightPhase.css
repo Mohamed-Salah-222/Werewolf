@@ -445,12 +445,12 @@
 .np-progress-below {
   display: flex;
   justify-content: center;
-  margin-top: clamp(8px, 1.2vw, 16px);
+  margin-top: clamp(24px, 3.5vw, 40px);
 }
 
 @media (max-width: 768px) {
   .np-page {
-    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+    background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -459,7 +459,7 @@
 
   @media (max-width: 768px) {
     .np-page {
-      background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+      background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;

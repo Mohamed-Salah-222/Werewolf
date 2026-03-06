@@ -430,9 +430,9 @@ function NightPhase() {
       </div>
 
       {/* Voice Chat */}
-      <div style={{ padding: "10px 20px", display: "flex", justifyContent: "center" }}>
+      {/* <div style={{ padding: "10px 20px", display: "flex", justifyContent: "center" }}>
         <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
-      </div>
+      </div> */}
 
       {/* Timer bar — only when it's your turn */}
       {isMyTurn && roleTimer > 0 && (

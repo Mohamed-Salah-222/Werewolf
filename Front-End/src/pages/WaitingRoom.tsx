@@ -8,6 +8,8 @@ import { allCards, backCardImage } from "../characters";
 import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
+
+
 // ===== CONSTANTS =====
 
 const MIN_PLAYERS = 6;

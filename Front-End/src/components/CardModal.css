@@ -1,0 +1,102 @@
+/* ===== BACKDROP ===== */
+.card-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: modalFadeIn 0.25s ease-out;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== CONTENT ===== */
+.card-modal-content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: modalScaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ===== CARD IMAGE ===== */
+.card-modal-img {
+  width: clamp(240px, 55vw, 340px);
+  height: auto;
+  border-radius: 8px;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.8),
+    0 0 80px rgba(201, 168, 76, 0.1);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ===== SUBTITLE ===== */
+.card-modal-subtitle {
+  font-size: clamp(11px, 1.2vw, 14px);
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  color: rgba(240, 230, 208, 0.7);
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
+}
+
+/* ===== CLOSE BUTTON ===== */
+.card-modal-close {
+  position: absolute;
+  top: -36px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: rgba(240, 230, 208, 0.6);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(240, 230, 208, 0.9);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+  .card-modal-img {
+    width: clamp(260px, 70vw, 320px);
+  }
+
+  .card-modal-close {
+    top: -40px;
+    right: 0;
+  }
+}

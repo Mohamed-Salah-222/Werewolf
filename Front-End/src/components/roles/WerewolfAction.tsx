@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./werewolfAction.css";
 
 // ===== TYPES =====
@@ -21,13 +22,24 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
+/** Get the square image for circle/board display */
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
+}
+
+/** Get the full card image for the modal */
+function getFullCardImage(roleName: string): string {
   const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
   return card?.image || backCardImage;
 }
 
-function getWerewolfCardImage(): string {
-  return getCardImage("werewolf");
+function getWerewolfSquare(): string {
+  return getSquareImage("werewolf");
+}
+
+function getWerewolfCard(): string {
+  return getFullCardImage("werewolf");
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -39,8 +51,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleDeg = 270 + offset * angleStep;
     const angleRad = (angleDeg * Math.PI) / 180;
 
-    const radiusX = 39;
-    const radiusY = 37;
+    const radiusX = 44;
+    const radiusY = 42;
     const cx = 50;
     const cy = 50;
 
@@ -57,19 +69,26 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 function WerewolfAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
-  // Auto-submit: if actionResult arrives from server (timer expired), mark as submitted
-  useEffect(() => {
-    if (actionResult && !submitted) {
-      setSubmitted(true);
-    }
-  }, [actionResult]);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [revealedGroundIdx, setRevealedGroundIdx] = useState<number | null>(null);
   const [groundCardName, setGroundCardName] = useState<string>("");
   const hasProcessedResult = useRef(false);
 
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
+
+  // Auto-submit if actionResult arrives from server (timer expired)
+  useEffect(() => {
+    if (actionResult && !submitted) {
+      setSubmitted(true);
+    }
+  }, [actionResult]);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -99,26 +118,53 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
     onAction({ type: "werewolf" });
   };
 
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
+  const handlePlayerCardTap = (playerId: string, playerName: string) => {
+    const isSelf = playerId === playerId;
+    const isRevealed = revealedIds.has(playerId);
+    if (isSelf || isRevealed) {
+      openModal(getWerewolfCard(), "Werewolf", playerName);
+    }
+  };
+
+  const handleGroundCardTap = () => {
+    if (revealedGroundIdx !== null && groundCardName) {
+      openModal(getFullCardImage(groundCardName), groundCardName);
+    }
+  };
+
   return (
     <div className="ww-action">
       <div className="ww-circle-area">
-        {/* Player cards around the full circle */}
+        {/* Player cards around the circle */}
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelf = player.id === playerId;
           const isRevealed = revealedIds.has(player.id);
+          const isFaceUp = isSelf || isRevealed;
 
           return (
             <div key={player.id} className={`ww-slot ${isSelf ? "ww-slot--self" : ""} ${isRevealed ? "ww-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`ww-name ${isSelf ? "ww-name--self" : ""} ${isRevealed ? "ww-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`ww-flip ${isSelf || isRevealed ? "ww-flip--up" : ""}`}>
+              <div className={`ww-flip ${isFaceUp ? "ww-flip--up" : ""} ${isFaceUp ? "ww-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(getWerewolfCard(), "Werewolf", isSelf ? "You" : player.name) : undefined}>
                 <div className="ww-flip-inner">
                   <div className="ww-flip-face ww-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="ww-flip-face ww-flip-face--front">
-                    <img src={isSelf || isRevealed ? getWerewolfCardImage() : backCardImage} alt={isSelf || isRevealed ? "Werewolf" : "Card"} draggable={false} />
+                    <img src={isFaceUp ? getWerewolfSquare() : backCardImage} alt={isFaceUp ? "Werewolf" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -129,20 +175,20 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
           );
         })}
 
-        {/* 3 Ground cards side by side in the center */}
+        {/* Ground cards in the center */}
         <div className="ww-ground">
           {groundCards.slice(0, 3).map((gc, idx) => {
             const isFlipped = revealedGroundIdx === idx;
 
             return (
               <div key={gc.id} className={`ww-ground-card ${isFlipped ? "ww-ground-card--flipped" : ""}`}>
-                <div className={`ww-flip ww-flip--ground ${isFlipped ? "ww-flip--up" : ""}`}>
+                <div className={`ww-flip ww-flip--ground ${isFlipped ? "ww-flip--up" : ""} ${isFlipped ? "ww-flip--tappable" : ""}`} onClick={isFlipped ? handleGroundCardTap : undefined}>
                   <div className="ww-flip-inner">
                     <div className="ww-flip-face ww-flip-face--back">
                       <img src={backCardImage} alt="Ground card" draggable={false} />
                     </div>
                     <div className="ww-flip-face ww-flip-face--front">
-                      <img src={isFlipped ? getCardImage(groundCardName) : backCardImage} alt={isFlipped ? groundCardName : "Ground card"} draggable={false} />
+                      <img src={isFlipped ? getSquareImage(groundCardName) : backCardImage} alt={isFlipped ? groundCardName : "Ground card"} draggable={false} />
                     </div>
                   </div>
                 </div>
@@ -165,7 +211,7 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
         )}
       </div>
 
-      {/* Button area — directly under the circle */}
+      {/* Button area */}
       <div className="ww-bottom">
         {!submitted ? (
           <button className="ww-btn" onClick={handleOpenEyes}>
@@ -178,6 +224,9 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
           <span className="ww-bottom-status ww-bottom-status--done">{actionResult.isAlone ? "You peeked at a ground card" : "You found your pack"}</span>
         )}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

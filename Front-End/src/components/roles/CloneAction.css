@@ -31,7 +31,7 @@
   font-family: var(--font-display);
 }
 
-/* ===== PASSIVE RESULT (minion/insomniac) ===== */
+/* ===== PASSIVE RESULT ===== */
 .cl-passive-result {
   display: flex;
   flex-direction: column;
@@ -43,10 +43,15 @@
 .cl-passive-card {
   width: clamp(70px, 9vw, 100px);
   height: clamp(98px, 12.6vw, 140px);
-  border-radius: 4px;
+  border-radius: 5px;
   overflow: hidden;
   border: 1px solid rgba(42, 138, 74, 0.3);
   box-shadow: 0 0 20px rgba(42, 138, 74, 0.15);
+}
+
+.cl-passive-card--tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cl-passive-card img {
@@ -68,8 +73,8 @@
 /* ===== CIRCLE AREA ===== */
 .cl-circle-area {
   position: relative;
-  width: clamp(300px, 48vw, 520px);
-  height: clamp(300px, 48vw, 520px);
+  width: clamp(320px, 50vw, 540px);
+  height: clamp(320px, 50vw, 540px);
   flex-shrink: 0;
 }
 
@@ -106,15 +111,15 @@
 
 /* ===== PLAYER NAME ===== */
 .cl-name {
-  font-size: clamp(9px, 1vw, 13px);
+  font-size: clamp(11px, 1.2vw, 15px);
   font-family: var(--font-display);
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #3d3020;
+  color: rgba(240, 230, 208, 0.7);
   white-space: nowrap;
   text-align: center;
   transition: color 0.3s ease;
-  max-width: clamp(56px, 7vw, 90px);
+  max-width: clamp(60px, 8vw, 100px);
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -129,11 +134,16 @@
   text-shadow: 0 0 10px rgba(42, 138, 74, 0.5);
 }
 
-/* ===== FLIP CARD (other players) ===== */
+/* ===== FLIP CARD (portrait card shape) ===== */
 .cl-flip {
-  width: clamp(46px, 5.2vw, 68px);
-  height: clamp(64px, 7.3vw, 95px);
+  width: clamp(56px, 6.8vw, 82px);
+  height: clamp(78px, 9.5vw, 115px);
   perspective: 800px;
+}
+
+.cl-flip--tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cl-flip-inner {
@@ -144,7 +154,7 @@
   transition:
     transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
     box-shadow 0.3s ease;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .cl-flip--up .cl-flip-inner {
@@ -155,7 +165,8 @@
   position: absolute;
   inset: 0;
   backface-visibility: hidden;
-  border-radius: 4px;
+  -webkit-backface-visibility: hidden;
+  border-radius: 5px;
   overflow: hidden;
   border: 1px solid var(--color-border-dark);
 }
@@ -178,11 +189,16 @@
 /* ===== MORPH CARD (self — clone → cloned role) ===== */
 .cl-morph-container {
   position: relative;
-  width: clamp(46px, 5.2vw, 68px);
-  height: clamp(64px, 7.3vw, 95px);
-  border-radius: 4px;
+  width: clamp(56px, 6.8vw, 82px);
+  height: clamp(78px, 9.5vw, 115px);
+  border-radius: 5px;
   overflow: hidden;
   border: 1px solid rgba(42, 138, 74, 0.3);
+}
+
+.cl-morph-container--tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .cl-morph-card {
@@ -200,25 +216,21 @@
   display: block;
 }
 
-/* Default visible */
 .cl-morph-card--clone {
   opacity: 1;
   transform: scale(1);
 }
 
-/* Fade out the clone card */
 .cl-morph-card--fade-out {
   opacity: 0;
   transform: scale(0.9);
 }
 
-/* Hidden state */
 .cl-morph-card--hidden {
   opacity: 0;
   pointer-events: none;
 }
 
-/* New role card starts hidden, fades in */
 .cl-morph-card--role {
   opacity: 0;
   transform: scale(1.1);
@@ -234,7 +246,6 @@
   transform: scale(1);
 }
 
-/* Glow pulse during morph */
 .cl-morph-container--morphing {
   animation: clMorphGlow 1.6s ease-in-out;
   border-color: rgba(42, 138, 74, 0.6);
@@ -378,7 +389,6 @@
 .cl-bottom-hint {
   font-size: clamp(10px, 0.9vw, 12px);
   font-family: var(--font-body);
-  font-style: italic;
   color: #5a4a30;
   letter-spacing: 1px;
 }
@@ -407,29 +417,29 @@
 }
 
 /* ============================================================
-   RESPONSIVE
+   RESPONSIVE — MOBILE FIRST
    ============================================================ */
 
 @media (max-width: 768px) {
   .cl-circle-area {
-    width: min(88vw, 360px);
-    height: min(88vw, 360px);
+    width: min(90vw, 370px);
+    height: min(90vw, 370px);
   }
 
   .cl-flip {
-    width: clamp(40px, 12vw, 56px);
-    height: clamp(56px, 16.8vw, 78px);
+    width: clamp(46px, 13vw, 62px);
+    height: clamp(64px, 18.2vw, 87px);
   }
 
   .cl-morph-container {
-    width: clamp(40px, 12vw, 56px);
-    height: clamp(56px, 16.8vw, 78px);
+    width: clamp(46px, 13vw, 62px);
+    height: clamp(64px, 18.2vw, 87px);
   }
 
   .cl-name {
-    font-size: clamp(8px, 2.8vw, 12px);
-    max-width: clamp(44px, 14vw, 72px);
-    color: rgba(240, 230, 208, 0.5);
+    font-size: clamp(10px, 3.2vw, 14px);
+    max-width: clamp(48px, 16vw, 80px);
+    color: rgba(240, 230, 208, 0.75);
   }
 
   .cl-name--self {
@@ -455,18 +465,18 @@
 
 @media (max-width: 480px) {
   .cl-circle-area {
-    width: min(92vw, 320px);
-    height: min(92vw, 320px);
+    width: min(94vw, 330px);
+    height: min(94vw, 330px);
   }
 
   .cl-flip {
-    width: clamp(36px, 11vw, 50px);
-    height: clamp(50px, 15.4vw, 70px);
+    width: clamp(40px, 12vw, 54px);
+    height: clamp(56px, 16.8vw, 76px);
   }
 
   .cl-morph-container {
-    width: clamp(36px, 11vw, 50px);
-    height: clamp(50px, 15.4vw, 70px);
+    width: clamp(40px, 12vw, 54px);
+    height: clamp(56px, 16.8vw, 76px);
   }
 
   .cl-name {

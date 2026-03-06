@@ -284,7 +284,7 @@
 
 @media (max-width: 768px) {
   .disc-page {
-    background: url("../assets/bg_waiting.png") center top / cover no-repeat fixed;
+    background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;

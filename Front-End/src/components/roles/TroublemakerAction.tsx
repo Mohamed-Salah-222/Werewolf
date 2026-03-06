@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { characters, allCards, backCardImage } from "../../characters";
+import CardModal from "../CardModal";
 import "./TroublemakerAction.css";
 
 // ===== TYPES =====
@@ -19,13 +20,14 @@ interface Props {
 
 // ===== HELPERS =====
 
-function getCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+function getSquareImage(roleName: string): string {
+  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return char?.square || backCardImage;
 }
 
-function getTroublemakerCardImage(): string {
-  return getCardImage("troublemaker");
+function getFullCardImage(roleName: string): string {
+  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  return card?.image || backCardImage;
 }
 
 function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
@@ -38,8 +40,8 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 39 * Math.cos(angleRad),
-      y: 50 + 37 * Math.sin(angleRad),
+      x: 50 + 44 * Math.cos(angleRad),
+      y: 50 + 42 * Math.sin(angleRad),
     });
   }
 
@@ -58,6 +60,12 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
   const [target1Id, setTarget1Id] = useState<string | null>(null);
   const [target2Id, setTarget2Id] = useState<string | null>(null);
   const hasProcessedResult = useRef(isRejoin);
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState("");
+  const [modalName, setModalName] = useState("");
+  const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -126,6 +134,18 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
     });
   };
 
+  // Modal handlers
+  const openModal = useCallback((image: string, name: string, subtitle?: string) => {
+    setModalImage(image);
+    setModalName(name);
+    setModalSubtitle(subtitle);
+    setModalOpen(true);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setModalOpen(false);
+  }, []);
+
   // Position logic: during swap and done, targets exchange positions
   const getSlotPosition = (playerIndex: number): { x: number; y: number } => {
     const t1Idx = target1Id ? players.findIndex((p) => p.id === target1Id) : -1;
@@ -152,7 +172,6 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
           const pos = getSlotPosition(i);
           const isAnimating = phase === "swap" && isTarget;
 
-          // Swap name labels so names stay at original positions
           const displayName = (() => {
             const shouldSwap = phase === "swap" || phase === "done";
             if (shouldSwap && isTarget) {
@@ -180,13 +199,23 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
             >
               <span className={`tm-name ${isSelf ? "tm-name--self" : ""} ${isSelected || isTarget ? "tm-name--highlight" : ""}`}>{displayName}</span>
 
-              <div className={`tm-flip ${isSelf ? "tm-flip--up" : ""}`}>
+              <div
+                className={`tm-flip ${isSelf ? "tm-flip--up" : ""}${isSelf ? " tm-flip--tappable" : ""}`}
+                onClick={
+                  isSelf
+                    ? (e) => {
+                        e.stopPropagation();
+                        openModal(getFullCardImage("troublemaker"), "Troublemaker", "You");
+                      }
+                    : undefined
+                }
+              >
                 <div className="tm-flip-inner">
                   <div className="tm-flip-face tm-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
                   <div className="tm-flip-face tm-flip-face--front">
-                    <img src={isSelf ? getTroublemakerCardImage() : backCardImage} alt={isSelf ? "Troublemaker" : "Card"} draggable={false} />
+                    <img src={isSelf ? getSquareImage("troublemaker") : backCardImage} alt={isSelf ? "Troublemaker" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -230,6 +259,9 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
         {(phase === "submitted" || phase === "swap") && <span className="tm-bottom-status">SWAPPING...</span>}
         {phase === "done" && <span className="tm-bottom-status tm-bottom-status--done">Roles have been swapped</span>}
       </div>
+
+      {/* Card Modal */}
+      <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );
 }

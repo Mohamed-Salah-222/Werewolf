@@ -259,7 +259,7 @@
 @media (max-width: 768px) {
   .vote-page {
     background:
-      url("../assets/bg_waiting.png") center center / cover no-repeat fixed,
+      url("../assets/bg_waiting.webp") center center / cover no-repeat fixed,
       #0a0a0a;
   }
 
