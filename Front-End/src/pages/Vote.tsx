@@ -63,9 +63,9 @@ function Vote() {
       });
     });
 
-    socket.on("gameEnded", (data: { winners: string; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }> }) => {
+    socket.on("gameEnded", (data: { winners: string; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory?: Array<{ role: string; playerName: string; description: string }> }) => {
       navigate(`/results/${gameCode}`, {
-        state: { playerName, playerId, isHost, winners: data.winners, votes: data.votes, playerRoles: data.playerRoles },
+        state: { playerName, playerId, isHost, winners: data.winners, votes: data.votes, playerRoles: data.playerRoles, actionHistory: data.actionHistory || [] },
       });
     });
 

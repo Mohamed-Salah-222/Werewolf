@@ -34,6 +34,7 @@ export class Game extends EventEmitter {
   host: PlayerId;
   currentActiveRole: string = "";
   endedAt: number | null = null;
+  actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
   private availableRoles: Role[] = [];
 
   constructor(private logger: Logger) {
@@ -479,6 +480,25 @@ export class Game extends EventEmitter {
   finish(): void {
     this.logger.info("Game Ended");
     this.phase = Phase.EndGame;
+
+    // Build action history from player results
+    const roleOrder = ["Werewolf", "Minion", "Clone", "Seer", "Mason", "Robber", "Troublemaker", "Drunk", "Insomniac", "Joker"];
+    this.actionHistory = [];
+
+    for (const roleName of roleOrder) {
+      const playersWithRole = this.players.filter((p) => p.getOriginalRole().name === roleName);
+
+      for (const player of playersWithRole) {
+        const result = (player as any).lastActionResult;
+        if (!result) continue;
+
+        this.actionHistory.push({
+          role: roleName,
+          playerName: player.name,
+          description: result.message || "Performed their action",
+        });
+      }
+    }
     const votes = this.getVoteResults();
     votes.forEach((value, key) => {
       if (key === "noWerewolf") {
@@ -674,6 +694,8 @@ export class Game extends EventEmitter {
     this.currentActiveRole = "";
 
     this.endedAt = null;
+
+    this.actionHistory = [];
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");

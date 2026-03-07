@@ -5,6 +5,12 @@ import { clearSession, saveSession } from "../utils/gameSession";
 // import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
 
+interface ActionHistoryItem {
+  role: string;
+  playerName: string;
+  description: string;
+}
+
 interface LocationState {
   playerName: string;
   playerId: string;
@@ -12,6 +18,7 @@ interface LocationState {
   winners: string;
   votes: Array<{ voter: string; vote: string }>;
   playerRoles: Array<{ playerId: string; name: string; role: string }>;
+  actionHistory?: ActionHistoryItem[];
 }
 
 function getTeam(role: string): string {
@@ -45,8 +52,10 @@ function Results() {
   const winners = state?.winners || "";
   const votes = state?.votes || [];
   const playerRoles = state?.playerRoles || [];
+  const actionHistory = state?.actionHistory || [];
 
   const [showVotes, setShowVotes] = useState(false);
+  const [showSequence, setShowSequence] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
   useEffect(() => {
@@ -125,15 +134,10 @@ function Results() {
       <div className="res-vignette" />
       <div className="res-content">
         {/* Winner banner */}
-        <div className={`res-banner`}>
+        <div className="res-banner">
           <h1 className={`res-winner-text ${getWinnerColorClass(winners)}`}>{winnerLabel()}</h1>
           <p className="res-personal-result">{didIWin() ? "You won" : "You lost"}</p>
         </div>
-
-        {/* Voice Chat */}
-        {/* <div className="res-voice">
-          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
-        </div> */}
 
         {/* Eliminated */}
         {isNoWerewolfVote ? (
@@ -169,6 +173,36 @@ function Results() {
             ))}
           </div>
         </div>
+
+        {/* Game sequence */}
+        {actionHistory.length > 0 && (
+          <div className="res-section">
+            <button className="res-toggle-btn" onClick={() => setShowSequence(!showSequence)}>
+              <span>{showSequence ? "HIDE" : "SHOW"} NIGHT SEQUENCE</span>
+              <span className="res-toggle-arrow">{showSequence ? "▲" : "▼"}</span>
+            </button>
+            {showSequence && (
+              <div className="res-sequence-list">
+                {actionHistory.map((item, i) => (
+                  <div key={i} className="res-sequence-row" style={{ animationDelay: `${i * 0.05}s` }}>
+                    <div className="res-sequence-marker">
+                      <span className="res-sequence-dot" />
+                      {i < actionHistory.length - 1 && <span className="res-sequence-line" />}
+                    </div>
+                    <div className="res-sequence-body">
+                      <div className="res-sequence-header">
+                        <span className={`res-sequence-role ${getColorClass(item.role)}`}>{item.role}</span>
+                        <span className="res-sequence-separator">—</span>
+                        <span className="res-sequence-player">{item.playerName}</span>
+                      </div>
+                      <p className="res-sequence-desc">{item.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Vote breakdown */}
         <div className="res-section">

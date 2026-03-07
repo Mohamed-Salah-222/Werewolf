@@ -141,7 +141,6 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
         {/* Center message — alone */}
         {showAlone && (
           <div className="ms-center-message">
-            <span className="ms-alone-icon">◆</span>
             <span className="ms-alone-text">LONE MASON</span>
             <span className="ms-alone-sub">No brothers found</span>
           </div>

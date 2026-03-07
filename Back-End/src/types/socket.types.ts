@@ -112,8 +112,9 @@ export interface DiscussionStartedData {
   startedAt: number;
 }
 
-export interface GameEndedData {
+interface GameEndedData {
   winners: string;
   votes: Array<{ voter: string; vote: string }>;
-  playerRoles: Array<{ playerId: PlayerId; name: string; role: string }>;
+  playerRoles: Array<{ playerId: string; name: string; role: string }>;
+  actionHistory: Array<{ role: string; playerName: string; description: string }>;
 }

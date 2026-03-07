@@ -199,14 +199,14 @@
   font-size: clamp(12px, 1.3vw, 16px);
   font-family: var(--font-display);
   letter-spacing: clamp(3px, 0.5vw, 6px);
-  color: #5a4a30;
+  color: #ff8c00;
   text-shadow: 0 0 16px rgba(90, 74, 48, 0.2);
 }
 
 .ms-alone-sub {
   font-size: clamp(10px, 0.9vw, 12px);
   font-family: var(--font-body);
-  color: #3d3020;
+  color: #ff8c00;
   letter-spacing: 1px;
 }
 

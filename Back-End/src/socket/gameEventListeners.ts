@@ -56,6 +56,7 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
         name: p.name,
         role: p.getRole().name,
       })),
+      actionHistory: game.actionHistory,
     });
   });
 
