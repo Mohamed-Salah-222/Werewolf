@@ -16,7 +16,7 @@ import DrunkAction from "../components/roles/DrunkAction";
 import InsomniacAction from "../components/roles/InsomniacAction";
 import JokerAction from "../components/roles/JokerAction";
 import NightRoleProgress from "../components/roles/NightRoleProgress";
-import VoiceChat from "../components/VoiceChat";
+// import VoiceChat from "../components/VoiceChat";
 import "./NightPhase.css";
 
 // ===== TYPES =====

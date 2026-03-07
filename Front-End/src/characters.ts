@@ -164,7 +164,6 @@ export function getGameCardData(roleName: string) {
   return {
     name: char?.name || roleName,
     ability: char?.ability || "",
-    image: char?.fullArt || "",
     frameColor: style.frameColor,
     panelColor: style.panelColor,
     borderColor: style.borderColor,
@@ -228,9 +227,5 @@ characters.forEach((char) => {
   if (char.square) {
     const img = new Image();
     img.src = char.square;
-  }
-  if (char.fullArt) {
-    const img = new Image();
-    img.src = char.fullArt;
   }
 });

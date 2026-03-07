@@ -225,7 +225,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           const isMorphing = isSelf && phase === "morph";
           const isMorphed = isSelf && phase === "phase2";
 
-          const isFaceUp = isSelf || showTargetFace;
+          // const isFaceUp = isSelf || showTargetFace;
 
           return (
             <div key={player.id} className={`cl-slot ${isSelf ? "cl-slot--self" : ""} ${showTargetFace ? "cl-slot--revealed" : ""} ${isClickable && !isSelf ? "cl-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>

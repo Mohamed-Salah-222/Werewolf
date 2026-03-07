@@ -130,13 +130,13 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
     setModalOpen(false);
   }, []);
 
-  const handlePlayerCardTap = (playerId: string, playerName: string) => {
-    const isSelf = playerId === playerId;
-    const isRevealed = revealedIds.has(playerId);
-    if (isSelf || isRevealed) {
-      openModal(getWerewolfCard(), "Werewolf", playerName);
-    }
-  };
+  // const handlePlayerCardTap = (playerId: string, playerName: string) => {
+  //   const isSelf = playerId === playerId;
+  //   const isRevealed = revealedIds.has(playerId);
+  //   if (isSelf || isRevealed) {
+  //     openModal(getWerewolfCard(), "Werewolf", playerName);
+  //   }
+  // };
 
   const handleGroundCardTap = () => {
     if (revealedGroundIdx !== null && groundCardName) {
