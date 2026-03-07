@@ -159,7 +159,6 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
       <div className="ms-bottom">
         {!submitted ? (
           <button className="ms-btn" onClick={handleAction}>
-            <span className="ms-btn-icon">◆</span>
             <span className="ms-btn-text">SEE MASONS</span>
           </button>
         ) : !actionResult ? (

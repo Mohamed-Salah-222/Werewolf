@@ -27,6 +27,7 @@
   padding: clamp(8px, 1.2vw, 16px) clamp(16px, 3vw, 40px) clamp(6px, 1vw, 12px);
   border-bottom: 1px solid var(--color-border-dark);
   text-align: center;
+  flex-shrink: 0;
 }
 
 .np-header-inner {
@@ -94,6 +95,7 @@
   align-items: center;
   gap: clamp(10px, 1.2vw, 16px);
   padding: clamp(8px, 1.2vw, 16px) clamp(12px, 3vw, 40px) clamp(4px, 0.8vw, 12px);
+  flex-shrink: 0;
 }
 
 .np-timer-track {
@@ -152,7 +154,10 @@
   }
 }
 
-/* ===== CONTENT AREA ===== */
+/* ===== CONTENT AREA =====
+   This is the main body between header and nothing else.
+   It fills all remaining vertical space.
+   ===== */
 .np-content {
   position: relative;
   z-index: 10;
@@ -160,16 +165,31 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(8px, 1.6vw, 20px) clamp(12px, 3vw, 40px);
-  overflow-y: auto;
+  padding: 0 clamp(12px, 3vw, 40px);
+  overflow: hidden;
+  min-height: 0;
 }
 
+/* ===== CONTENT INNER (action + progress stacked) =====
+   Full height column: action component centered, progress pinned bottom.
+   ===== */
 .np-content-inner {
   width: 100%;
   max-width: 480px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+/* Action component — takes available space minus progress, centered vertically */
 .np-action-enter {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
   animation: fadeSlideIn 0.4s ease-out;
 }
 
@@ -184,253 +204,35 @@
   }
 }
 
-.np-result-section {
-  margin-bottom: 16px;
+/* Progress tracker — pinned to bottom */
+.np-progress-below {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  flex-shrink: 0;
+  padding-top: 8px;
+  padding-bottom: clamp(24px, 5vh, 40px);
 }
 
-/* ===== WAITING LAYOUT (result on top, tracker pinned to bottom) ===== */
+/* ===== WAITING LAYOUT (no action, just result + tracker) ===== */
 .np-waiting-layout {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  width: 100%;
-  height: 100%;
   gap: clamp(12px, 2vw, 24px);
-  padding-bottom: clamp(12px, 2vw, 24px);
+  padding-bottom: clamp(24px, 5vh, 40px);
 }
 
-/* ============================================================
-   NIGHT ROLE PROGRESS TRACKER (card journey map)
-   ============================================================ */
-
-.nrp-container {
-  width: 100%;
-  padding: clamp(8px, 1.2vw, 16px) 0;
-}
-
-/* ===== HORIZONTAL TRACK — full width ===== */
-.nrp-track {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: clamp(10px, 1.8vw, 24px);
-  width: 100%;
-  padding: clamp(10px, 1.5vw, 16px) clamp(8px, 1.5vw, 20px);
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.nrp-track::-webkit-scrollbar {
-  height: 2px;
-}
-
-.nrp-track::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 2px;
-}
-
-/* ===== STEP (card + connector pair) ===== */
-.nrp-step {
-  display: flex;
-  align-items: flex-start;
-  flex-shrink: 0;
-}
-
-/* ===== CARD SLOT ===== */
-.nrp-card-slot {
-  position: relative;
-  width: clamp(56px, 6.5vw, 84px);
-  height: clamp(78px, 9.1vw, 118px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  transition:
-    transform 0.4s ease,
-    filter 0.4s ease;
-}
-
-.nrp-card-slot--completed {
-  opacity: 0.45;
-  filter: brightness(0.7);
-}
-
-.nrp-card-slot--active {
-  transform: scale(1.12);
-  z-index: 5;
-  filter: drop-shadow(0 0 16px rgba(201, 168, 76, 0.35));
-}
-
-.nrp-card-slot--mine:not(.nrp-card-slot--active) {
-  filter: drop-shadow(0 0 8px rgba(201, 168, 76, 0.15));
-}
-
-/* ===== FLIP CARD ===== */
-.nrp-flip {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  transform-style: preserve-3d;
-  transition: transform 0.6s ease;
-}
-
-.nrp-flip--up {
-  transform: rotateY(180deg);
-}
-
-.nrp-flip-side {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.nrp-flip-side--front {
-  transform: rotateY(180deg);
-}
-
-.nrp-flip-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 4px;
-}
-
-/* ===== TIMER RING (SVG rect around active card) ===== */
-.nrp-card-ring {
-  position: absolute;
-  inset: -4px;
-  z-index: 6;
-  pointer-events: none;
-}
-
-.nrp-card-ring svg {
-  width: 100%;
-  height: 100%;
-}
-
-.nrp-card-ring rect {
-  fill: none;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.nrp-card-ring-bg {
-  stroke: rgba(201, 168, 76, 0.12);
-}
-
-.nrp-card-ring-progress {
-  stroke: var(--color-gold);
-  transition:
-    stroke-dashoffset 1s linear,
-    stroke 0.3s ease;
-  filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.5));
-}
-
-.nrp-card-ring-progress--urgent {
-  stroke: var(--color-villain);
-  filter: drop-shadow(0 0 6px rgba(196, 30, 30, 0.6));
-}
-
-/* ===== LABEL UNDER CARD ===== */
-.nrp-card-label {
-  font-size: clamp(7px, 0.7vw, 9px);
-  font-family: var(--font-display);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin-top: 5px;
-  color: #2a2019;
-  transition: color 0.4s ease;
-  white-space: nowrap;
-  text-align: center;
-}
-
-.nrp-card-label--completed {
-  color: #3d3020;
-}
-
-.nrp-card-label--active {
-  color: var(--color-gold);
-}
-
-.nrp-card-label--mine {
-  color: var(--color-text-dim);
-}
-
-/* YOU badge */
-.nrp-card-you {
-  font-size: 7px;
-  letter-spacing: 2px;
-  color: var(--color-gold);
-  font-family: var(--font-display);
-  margin-top: 1px;
-}
-
-/* ===== CONNECTOR LINES ===== */
-.nrp-connector {
-  width: clamp(10px, 1.8vw, 28px);
-  height: 3px;
-  background-color: #1a1510;
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-  align-self: stretch;
-  margin-top: clamp(36px, 4.2vw, 55px);
-}
-
-.nrp-connector-fill {
-  position: absolute;
-  inset: 0;
-  background-color: var(--color-gold-dark);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.5s ease;
-}
-
-.nrp-connector-fill--filled {
-  transform: scaleX(1);
-  background-color: #2d5a26;
-}
-
-.nrp-connector-fill--active {
-  background: linear-gradient(90deg, #2d5a26, var(--color-gold));
-  transform: scaleX(1);
-}
-
-/* ===== TIMER DISPLAY ===== */
-.nrp-timer-display {
-  text-align: center;
-  margin-top: 10px;
-  font-size: clamp(13px, 1.3vw, 17px);
-  font-family: var(--font-display);
-  letter-spacing: 3px;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-gold);
-  opacity: 0.8;
-}
-
-.nrp-timer-display--urgent {
-  color: var(--color-villain);
-  animation: timerPulse 0.6s ease-in-out infinite;
+.np-result-section {
+  margin-bottom: 16px;
 }
 
 /* ============================================================
    RESPONSIVE
    ============================================================ */
-
-@media (max-width: 768px) {
-  .np-page {
-    overflow-y: auto;
-  }
-
-  .nrp-track {
-    justify-content: flex-start;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-}
 
 @media (max-height: 500px) {
   .np-header {
@@ -442,60 +244,12 @@
   }
 }
 
-.np-progress-below {
-  display: flex;
-  justify-content: center;
-  margin-top: clamp(24px, 3.5vw, 40px);
-}
-
 @media (max-width: 768px) {
   .np-page {
     background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
   }
 
-  @media (max-width: 768px) {
-    .np-page {
-      background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      background-attachment: fixed;
-    }
-
-    /* Header text */
-    .np-role-label {
-      color: rgba(240, 230, 208, 0.6);
-    }
-
-    /* Night role progress labels */
-    .nrp-card-label {
-      color: rgba(240, 230, 208, 0.3);
-    }
-
-    .nrp-card-label--completed {
-      color: rgba(240, 230, 208, 0.35);
-    }
-
-    .nrp-card-label--active {
-      color: var(--color-gold);
-    }
-
-    .nrp-card-label--mine {
-      color: rgba(240, 230, 208, 0.6);
-    }
-
-    /* Connector lines */
-    .nrp-connector {
-      background-color: rgba(240, 230, 208, 0.08);
-    }
-
-    /* Timer display */
-    .nrp-timer-display {
-      opacity: 1;
-    }
+  .np-role-label {
+    color: rgba(240, 230, 208, 0.6);
   }
 }

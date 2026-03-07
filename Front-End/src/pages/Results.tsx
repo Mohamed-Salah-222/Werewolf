@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { clearSession, saveSession } from "../utils/gameSession";
-import VoiceChat from "../components/VoiceChat";
+// import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
 
 interface LocationState {
@@ -131,9 +131,9 @@ function Results() {
         </div>
 
         {/* Voice Chat */}
-        <div className="res-voice">
+        {/* <div className="res-voice">
           <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
-        </div>
+        </div> */}
 
         {/* Eliminated */}
         {isNoWerewolfVote ? (
@@ -160,7 +160,6 @@ function Results() {
 
         {/* All roles */}
         <div className="res-section">
-          <h2 className="res-section-title">ALL ROLES</h2>
           <div className="res-role-list">
             {playerRoles.map((p) => (
               <div key={p.playerId} className="res-role-row">

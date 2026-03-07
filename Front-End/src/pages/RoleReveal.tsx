@@ -60,6 +60,7 @@ function RoleReveal() {
   });
 
   const [playerStatuses, setPlayerStatuses] = useState<Array<{ id: string; name: string; confirmed: boolean }>>([]);
+  const [showSlackers, setShowSlackers] = useState(false);
 
   // Refs to avoid stale closures and unnecessary effect re-runs
   const roleNameRef = useRef(role?.roleName ?? null);
@@ -164,6 +165,12 @@ function RoleReveal() {
     socket.emit("confirmRoleReveal", { gameCode, playerId });
   }, [gameCode, playerId]);
 
+  // Derived counts
+  const readyCount = playerStatuses.filter((p) => p.confirmed).length;
+  const totalCount = playerStatuses.length;
+  const notReady = playerStatuses.filter((p) => !p.confirmed);
+  const allReady = totalCount > 0 && readyCount === totalCount;
+
   // ===== LOADING STATE =====
   if (!role) {
     return (
@@ -185,25 +192,25 @@ function RoleReveal() {
       <div className="rr-vignette" />
 
       <div className="rr-content">
-        {/* Top section */}
-        <div className="rr-top-section">
-          {!flipped && <p className="rr-sub-text">Tap the card to reveal your role</p>}
-
-          <div className="rr-player-status-list">
-            {playerStatuses.map((p) => (
-              <span key={p.id} className={`rr-player-tag ${p.confirmed ? "rr-player-tag--ready" : ""}`}>
-                {p.name}
-              </span>
-            ))}
+        {/* Player status bar */}
+        <div className="rr-status-bar">
+          <div className={`rr-status-line ${allReady ? "rr-status-line--all-ready" : ""}`}>
+            <span className="rr-status-label">Players</span>
+            <span className="rr-status-count">
+              <span className="rr-status-ready">{readyCount}</span>
+              <span className="rr-status-separator">/</span>
+              <span className="rr-status-total">{totalCount}</span>
+            </span>
           </div>
-
-          {flipped && (
-            <>
-              {/* <h1 className="rr-heading">YOUR ROLE</h1> */}
-              {confirmed && <p className="rr-waiting-text">Waiting for other players</p>}
-            </>
+          {notReady.length > 0 && (
+            <button className="rr-info-btn" onClick={() => setShowSlackers(true)} aria-label="Show unready players">
+              !
+            </button>
           )}
         </div>
+
+        {!flipped && <p className="rr-sub-text">Tap the card to reveal your role</p>}
+        {flipped && confirmed && <p className="rr-waiting-text">Waiting for other players</p>}
 
         {/* Card with flip */}
         <div className={`rr-card-container ${!flipped ? "rr-card-container--clickable" : ""}`} onClick={!flipped ? handleFlip : undefined}>
@@ -226,6 +233,30 @@ function RoleReveal() {
           </button>
         )}
       </div>
+
+      {/* Slackers modal */}
+      {showSlackers && (
+        <div className="rr-modal-overlay" onClick={() => setShowSlackers(false)}>
+          <div className="rr-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rr-modal-header">
+              <span className="rr-modal-icon">💀</span>
+              <h2 className="rr-modal-title">BRAIN DEAD</h2>
+              <p className="rr-modal-subtitle">Still loading their last brain cell</p>
+            </div>
+            <div className="rr-modal-list">
+              {notReady.map((p) => (
+                <div key={p.id} className="rr-modal-player">
+                  <span className="rr-modal-dot" />
+                  <span className="rr-modal-name">{p.name}</span>
+                </div>
+              ))}
+            </div>
+            <button className="rr-modal-close" onClick={() => setShowSlackers(false)}>
+              DISMISS
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

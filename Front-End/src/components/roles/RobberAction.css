@@ -219,7 +219,7 @@
 
 /* ===== BOTTOM ===== */
 .rb-bottom {
-  margin-top: clamp(4px, 0.8vw, 12px);
+  margin-top: clamp(20px, 4vh, 36px);
   display: flex;
   justify-content: center;
   flex-shrink: 0;

@@ -65,14 +65,10 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
-  // Refs for swap animation
-  const selfSlotRef = useRef<HTMLDivElement | null>(null);
-  const groundRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
-  // Process result
+  // Process result — trigger swap animation
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
@@ -104,49 +100,7 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
   }, []);
 
   const isClickable = phase === "idle";
-
-  // Swap animation offsets
-  const [selfOffset, setSelfOffset] = useState<{ x: number; y: number } | null>(null);
-  const [groundOffset, setGroundOffset] = useState<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    if (phase !== "swap" || !selectedGroundId) return;
-
-    const selfEl = selfSlotRef.current;
-    const groundEl = groundRefs.current[selectedGroundId];
-    if (!selfEl || !groundEl) return;
-
-    requestAnimationFrame(() => {
-      const selfRect = selfEl.getBoundingClientRect();
-      const groundRect = groundEl.getBoundingClientRect();
-
-      const dx = groundRect.left - selfRect.left;
-      const dy = groundRect.top - selfRect.top;
-
-      requestAnimationFrame(() => {
-        setSelfOffset({ x: dx, y: dy });
-        setGroundOffset({ x: -dx, y: -dy });
-      });
-    });
-  }, [phase, selectedGroundId]);
-
-  const getSelfSwapStyle = (): React.CSSProperties => {
-    if (phase === "swap" && selfOffset) {
-      return {
-        transform: `translate(calc(-50% + ${selfOffset.x}px), calc(-50% + ${selfOffset.y}px))`,
-      };
-    }
-    return {};
-  };
-
-  const getGroundSwapStyle = (groundId: string): React.CSSProperties => {
-    if (phase === "swap" && groundId === selectedGroundId && groundOffset) {
-      return {
-        transform: `translate(${groundOffset.x}px, ${groundOffset.y}px)`,
-      };
-    }
-    return {};
-  };
+  const swapped = phase === "swap" || phase === "done";
 
   return (
     <div className="dk-action">
@@ -155,43 +109,64 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
         {players.map((player, i) => {
           const isSelf = player.id === playerId;
           const pos = positions[i];
-          const isSwapping = phase === "swap" && isSelf;
+
+          // After swap: self slot shows a face-down card (the ground card that moved here)
+          // Before swap: self slot shows the drunk face-up
+          const showDrunkFace = isSelf && !swapped;
+          const showGroundCardHere = isSelf && swapped;
 
           return (
             <div
               key={player.id}
-              ref={isSelf ? selfSlotRef : undefined}
-              className={`dk-slot ${isSelf ? "dk-slot--self" : ""} ${isSwapping ? "dk-slot--swapping" : ""}`}
+              className={`dk-slot ${isSelf ? "dk-slot--self" : ""}`}
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
-                ...(isSelf ? getSelfSwapStyle() : {}),
               }}
             >
               <span className={`dk-name ${isSelf ? "dk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div
-                className={`dk-flip ${isSelf ? "dk-flip--up" : ""}${isSelf ? " dk-flip--tappable" : ""}`}
-                onClick={
-                  isSelf
-                    ? (e) => {
-                        e.stopPropagation();
-                        openModal(getFullCardImage("drunk"), "Drunk", "You");
-                      }
-                    : undefined
-                }
-              >
-                <div className="dk-flip-inner">
-                  <div className="dk-flip-face dk-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+              {isSelf ? (
+                showGroundCardHere ? (
+                  /* After swap: face-down ground card sits at player position */
+                  <div className="dk-flip dk-card-arrive">
+                    <div className="dk-flip-inner">
+                      <div className="dk-flip-face dk-flip-face--back">
+                        <img src={backCardImage} alt="Unknown role" draggable={false} />
+                      </div>
+                      <div className="dk-flip-face dk-flip-face--front">
+                        <img src={backCardImage} alt="Unknown role" draggable={false} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="dk-flip-face dk-flip-face--front">
-                    <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "Drunk" : "Card"} draggable={false} />
+                ) : (
+                  /* Before swap: drunk card face-up */
+                  <div className={`dk-flip dk-flip--up dk-flip--tappable`} onClick={() => openModal(getFullCardImage("drunk"), "Drunk", "You")}>
+                    <div className="dk-flip-inner">
+                      <div className="dk-flip-face dk-flip-face--back">
+                        <img src={backCardImage} alt="Card back" draggable={false} />
+                      </div>
+                      <div className="dk-flip-face dk-flip-face--front">
+                        <img src={getSquareImage("drunk")} alt="Drunk" draggable={false} />
+                      </div>
+                    </div>
+                  </div>
+                )
+              ) : (
+                /* Other players: always face-down */
+                <div className="dk-flip">
+                  <div className="dk-flip-inner">
+                    <div className="dk-flip-face dk-flip-face--back">
+                      <img src={backCardImage} alt="Card back" draggable={false} />
+                    </div>
+                    <div className="dk-flip-face dk-flip-face--front">
+                      <img src={backCardImage} alt="Card" draggable={false} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {isSelf && phase !== "done" && <div className="dk-glow dk-glow--green dk-glow--subtle" />}
+              {isSelf && !swapped && <div className="dk-glow dk-glow--green dk-glow--subtle" />}
             </div>
           );
         })}
@@ -200,31 +175,46 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
         <div className="dk-ground">
           {groundCards.slice(0, 3).map((gc) => {
             const isSelected = gc.id === selectedGroundId;
-            const isSwapping = phase === "swap" && isSelected;
             const canClick = isClickable;
 
+            // After swap: selected ground card shows the drunk face-up, others stay face-down
+            const showDrunkHere = isSelected && swapped;
+
             return (
-              <div
-                key={gc.id}
-                ref={(el) => {
-                  groundRefs.current[gc.id] = el;
-                }}
-                className={`dk-ground-card ${canClick ? "dk-ground-card--clickable" : ""} ${isSelected ? "dk-ground-card--selected" : ""} ${isSwapping ? "dk-ground-card--swapping" : ""}`}
-                style={getGroundSwapStyle(gc.id)}
-                onClick={() => canClick && handleGroundClick(gc.id)}
-              >
-                <div className="dk-flip dk-flip--ground">
-                  <div className="dk-flip-inner">
-                    <div className="dk-flip-face dk-flip-face--back">
-                      <img src={backCardImage} alt="Ground card" draggable={false} />
-                    </div>
-                    <div className="dk-flip-face dk-flip-face--front">
-                      <img src={backCardImage} alt="Ground card" draggable={false} />
+              <div key={gc.id} className={`dk-ground-card ${canClick ? "dk-ground-card--clickable" : ""} ${isSelected ? "dk-ground-card--selected" : ""}`} onClick={() => canClick && handleGroundClick(gc.id)}>
+                {showDrunkHere ? (
+                  /* After swap: drunk card appears here face-up */
+                  <div
+                    className="dk-flip dk-flip--ground dk-flip--up dk-flip--tappable dk-card-arrive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openModal(getFullCardImage("drunk"), "Drunk");
+                    }}
+                  >
+                    <div className="dk-flip-inner">
+                      <div className="dk-flip-face dk-flip-face--back">
+                        <img src={backCardImage} alt="Card back" draggable={false} />
+                      </div>
+                      <div className="dk-flip-face dk-flip-face--front">
+                        <img src={getSquareImage("drunk")} alt="Drunk" draggable={false} />
+                      </div>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  /* Normal: face-down ground card */
+                  <div className="dk-flip dk-flip--ground">
+                    <div className="dk-flip-inner">
+                      <div className="dk-flip-face dk-flip-face--back">
+                        <img src={backCardImage} alt="Ground card" draggable={false} />
+                      </div>
+                      <div className="dk-flip-face dk-flip-face--front">
+                        <img src={backCardImage} alt="Ground card" draggable={false} />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-                {isSelected && (phase === "swap" || phase === "done") && <div className="dk-glow dk-glow--gold" />}
+                {showDrunkHere && <div className="dk-glow dk-glow--gold" />}
               </div>
             );
           })}

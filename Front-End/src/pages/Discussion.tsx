@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
-import VoiceChat from "../components/VoiceChat";
+// import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
 // ===== TYPES =====
@@ -120,7 +120,7 @@ function Discussion() {
 
         {/* Voice Chat */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+          {/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}
         </div>
 
         {/* Timer */}

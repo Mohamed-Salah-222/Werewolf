@@ -101,10 +101,7 @@ function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
           </svg>
 
           {/* Role name label */}
-          <span className={`nrp-role-name ${isMine ? "nrp-role-name--mine" : ""}`}>
-            {activeItem.roleName}
-            {isMine && <span className="nrp-you-tag"> (YOU)</span>}
-          </span>
+          <span className={`nrp-role-name ${isMine ? "nrp-role-name--mine" : ""}`}>{activeItem.roleName}</span>
         </div>
       )}
 

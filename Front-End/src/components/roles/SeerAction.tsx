@@ -249,11 +249,7 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
         </div>
 
         {/* Instruction / status in center */}
-        {!submitted && !mode && (
-          <div className="sr-center-hint">
-            <span className="sr-hint-text">TAP A PLAYER OR GROUND CARD</span>
-          </div>
-        )}
+
         {!submitted && mode === "ground" && selectedGroundIds.length === 1 && (
           <div className="sr-center-hint">
             <span className="sr-hint-text">PICK ONE MORE</span>

@@ -29,6 +29,11 @@
   width: 100%;
   max-width: 420px;
   padding: 32px 20px 40px;
+  transition: opacity 0.4s ease;
+}
+
+.vote-content--fading {
+  opacity: 0.3;
 }
 
 .vote-title {
@@ -46,7 +51,6 @@
   font-size: 14px;
   color: #5a4a30;
   margin-bottom: 4px;
-
   font-family: var(--font-body);
 }
 
@@ -58,11 +62,89 @@
   font-family: var(--font-display);
 }
 
-/* ===== VOICE CHAT WRAPPER ===== */
+/* ===== VOICE CHAT ===== */
 .vote-voice {
   display: flex;
   justify-content: center;
   margin-bottom: 20px;
+}
+
+/* ===== SEAL OVERLAY ===== */
+.vote-seal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: sealFade 1.2s ease forwards;
+}
+
+@keyframes sealFade {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.vote-seal-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: sealPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes sealPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.vote-seal-icon {
+  font-size: 40px;
+  filter: drop-shadow(0 0 20px rgba(196, 30, 30, 0.4));
+}
+
+.vote-seal-text {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 6px;
+  color: var(--color-villain);
+  text-shadow: 0 0 20px rgba(196, 30, 30, 0.3);
+}
+
+/* ===== VOTING VIEW ===== */
+.vote-voting-view {
+  width: 100%;
+  animation: voteFadeUp 0.3s ease-out;
+}
+
+@keyframes voteFadeUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== PLAYER LIST ===== */
@@ -87,26 +169,47 @@
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: var(--font-body);
+  animation: voteItemIn 0.3s ease-out backwards;
+}
+
+@keyframes voteItemIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .vote-item:hover {
-  border-color: var(--color-border);
-  background-color: rgba(201, 168, 76, 0.05);
+  border-color: rgb(255, 0, 0);
+  background-color: rgba(196, 30, 30, 0.05);
+  color: rgb(255, 5, 5);
 }
 
 .vote-item--selected {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px;
-  font-size: 15px;
   background-color: rgba(196, 30, 30, 0.08);
   color: var(--color-text);
-  border: 2px solid var(--color-villain);
-  border-radius: 4px;
-  cursor: pointer;
+  border-color: var(--color-villain);
+  border-width: 2px;
   box-shadow: 0 0 15px rgba(196, 30, 30, 0.2);
-  font-family: var(--font-body);
+}
+
+.vote-no-wolf {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-style: dashed;
+  margin-top: 4px;
+}
+
+.vote-no-wolf.vote-item--selected {
+  background-color: rgba(212, 160, 23, 0.08);
+  border-color: var(--color-neutral);
+  border-style: solid;
+  box-shadow: 0 0 15px rgba(212, 160, 23, 0.2);
 }
 
 .vote-player-name {
@@ -121,135 +224,193 @@
   font-family: var(--font-display);
 }
 
-/* ===== NO WEREWOLF OPTION ===== */
-.vote-no-wolf {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 14px 16px;
-  font-size: 15px;
-  background-color: rgba(201, 168, 76, 0.03);
-  color: #c9b896;
-  border: 1px dashed #3d2e1a;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 4px;
-  gap: 4px;
-  font-family: var(--font-body);
-  transition: all 0.2s ease;
-}
-
-.vote-no-wolf:hover {
-  border-color: var(--color-border);
-}
-
-.vote-no-wolf--selected {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  padding: 14px 16px;
-  font-size: 15px;
-  background-color: rgba(212, 160, 23, 0.08);
-  color: var(--color-text);
-  border: 2px solid var(--color-neutral);
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 4px;
-  gap: 4px;
-  box-shadow: 0 0 15px rgba(212, 160, 23, 0.2);
-  font-family: var(--font-body);
-}
-
 .vote-no-wolf-hint {
   font-size: 11px;
   color: #5a4a30;
 }
 
-/* ===== CONFIRM BUTTON ===== */
+/* ===== CONFIRM BUTTON (Gothic Stone) ===== */
 .vote-btn {
   width: 100%;
   padding: 14px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 400;
   letter-spacing: 3px;
-  background-color: var(--color-villain);
-  color: var(--color-text);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
   font-family: var(--font-display);
+  color: rgba(240, 230, 208, 0.8);
+  background: linear-gradient(180deg, #1e1b17 0%, #141210 50%, #1a1714 100%);
+  border: 1px solid rgba(80, 70, 55, 0.5);
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 2px 0 rgba(80, 70, 55, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(240, 230, 208, 0.05),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
   transition: all 0.3s ease;
 }
 
-.vote-btn:hover {
-  background-color: #d42a2a;
+.vote-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #252119 0%, #1a1714 50%, #201d18 100%);
+  border-color: rgba(120, 100, 70, 0.5);
+  color: var(--color-text);
+  box-shadow:
+    0 2px 0 rgba(100, 85, 60, 0.3),
+    0 6px 18px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(240, 230, 208, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.vote-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow:
+    0 1px 0 rgba(80, 70, 55, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.6),
+    inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .vote-btn:disabled {
-  background-color: transparent;
-  color: #3d2e1a;
-  border: 1px solid #1a1510;
+  background: linear-gradient(180deg, #13110f 0%, #0e0d0b 50%, #111010 100%);
+  color: rgba(240, 230, 208, 0.2);
+  border: 1px solid rgba(80, 70, 55, 0.2);
   cursor: not-allowed;
+  box-shadow: none;
+  text-shadow: none;
 }
 
-/* ===== WAITING STATE ===== */
-.vote-waiting {
+/* ===== WAITING VIEW ===== */
+.vote-waiting-view {
   width: 100%;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: waitingReveal 0.5s ease-out;
 }
 
-.vote-voted-text {
-  font-size: 15px;
-  color: #9a8a70;
-  margin-bottom: 8px;
-  font-family: var(--font-body);
+@keyframes waitingReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.vote-voted-strong {
-  color: var(--color-gold);
+/* Your vote summary */
+.vote-your-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 32px;
+  border: 2px solid var(--color-villain);
+  border-radius: 6px;
+  background: rgba(196, 30, 30, 0.06);
+  box-shadow: 0 0 30px rgba(196, 30, 30, 0.15);
+}
+
+.vote-your-label {
   font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 4px;
+  color: rgb(255, 218, 50);
 }
 
-.vote-waiting-text {
-  color: #5a4a30;
-  font-size: 13px;
+.vote-your-target {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 4px;
+  color: #f0e6d0;
+  text-shadow: 0 0 16px rgba(196, 30, 30, 0.4);
+}
 
-  margin-bottom: 24px;
+/* Divider */
+.vote-divider {
+  width: 60px;
+  height: 1px;
+  background: #2a2019;
+  margin: 24px 0;
+}
+
+/* Waiting hint */
+.vote-waiting-hint {
   font-family: var(--font-body);
+  font-size: 13px;
+  color: rgba(240, 230, 208, 0.6);
+  margin-bottom: 16px;
 }
 
-/* ===== VOTER LIST ===== */
-.vote-voter-list {
+/* Progress list */
+.vote-progress-list {
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  width: 100%;
 }
 
-.vote-voter-row {
+.vote-progress-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 10px;
   padding: 10px 14px;
-  background-color: rgba(201, 168, 76, 0.03);
   border-radius: 4px;
-  border: 1px solid #1a1510;
+  border: 1px solid rgba(240, 230, 208, 0.04);
+  background: rgba(0, 0, 0, 0.2);
+  transition: all 0.4s ease;
+  animation: progressItemIn 0.3s ease-out backwards;
 }
 
-.vote-voter-name {
-  font-size: 14px;
-  color: #9a8a70;
+@keyframes progressItemIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.vote-progress-item--done {
+  border-color: rgba(42, 138, 74, 0.15);
+  background: rgba(42, 138, 74, 0.04);
+}
+
+.vote-progress-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2a2019;
+  flex-shrink: 0;
+  transition: all 0.4s ease;
+}
+
+.vote-progress-dot--done {
+  background: var(--color-village);
+  box-shadow: 0 0 8px rgba(42, 138, 74, 0.4);
+}
+
+.vote-progress-name {
+  flex: 1;
   font-family: var(--font-body);
+  font-size: 14px;
+  color: rgba(240, 230, 208, 0.5);
 }
 
-.vote-done-tag {
-  color: var(--color-village);
+.vote-progress-item--done .vote-progress-name {
+  color: rgba(240, 230, 208, 0.7);
+}
+
+.vote-progress-check {
   font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--color-village);
   letter-spacing: 1px;
-}
-
-.vote-pending-tag {
-  color: #3d2e1a;
 }
 
 /* ============================================================
@@ -272,6 +433,7 @@
     font-size: 28px;
     letter-spacing: 6px;
   }
+
   .vote-subtitle {
     color: rgba(240, 230, 208, 0.55);
   }
@@ -282,6 +444,14 @@
 
   .vote-no-wolf-hint {
     color: rgba(240, 230, 208, 0.45);
+  }
+
+  .vote-waiting-hint {
+    color: rgb(240, 230, 208);
+  }
+
+  .vote-btn {
+    border-color: rgba(100, 85, 60, 0.5);
   }
 }
 
@@ -300,21 +470,23 @@
     font-size: 12px;
   }
 
-  .vote-item,
-  .vote-item--selected,
-  .vote-no-wolf,
-  .vote-no-wolf--selected {
+  .vote-item {
     padding: 12px 14px;
     font-size: 13px;
   }
 
   .vote-btn {
     padding: 12px;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   .vote-player-name {
     font-size: 13px;
+  }
+
+  .vote-your-target {
+    font-size: 18px;
+    letter-spacing: 3px;
   }
 }
 
@@ -328,16 +500,13 @@
     letter-spacing: 3px;
   }
 
-  .vote-item,
-  .vote-item--selected,
-  .vote-no-wolf,
-  .vote-no-wolf--selected {
+  .vote-item {
     padding: 10px 12px;
     font-size: 12px;
   }
 
   .vote-btn {
     padding: 10px;
-    font-size: 12px;
+    font-size: 11px;
   }
 }

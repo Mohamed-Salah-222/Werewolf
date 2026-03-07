@@ -215,8 +215,7 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
       <div className="ww-bottom">
         {!submitted ? (
           <button className="ww-btn" onClick={handleOpenEyes}>
-            <span className="ww-btn-icon">👁</span>
-            <span className="ww-btn-text">OPEN EYES</span>
+            OPEN EYES
           </button>
         ) : !actionResult ? (
           <span className="ww-bottom-status">LOOKING...</span>

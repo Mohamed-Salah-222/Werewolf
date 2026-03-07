@@ -5,7 +5,7 @@ import { API_URL } from "../config";
 import { clearSession } from "../utils/gameSession";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
-import VoiceChat from "../components/VoiceChat";
+// import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
 
@@ -369,7 +369,7 @@ function WaitingRoom() {
         </div>
 
         <div className="wr-actions wr-anim-actions">
-          <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
+          {/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}
 
           {isHost && (
             <>

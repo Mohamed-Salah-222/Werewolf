@@ -159,8 +159,7 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
       <div className="mn-bottom">
         {!submitted ? (
           <button className="mn-btn" onClick={handleAction}>
-            <span className="mn-btn-icon">👁</span>
-            <span className="mn-btn-text">SEE WEREWOLVES</span>
+            SEE WEREWOLVES
           </button>
         ) : !actionResult ? (
           <span className="mn-bottom-status">LOOKING...</span>
