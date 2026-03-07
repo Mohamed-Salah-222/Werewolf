@@ -112,7 +112,7 @@ function DrunkAction({ onAction, playerId, players, groundCards, actionResult }:
 
           // After swap: self slot shows a face-down card (the ground card that moved here)
           // Before swap: self slot shows the drunk face-up
-          const showDrunkFace = isSelf && !swapped;
+          // const showDrunkFace = isSelf && !swapped;
           const showGroundCardHere = isSelf && swapped;
 
           return (
