@@ -101,6 +101,7 @@ function RoleReveal() {
     fetchPlayers();
 
     socket.on("playerRoleConfirmed", (data: { playerId: string }) => {
+      console.log("playerRoleConfirmed received:", data);
       setPlayerStatuses((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, confirmed: true } : p)));
     });
 
