@@ -4,7 +4,7 @@ import { Role, RoleClasses } from "./roles";
 import { Player } from "./Player";
 import { EventEmitter } from "events";
 import { Logger } from "../utils/Logger";
-import { PlayerId } from "../types/game.types";
+import { PlayerId, Settings } from "../types/game.types";
 import { Vote } from "../types/game.types";
 
 export class Game extends EventEmitter {
@@ -108,6 +108,10 @@ export class Game extends EventEmitter {
       this.allPlayersReady = true;
     }
     return ready;
+  }
+
+  updateSettings(settings: Settings): void {
+    this.timer = settings.timer;
   }
 
   start(): void {

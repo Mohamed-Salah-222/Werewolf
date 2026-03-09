@@ -1,4 +1,5 @@
 import { PlayerId } from "./game.types";
+import { Settings } from "./game.types";
 
 // Client -> Server events (what frontend sends)
 export interface ClientToServerEvents {
@@ -17,6 +18,7 @@ export interface ClientToServerEvents {
   voiceAnswer: (data: { to: PlayerId; answer: any }) => void;
   voiceIce: (data: { to: PlayerId; candidate: any }) => void;
   voiceLeave: (data: { playerId: PlayerId }) => void;
+  settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
 }
 
 // Server -> Client events (what backend sends)

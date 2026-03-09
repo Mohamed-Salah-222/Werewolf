@@ -246,6 +246,27 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
+    socket.on("settingsUpdate", ({ gameCode, playerId, settings }) => {
+      try {
+        const game = manager.getGameByCode(gameCode);
+        if (!game) return;
+
+        const player = game.getPlayerById(playerId);
+        if (!player) return;
+        if (game.host !== player.id) {
+          socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
+          console.log("host only");
+          return;
+
+        }
+        console.log("settings updated by player", player.name, settings);
+
+        game.updateSettings(settings);
+        console.log(`🔄 Player ${player.name} (${player.id}) updated settings in game ${gameCode}`);
+      } catch (error: any) {
+        console.error("Error in settingsUpdate:", error);
+      }
+    });
     // KICK PLAYER
     socket.on("kickPlayer", ({ gameCode, hostId, kickedPlayerId }) => {
       try {

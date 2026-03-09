@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type ChangeEvent, type MouseEvent } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
@@ -7,8 +7,6 @@ import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
 // import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
-
-
 
 // ===== CONSTANTS =====
 
@@ -20,6 +18,22 @@ interface LocationState {
   playerName: string;
   playerId: string;
   isHost: boolean;
+  settings: Settings;
+}
+
+const TimerOption = {
+  Short: 4,
+  Medium: 6,
+  Long: 8,
+  VeryLong: 10,
+} as const;
+
+const DEFAULT_TIMER = TimerOption.Medium;
+
+type TimerOption = typeof TimerOption[keyof typeof TimerOption];
+
+interface Settings {
+  timer: TimerOption;
 }
 
 interface GridCard {
@@ -68,6 +82,9 @@ function WaitingRoom() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
 
+  const [settings, setSettings] = useState<Settings>(state?.settings || { timer: DEFAULT_TIMER });
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+
   const [players, setPlayers] = useState<PlayerStatus[]>([]);
   const [copied, setCopied] = useState(false);
   const [revealedCard, setRevealedCard] = useState<number | null>(null);
@@ -82,6 +99,7 @@ function WaitingRoom() {
 
   // Always-fresh ref to avoid stale closure issues in socket callbacks
   const readySetRef = useRef<Set<string>>(new Set());
+  const settingsRef = useRef<Settings>(settings);
 
   // Timeout refs for cleanup on unmount
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -151,7 +169,7 @@ function WaitingRoom() {
         }
 
         if (gameCode && playerId) {
-          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
         }
       } catch (err) {
         console.error("Failed to fetch players", err);
@@ -272,6 +290,11 @@ function WaitingRoom() {
     });
   }, [players, gameCode, playerId]);
 
+  const handleUpdateSettings = useCallback(() => {
+    socket.emit("settingsUpdate", { gameCode, playerId, settings: settingsRef.current });
+    setSettingsModalOpen(false);
+  }, [gameCode, playerId]);
+
   const handleLeave = useCallback(() => {
     socket.emit("leaveGame", { gameCode, playerId });
     clearSession();
@@ -302,6 +325,25 @@ function WaitingRoom() {
     },
     [selectedPileCard],
   );
+
+  function handleCloseSettings(event: MouseEvent<HTMLButtonElement>): void {
+    event.stopPropagation();
+    setSettingsModalOpen(false);
+  }
+
+  function handleOpenSettings(event: MouseEvent<HTMLButtonElement>): void {
+    event.stopPropagation();
+    setSettingsModalOpen(true);
+  }
+
+  function handleTimerChange(event: ChangeEvent<HTMLSelectElement>): void {
+    const newTimer = Number(event.target.value) as TimerOption;
+    setSettings((prev) => {
+      const updated = { ...prev, timer: newTimer };
+      settingsRef.current = updated; // Keep ref in sync for socket emission
+      return updated;
+    });
+  }
 
   // ===== DERIVED =====
 
@@ -374,6 +416,9 @@ function WaitingRoom() {
           {isHost && (
             <>
               {startError && <div className="wr-error-message">{startError}</div>}
+              <button className="wr-settings-btn" onClick={handleOpenSettings}>
+                SETTINGS
+              </button>
               <button className="wr-start-btn" onClick={handleStartGame} disabled={!canStart}>
                 {startButtonText}
               </button>
@@ -387,6 +432,36 @@ function WaitingRoom() {
           </button>
         </div>
       </div>
+
+      {settingsModalOpen && (
+        <div className="wr-settings-modal">
+          <div className="wr-settings-modal-inner">
+            <div className="wr-settings-modal-header">
+              <span className="wr-settings-modal-title">Settings</span>
+              <button className="wr-settings-modal-close-btn" onClick={handleCloseSettings}>
+                <span className="wr-settings-modal-close-btn-icon">✕</span>
+              </button>
+            </div>
+            <div className="wr-settings-modal-body">
+              <div className="wr-settings-modal-option">
+                <span className="wr-settings-modal-option-label">Timer</span>
+                <select className="wr-settings-modal-option-select" value={settings.timer} onChange={handleTimerChange}>
+                  {Object.entries(TimerOption).map(([key, value]) => (
+                    <option key={key} value={value}>
+                      {key}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="wr-settings-modal-footer">
+              <button className="wr-settings-modal-btn" onClick={handleUpdateSettings}>
+                SAVE
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== RIGHT: REVEALED CARD ===== */}
       <div className="wr-reveal">
