@@ -123,9 +123,9 @@
 
 /* ===== FLAVOR TEXT ===== */
 .htp-flavor {
-  font-size: clamp(12px, 1.1vw, 14px);
+  font-size: clamp(13px, 1.3vw, 15px);
   color: var(--color-text-dim);
-  font-style: italic;
+  font-style: normal;
   line-height: 1.7;
   margin: 0 0 20px 0;
   font-family: var(--font-body);
@@ -156,7 +156,7 @@
 
 .htp-step-title {
   display: block;
-  font-size: clamp(11px, 1vw, 13px);
+  font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
   letter-spacing: 2px;
   color: var(--color-text);
@@ -164,7 +164,7 @@
 }
 
 .htp-step-desc {
-  font-size: clamp(11px, 1vw, 13px);
+  font-size: clamp(12px, 1.1vw, 14px);
   color: var(--color-text-muted);
   line-height: 1.6;
   margin: 0;
@@ -190,7 +190,7 @@
 }
 
 .htp-win-item {
-  font-size: clamp(11px, 1vw, 13px);
+  font-size: clamp(12px, 1.1vw, 14px);
   color: var(--color-text-muted);
   line-height: 1.6;
   margin: 0 0 6px 0;
@@ -321,9 +321,9 @@
 
 /* ===== NOTE ===== */
 .htp-note {
-  font-size: clamp(10px, 0.9vw, 12px);
+  font-size: clamp(11px, 1vw, 13px);
   color: #5a4a30;
-  font-style: italic;
+  font-style: normal;
   line-height: 1.6;
   margin-top: 16px;
   font-family: var(--font-body);

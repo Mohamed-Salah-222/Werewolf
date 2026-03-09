@@ -258,45 +258,72 @@ function HomePage() {
         </div>
       </div>
 
-      {/* ===== BOTTOM: CHARACTER SELECT GRID ===== */}
+      {/* ===== BOTTOM: CHARACTER CAROUSEL ===== */}
       <div className="home-selectbar anim-selectbar">
-        <div className="home-select-grid">
-          {characters.map((char, index) => {
-            const isActive = selectedChar.id === char.id;
-            const color = teamColor(char.team);
-            return (
-              <button
-                key={char.id}
-                className={`home-grid-slot anim-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
-                style={
-                  {
-                    "--slot-index": index,
-                    ...(isActive
-                      ? {
-                          borderColor: color,
-                          boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                        }
-                      : undefined),
-                  } as React.CSSProperties
-                }
-                onClick={() => handleCharSwitch(char)}
-              >
-                {char.square ? (
-                  <img src={char.square} alt={char.name} className="home-grid-img" />
-                ) : (
-                  <div className="home-grid-placeholder">
-                    <span className="home-grid-placeholder-text">{char.name.charAt(0)}</span>
-                  </div>
-                )}
-                <span className="home-grid-label" style={{ color: isActive ? color : "#666" }}>
-                  {char.name}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
+        <button
+          className="carousel-arrow carousel-arrow--left"
+          onClick={() => {
+            const grid = document.querySelector(".home-select-grid");
+            if (grid) grid.scrollBy({ left: -200, behavior: "smooth" });
+          }}
+          aria-label="Scroll left"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
 
+        <div className="carousel-mask">
+          <div className="home-select-grid">
+            {characters.map((char, index) => {
+              const isActive = selectedChar.id === char.id;
+              const color = teamColor(char.team);
+              return (
+                <button
+                  key={char.id}
+                  className={`home-grid-slot anim-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
+                  style={
+                    {
+                      "--slot-index": index,
+                      ...(isActive
+                        ? {
+                            borderColor: color,
+                            boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                          }
+                        : undefined),
+                    } as React.CSSProperties
+                  }
+                  onClick={() => handleCharSwitch(char)}
+                >
+                  {char.square ? (
+                    <img src={char.square} alt={char.name} className="home-grid-img" />
+                  ) : (
+                    <div className="home-grid-placeholder">
+                      <span className="home-grid-placeholder-text">{char.name.charAt(0)}</span>
+                    </div>
+                  )}
+                  <span className="home-grid-label" style={{ color: isActive ? color : "#666" }}>
+                    {char.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <button
+          className="carousel-arrow carousel-arrow--right"
+          onClick={() => {
+            const grid = document.querySelector(".home-select-grid");
+            if (grid) grid.scrollBy({ left: 200, behavior: "smooth" });
+          }}
+          aria-label="Scroll right"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 6 15 12 9 18" />
+          </svg>
+        </button>
+      </div>
       {/* ===== CREATE MODAL ===== */}
       {showCreateModal && (
         <div className="home-overlay" onClick={closeModals}>

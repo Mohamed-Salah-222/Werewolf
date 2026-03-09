@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, type ChangeEvent, type MouseEvent } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
@@ -30,7 +30,7 @@ const TimerOption = {
 
 const DEFAULT_TIMER = TimerOption.Medium;
 
-type TimerOption = typeof TimerOption[keyof typeof TimerOption];
+type TimerOption = (typeof TimerOption)[keyof typeof TimerOption];
 
 interface Settings {
   timer: TimerOption;
@@ -169,7 +169,7 @@ function WaitingRoom() {
         }
 
         if (gameCode && playerId) {
-          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => { });
+          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
         }
       } catch (err) {
         console.error("Failed to fetch players", err);
@@ -326,25 +326,6 @@ function WaitingRoom() {
     [selectedPileCard],
   );
 
-  function handleCloseSettings(event: MouseEvent<HTMLButtonElement>): void {
-    event.stopPropagation();
-    setSettingsModalOpen(false);
-  }
-
-  function handleOpenSettings(event: MouseEvent<HTMLButtonElement>): void {
-    event.stopPropagation();
-    setSettingsModalOpen(true);
-  }
-
-  function handleTimerChange(event: ChangeEvent<HTMLSelectElement>): void {
-    const newTimer = Number(event.target.value) as TimerOption;
-    setSettings((prev) => {
-      const updated = { ...prev, timer: newTimer };
-      settingsRef.current = updated; // Keep ref in sync for socket emission
-      return updated;
-    });
-  }
-
   // ===== DERIVED =====
 
   const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
@@ -379,7 +360,17 @@ function WaitingRoom() {
 
       {/* ===== MIDDLE: WAITING ROOM ===== */}
       <div className="wr-center">
-        <h1 className="wr-title wr-anim-title">WAITING ROOM</h1>
+        <div className="wr-title-row wr-anim-title">
+          <h1 className="wr-title">WAITING ROOM</h1>
+          {isHost && (
+            <button className="wr-settings-btn" onClick={() => setSettingsModalOpen(true)} aria-label="Settings">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
+            </button>
+          )}
+        </div>
 
         <div className="wr-code-section wr-anim-code">
           <span className="wr-code-label">GAME CODE</span>
@@ -398,7 +389,6 @@ function WaitingRoom() {
                 <div className="wr-badges">
                   {p.isReady && <span className="wr-ready-badge">✓ READY</span>}
                   {p.id === hostId && <span className="wr-host-badge">HOST</span>}
-
                   {isHost && p.id !== playerId && (
                     <button className="wr-kick-btn" onClick={() => handleKick(p.id)}>
                       KICK
@@ -411,14 +401,9 @@ function WaitingRoom() {
         </div>
 
         <div className="wr-actions wr-anim-actions">
-          {/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}
-
           {isHost && (
             <>
               {startError && <div className="wr-error-message">{startError}</div>}
-              <button className="wr-settings-btn" onClick={handleOpenSettings}>
-                SETTINGS
-              </button>
               <button className="wr-start-btn" onClick={handleStartGame} disabled={!canStart}>
                 {startButtonText}
               </button>
@@ -433,29 +418,45 @@ function WaitingRoom() {
         </div>
       </div>
 
+      {/* ===== SETTINGS MODAL ===== */}
       {settingsModalOpen && (
-        <div className="wr-settings-modal">
-          <div className="wr-settings-modal-inner">
-            <div className="wr-settings-modal-header">
-              <span className="wr-settings-modal-title">Settings</span>
-              <button className="wr-settings-modal-close-btn" onClick={handleCloseSettings}>
-                <span className="wr-settings-modal-close-btn-icon">✕</span>
+        <div className="wr-settings-overlay" onClick={() => setSettingsModalOpen(false)}>
+          <div className="wr-settings-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="wr-settings-header">
+              <h3 className="wr-settings-title">SETTINGS</h3>
+              <button className="wr-settings-close" onClick={() => setSettingsModalOpen(false)}>
+                ✕
               </button>
             </div>
-            <div className="wr-settings-modal-body">
-              <div className="wr-settings-modal-option">
-                <span className="wr-settings-modal-option-label">Timer</span>
-                <select className="wr-settings-modal-option-select" value={settings.timer} onChange={handleTimerChange}>
+            <div className="wr-settings-body">
+              <div className="wr-settings-option">
+                <span className="wr-settings-option-label">DISCUSSION TIMER</span>
+                <span className="wr-settings-option-hint">Minutes per discussion round</span>
+                <div className="wr-settings-timer-options">
                   {Object.entries(TimerOption).map(([key, value]) => (
-                    <option key={key} value={value}>
-                      {key}
-                    </option>
+                    <button
+                      key={key}
+                      className={`wr-settings-timer-btn ${settings.timer === value ? "wr-settings-timer-btn--active" : ""}`}
+                      onClick={() => {
+                        setSettings((prev) => {
+                          const updated = { ...prev, timer: value as TimerOption };
+                          settingsRef.current = updated;
+                          return updated;
+                        });
+                      }}
+                    >
+                      <span className="wr-settings-timer-value">{value}</span>
+                      <span className="wr-settings-timer-label">{key}</span>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
             </div>
-            <div className="wr-settings-modal-footer">
-              <button className="wr-settings-modal-btn" onClick={handleUpdateSettings}>
+            <div className="wr-settings-footer">
+              <button className="wr-settings-cancel" onClick={() => setSettingsModalOpen(false)}>
+                CANCEL
+              </button>
+              <button className="wr-settings-save" onClick={handleUpdateSettings}>
                 SAVE
               </button>
             </div>
