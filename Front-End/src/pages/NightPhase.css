@@ -231,6 +231,72 @@
 }
 
 /* ============================================================
+   SPLASH SCREEN — "LET THE NIGHT BEGIN"
+   ============================================================ */
+
+.np-splash {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.95);
+  animation: splashFade 2.5s ease forwards;
+}
+
+@keyframes splashFade {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.np-splash-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  animation: splashPop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes splashPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.np-splash-text {
+  font-family: var(--font-display);
+  font-size: clamp(16px, 4vw, 28px);
+  letter-spacing: clamp(4px, 1vw, 8px);
+  color: var(--color-villain);
+  text-shadow:
+    0 0 30px rgba(196, 30, 30, 0.5),
+    0 0 60px rgba(196, 30, 30, 0.2);
+  white-space: nowrap;
+}
+
+.np-splash-line {
+  width: clamp(30px, 8vw, 60px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-villain), transparent);
+  box-shadow: 0 0 10px rgba(196, 30, 30, 0.3);
+}
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 

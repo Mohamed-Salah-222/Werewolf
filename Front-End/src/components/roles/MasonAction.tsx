@@ -12,6 +12,7 @@ interface MasonResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   actionResult?: MasonResult | null;
@@ -49,7 +50,7 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 // ===== COMPONENT =====
 
-function MasonAction({ onAction, playerId, players, actionResult }: Props) {
+function MasonAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [showAlone, setShowAlone] = useState(false);
@@ -60,6 +61,13 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
+  // Brotherhood modal (2 masons)
+  const [packModalOpen, setPackModalOpen] = useState(false);
+  const [packMasons, setPackMasons] = useState<Array<{ name: string; image: string }>>([]);
+
+  // Track if auto-modal has fired
+  const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -76,6 +84,8 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
 
     if (actionResult.masons.length > 0) {
       const masonIds = actionResult.masons.map((m) => m.id);
+      const totalFlipTime = 500 + (masonIds.length - 1) * 400;
+
       masonIds.forEach((id, i) => {
         setTimeout(
           () => {
@@ -84,6 +94,27 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
           500 + i * 400,
         );
       });
+
+      // After all cards flip, auto-open modal
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+
+        if (actionResult.masons.length === 1) {
+          const mason = actionResult.masons[0];
+          setModalImage(getFullCardImage("mason"));
+          setModalName("Mason");
+          setModalSubtitle(mason.name);
+          setModalOpen(true);
+        } else {
+          const masons = actionResult.masons.map((m) => ({
+            name: m.name,
+            image: getFullCardImage("mason"),
+          }));
+          setPackMasons(masons);
+          setPackModalOpen(true);
+        }
+      }, totalFlipTime + 600);
     } else {
       setTimeout(() => {
         setShowAlone(true);
@@ -121,7 +152,7 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
             <div key={player.id} className={`ms-slot ${isSelf ? "ms-slot--self" : ""} ${isRevealed ? "ms-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`ms-name ${isSelf ? "ms-name--self" : ""} ${isRevealed ? "ms-name--mason" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`ms-flip ${isFaceUp ? "ms-flip--up" : ""} ${isFaceUp ? "ms-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(getFullCardImage("mason"), "Mason", isSelf ? "You" : player.name) : undefined}>
+              <div className={`ms-flip ${isFaceUp ? "ms-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "ms-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("mason"), "Mason", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("mason"), "Mason", player.name) : undefined}>
                 <div className="ms-flip-inner">
                   <div className="ms-flip-face ms-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
@@ -156,7 +187,9 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
 
       {/* Button — below the circle */}
       <div className="ms-bottom">
-        {!submitted ? (
+        {locked ? (
+          <span className="ms-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : !submitted ? (
           <button className="ms-btn" onClick={handleAction}>
             <span className="ms-btn-text">SEE MASONS</span>
           </button>
@@ -167,8 +200,28 @@ function MasonAction({ onAction, playerId, players, actionResult }: Props) {
         )}
       </div>
 
-      {/* Card Modal */}
+      {/* Single Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
+
+      {/* Brotherhood Modal (2 masons) */}
+      {packModalOpen && (
+        <div className="ms-pack-overlay" onClick={() => setPackModalOpen(false)}>
+          <div className="ms-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="ms-pack-title">BROTHERHOOD</span>
+            <div className="ms-pack-cards">
+              {packMasons.map((mason, i) => (
+                <div key={i} className="ms-pack-card">
+                  <span className="ms-pack-name">{mason.name}</span>
+                  <img src={mason.image} alt={mason.name} className="ms-pack-img" />
+                </div>
+              ))}
+            </div>
+            <button className="ms-pack-close" onClick={() => setPackModalOpen(false)}>
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,6 @@ interface CardModalProps {
 function CardModal({ isOpen, onClose, cardImage, cardName, subtitle }: CardModalProps) {
   const backdropRef = useRef<HTMLDivElement>(null);
 
-  // Close on Escape key
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -22,7 +21,6 @@ function CardModal({ isOpen, onClose, cardImage, cardName, subtitle }: CardModal
     return () => window.removeEventListener("keydown", handleKey);
   }, [isOpen, onClose]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -43,10 +41,10 @@ function CardModal({ isOpen, onClose, cardImage, cardName, subtitle }: CardModal
   return (
     <div className="card-modal-backdrop" ref={backdropRef} onClick={handleBackdropClick}>
       <div className="card-modal-content">
+        <div className="card-modal-header">{subtitle && <span className="card-modal-name">{subtitle}</span>}</div>
         <img src={cardImage} alt={cardName} className="card-modal-img" draggable={false} />
-        {subtitle && <p className="card-modal-subtitle">{subtitle}</p>}
         <button className="card-modal-close" onClick={onClose}>
-          ✕
+          CLOSE
         </button>
       </div>
     </div>

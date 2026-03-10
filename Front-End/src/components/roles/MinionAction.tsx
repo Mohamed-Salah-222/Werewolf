@@ -12,6 +12,7 @@ interface MinionResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   actionResult?: MinionResult | null;
@@ -49,7 +50,7 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 // ===== COMPONENT =====
 
-function MinionAction({ onAction, playerId, players, actionResult }: Props) {
+function MinionAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [showNoWolves, setShowNoWolves] = useState(false);
@@ -60,6 +61,13 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
+  // Pack modal state (werewolves reveal)
+  const [packModalOpen, setPackModalOpen] = useState(false);
+  const [packWolves, setPackWolves] = useState<Array<{ name: string; image: string }>>([]);
+
+  // Track if auto-modal has fired
+  const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -76,6 +84,8 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
 
     if (actionResult.werewolves.length > 0) {
       const wwIds = actionResult.werewolves.map((w) => w.id);
+      const totalFlipTime = 500 + (wwIds.length - 1) * 400;
+
       wwIds.forEach((id, i) => {
         setTimeout(
           () => {
@@ -84,6 +94,29 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
           500 + i * 400,
         );
       });
+
+      // After all cards flip, auto-open modal
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+
+        if (actionResult.werewolves.length === 1) {
+          // Single wolf — use big CardModal
+          const wolf = actionResult.werewolves[0];
+          setModalImage(getFullCardImage("werewolf"));
+          setModalName("Werewolf");
+          setModalSubtitle(wolf.name);
+          setModalOpen(true);
+        } else {
+          // Multiple wolves — use pack modal
+          const wolves = actionResult.werewolves.map((w) => ({
+            name: w.name,
+            image: getFullCardImage("werewolf"),
+          }));
+          setPackWolves(wolves);
+          setPackModalOpen(true);
+        }
+      }, totalFlipTime + 600);
     } else {
       setTimeout(() => {
         setShowNoWolves(true);
@@ -121,7 +154,7 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
             <div key={player.id} className={`mn-slot ${isSelf ? "mn-slot--self" : ""} ${isRevealed ? "mn-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`mn-name ${isSelf ? "mn-name--self" : ""} ${isRevealed ? "mn-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`mn-flip ${isFaceUp ? "mn-flip--up" : ""} ${isFaceUp ? "mn-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(isSelf ? getFullCardImage("minion") : getFullCardImage("werewolf"), isSelf ? "Minion" : "Werewolf", isSelf ? "You" : player.name) : undefined}>
+              <div className={`mn-flip ${isFaceUp ? "mn-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "mn-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("minion"), "Minion", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("werewolf"), "Werewolf", player.name) : undefined}>
                 <div className="mn-flip-inner">
                   <div className="mn-flip-face mn-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
@@ -157,7 +190,9 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
 
       {/* Button — below the circle */}
       <div className="mn-bottom">
-        {!submitted ? (
+        {locked ? (
+          <span className="mn-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : !submitted ? (
           <button className="mn-btn" onClick={handleAction}>
             SEE WEREWOLVES
           </button>
@@ -168,8 +203,28 @@ function MinionAction({ onAction, playerId, players, actionResult }: Props) {
         )}
       </div>
 
-      {/* Card Modal */}
+      {/* Single Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
+
+      {/* Pack Modal (werewolves reveal) */}
+      {packModalOpen && (
+        <div className="mn-pack-overlay" onClick={() => setPackModalOpen(false)}>
+          <div className="mn-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="mn-pack-title">YOUR MASTERS</span>
+            <div className="mn-pack-cards">
+              {packWolves.map((wolf, i) => (
+                <div key={i} className="mn-pack-card">
+                  <span className="mn-pack-name">{wolf.name}</span>
+                  <img src={wolf.image} alt={wolf.name} className="mn-pack-img" />
+                </div>
+              ))}
+            </div>
+            <button className="mn-pack-close" onClick={() => setPackModalOpen(false)}>
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

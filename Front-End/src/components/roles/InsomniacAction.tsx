@@ -13,6 +13,7 @@ interface InsomniacResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   actionResult?: InsomniacResult | null;
   autoSubmitted?: boolean;
 }
@@ -36,7 +37,7 @@ function isValidResult(r: unknown): r is InsomniacResult {
   return typeof obj.currentRole === "string" && typeof obj.hasChanged === "boolean";
 }
 
-function InsomniacAction({ onAction, actionResult, autoSubmitted }: Props) {
+function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted }: Props) {
   const validResult = isValidResult(actionResult) ? actionResult : null;
   const isRejoin = !!validResult;
 
@@ -88,15 +89,18 @@ function InsomniacAction({ onAction, actionResult, autoSubmitted }: Props) {
 
       {/* Status */}
       <div className="in-status">
-        {phase === "asleep" && (
-          <>
-            <p className="in-flavor">You stir awake one last time...</p>
-            <button className="in-btn" onClick={handleWakeUp}>
-              <span className="in-btn-icon">👁</span>
-              <span className="in-btn-text">WAKE UP</span>
-            </button>
-          </>
-        )}
+        {phase === "asleep" &&
+          (locked ? (
+            <span className="in-status-text in-status-text--pulse">WAITING FOR YOUR TURN...</span>
+          ) : (
+            <>
+              <p className="in-flavor">You stir awake one last time...</p>
+              <button className="in-btn" onClick={handleWakeUp}>
+                <span className="in-btn-icon">👁</span>
+                <span className="in-btn-text">WAKE UP</span>
+              </button>
+            </>
+          ))}
         {phase === "submitted" && <span className="in-status-text in-status-text--pulse">{autoSubmitted ? "WAITING TO WAKE..." : "CHECKING..."}</span>}
         {phase === "reveal" && !hasChanged && <span className="in-status-text in-status-text--green">STILL INSOMNIAC</span>}
         {phase === "reveal" && hasChanged && <span className="in-status-text in-status-text--red">ROLE CHANGED!</span>}

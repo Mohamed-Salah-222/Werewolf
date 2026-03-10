@@ -190,7 +190,7 @@
 
 .ms-alone-icon {
   font-size: clamp(18px, 2vw, 28px);
-  color: #5a4a30;
+  color: var(--color-gold);
   filter: drop-shadow(0 0 10px rgba(90, 74, 48, 0.3));
   line-height: 1;
 }
@@ -232,7 +232,7 @@
   gap: 10px;
   padding: clamp(10px, 1.4vw, 16px) clamp(20px, 3vw, 40px);
   background-color: rgba(10, 10, 10, 0.8);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(201, 168, 76, 0.4);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -272,7 +272,7 @@
   font-size: clamp(11px, 1vw, 13px);
   font-family: var(--font-display);
   letter-spacing: 3px;
-  color: #5a4a30;
+  color: var(--color-gold);
   animation: msPulse 2s ease-in-out infinite;
 }
 
@@ -291,6 +291,110 @@
   50% {
     opacity: 1;
   }
+}
+
+/* ===== BROTHERHOOD MODAL (2 masons) ===== */
+.ms-pack-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  animation: msPackOverlayIn 0.3s ease-out;
+}
+
+@keyframes msPackOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.ms-pack-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: msPackSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes msPackSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ms-pack-title {
+  font-family: var(--font-display);
+  font-size: clamp(14px, 3vw, 20px);
+  letter-spacing: clamp(4px, 1vw, 8px);
+  color: var(--color-village);
+  text-shadow:
+    0 0 20px rgba(42, 138, 74, 0.4),
+    0 0 40px rgba(42, 138, 74, 0.15);
+}
+
+.ms-pack-cards {
+  display: flex;
+  gap: clamp(16px, 4vw, 32px);
+  align-items: flex-start;
+}
+
+.ms-pack-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ms-pack-name {
+  font-family: var(--font-display);
+  font-size: clamp(11px, 2.5vw, 14px);
+  letter-spacing: 2px;
+  color: rgba(240, 230, 208, 0.8);
+  text-transform: uppercase;
+}
+
+.ms-pack-img {
+  width: clamp(120px, 30vw, 180px);
+  height: clamp(168px, 42vw, 252px);
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid rgba(42, 138, 74, 0.35);
+  box-shadow:
+    0 0 30px rgba(42, 138, 74, 0.25),
+    0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.ms-pack-close {
+  padding: 10px 32px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  font-family: var(--font-display);
+  color: var(--color-gold);
+  background: none;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+  margin-top: 8px;
+}
+
+.ms-pack-close:hover {
+  border-color: var(--color-gold);
+  color: var(--color-text);
 }
 
 /* ============================================================

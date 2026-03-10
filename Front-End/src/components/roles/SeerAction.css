@@ -292,6 +292,110 @@
   }
 }
 
+/* ===== GROUND PEEK MODAL (2 cards) ===== */
+.sr-ground-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  animation: srGroundOverlayIn 0.3s ease-out;
+}
+
+@keyframes srGroundOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sr-ground-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: srGroundSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes srGroundSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.sr-ground-modal-title {
+  font-family: var(--font-display);
+  font-size: clamp(13px, 2.5vw, 18px);
+  letter-spacing: clamp(3px, 0.8vw, 6px);
+  color: var(--color-village);
+  text-shadow:
+    0 0 20px rgba(42, 138, 74, 0.4),
+    0 0 40px rgba(42, 138, 74, 0.15);
+}
+
+.sr-ground-modal-cards {
+  display: flex;
+  gap: clamp(12px, 3vw, 24px);
+  align-items: flex-start;
+}
+
+.sr-ground-modal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.sr-ground-modal-img {
+  width: clamp(140px, 38vw, 200px);
+  height: clamp(196px, 53vw, 280px);
+  object-fit: cover;
+  border-radius: 6px;
+  border: 2px solid rgba(42, 138, 74, 0.35);
+  box-shadow:
+    0 0 24px rgba(42, 138, 74, 0.25),
+    0 10px 30px rgba(0, 0, 0, 0.6);
+}
+
+.sr-ground-modal-name {
+  font-family: var(--font-display);
+  font-size: clamp(10px, 2.2vw, 13px);
+  letter-spacing: 2px;
+  color: rgba(240, 230, 208, 0.7);
+  text-transform: uppercase;
+}
+
+.sr-ground-modal-close {
+  padding: 10px 32px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  font-family: var(--font-display);
+  color: #5a4a30;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+  margin-top: 8px;
+}
+
+.sr-ground-modal-close:hover {
+  border-color: var(--color-gold);
+  color: var(--color-text);
+}
+
 /* ============================================================
    RESPONSIVE — MOBILE FIRST
    ============================================================ */

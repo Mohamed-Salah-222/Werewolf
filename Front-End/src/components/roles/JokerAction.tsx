@@ -12,6 +12,7 @@ interface JokerResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   groundCards: Array<{ id: string; label: string }>;
@@ -50,11 +51,12 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 // ===== COMPONENT =====
 
-function JokerAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+function JokerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
   const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
   const [revealedRole, setRevealedRole] = useState<string>("");
   const hasProcessedResult = useRef(!!actionResult);
+  const hasAutoModalFired = useRef(false);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -71,6 +73,16 @@ function JokerAction({ onAction, playerId, players, groundCards, actionResult }:
 
     if (actionResult.groundRole) {
       setRevealedRole(actionResult.groundRole);
+
+      // Auto-open modal after card flips
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+        setModalImage(getFullCardImage(actionResult.groundRole));
+        setModalName(actionResult.groundRole);
+        setModalSubtitle("Ground card");
+        setModalOpen(true);
+      }, 1000);
     }
   }, [actionResult]);
 
@@ -99,7 +111,7 @@ function JokerAction({ onAction, playerId, players, groundCards, actionResult }:
     setModalOpen(false);
   }, []);
 
-  const isClickable = !submitted;
+  const isClickable = !locked && !submitted;
 
   return (
     <div className="jk-action">
@@ -178,7 +190,7 @@ function JokerAction({ onAction, playerId, players, groundCards, actionResult }:
       </div>
 
       {/* Bottom */}
-      <div className="jk-bottom">{!submitted ? <span className="jk-bottom-hint">Tap a ground card to see what it is</span> : !revealedRole ? <span className="jk-bottom-status">PEEKING...</span> : <span className="jk-bottom-status jk-bottom-status--done">You saw a {revealedRole}</span>}</div>
+      <div className="jk-bottom">{locked ? <span className="jk-bottom-status">WAITING FOR YOUR TURN...</span> : !submitted ? <span className="jk-bottom-hint">Tap a ground card to see what it is</span> : !revealedRole ? <span className="jk-bottom-status">PEEKING...</span> : <span className="jk-bottom-status jk-bottom-status--done">You saw a {revealedRole}</span>}</div>
 
       {/* Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />

@@ -77,6 +77,7 @@ function NightPhase() {
   const roleQueue = state?.roleQueue || [];
 
   const [myRole] = useState<string>(state?.roleName || "");
+  const [showSplash, setShowSplash] = useState(!hasAlreadyActed);
   const [isMyTurn, setIsMyTurn] = useState(() => {
     if (hasAlreadyActed) return false;
     const initialRole = state?.initialActiveRole;
@@ -121,6 +122,15 @@ function NightPhase() {
   useEffect(() => {
     actionDoneRef.current = actionDone;
   }, [actionDone]);
+
+  // Splash screen timer
+  useEffect(() => {
+    if (!showSplash) return;
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [showSplash]);
 
   // Fetch players
   useEffect(() => {
@@ -367,8 +377,8 @@ function NightPhase() {
     const Component = ROLE_COMPONENTS[roleLower];
     if (!Component) return null;
 
-    // Build props based on what each component needs
-    const baseProps = { onAction: handleAction };
+    const locked = !isMyTurn && !actionDone;
+    const baseProps = { onAction: handleAction, locked };
 
     switch (roleLower) {
       case "werewolf":
@@ -407,7 +417,7 @@ function NightPhase() {
   // Should we show the action component? Yes if:
   // - It's our turn (active play), OR
   // - Action is done AND this role has a persistent visual
-  const showActionComponent = isMyTurn || (actionDone && actionResult && hasPersistentAction);
+  const showActionComponent = !showSplash && (isMyTurn || actionDone || hasPersistentAction);
 
   // Should we show the generic ActionComplete waiting text?
   // Only if action is done but the role does NOT have a persistent action visual
@@ -419,60 +429,62 @@ function NightPhase() {
     <div className="np-page">
       <div className="np-vignette" />
 
-      {/* Header */}
-      <div className="np-header">
-        <div className="np-header-inner">
-          <div className="np-moon">☽</div>
-          <h1 className="np-phase-title">NIGHT PHASE</h1>
-          <div className="np-header-divider" />
-          <p className="np-role-label">{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>
-        </div>
-      </div>
-
-      {/* Voice Chat */}
-      {/* <div style={{ padding: "10px 20px", display: "flex", justifyContent: "center" }}>
-        <VoiceChat gameCode={gameCode || ""} playerId={playerId} />
-      </div> */}
-
-      {/* Timer bar — only when it's your turn */}
-      {isMyTurn && roleTimer > 0 && (
-        <div className="np-timer">
-          <div className="np-timer-track">
-            <div className={`np-timer-fill ${isUrgent ? "np-timer-fill--urgent" : "np-timer-fill--normal"}`} style={{ transform: `scaleX(${timerFraction})` }} />
+      {/* ===== SPLASH SCREEN ===== */}
+      {showSplash && (
+        <div className="np-splash">
+          <div className="np-splash-content">
+            <span className="np-splash-text">LET THE NIGHT BEGIN</span>
           </div>
-          <span className={`np-timer-text ${isUrgent ? "np-timer-text--urgent" : "np-timer-text--normal"}`}>{roleTimer}s</span>
         </div>
       )}
 
-      {/* Content */}
-      <div className="np-content">
-        {showActionComponent ? (
-          /*
-           * IMPORTANT: This single branch handles BOTH "isMyTurn" and "actionDone"
-           * states for roles with persistent visuals. This prevents React from
-           * unmounting/remounting the action component when the state transitions,
-           * which preserves local state (like targetId in RobberAction) and allows
-           * animations to run uninterrupted.
-           */
-          <div className="np-content-inner">
-            <div className="np-action-enter">{renderActionComponent()}</div>
-            {roleQueue.length > 0 && (
-              <div className="np-progress-below">
-                <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />
+      {/* ===== MAIN CONTENT (hidden during splash) ===== */}
+      {!showSplash && (
+        <>
+          {/* Header */}
+          <div className="np-header">
+            <div className="np-header-inner">
+              <div className="np-moon">☽</div>
+              <h1 className="np-phase-title">NIGHT PHASE</h1>
+              <div className="np-header-divider" />
+              <p className="np-role-label">{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>
+            </div>
+          </div>
+
+          {/* Timer bar — only when it's your turn */}
+          {isMyTurn && roleTimer > 0 && (
+            <div className="np-timer">
+              <div className="np-timer-track">
+                <div className={`np-timer-fill ${isUrgent ? "np-timer-fill--urgent" : "np-timer-fill--normal"}`} style={{ transform: `scaleX(${timerFraction})` }} />
+              </div>
+              <span className={`np-timer-text ${isUrgent ? "np-timer-text--urgent" : "np-timer-text--normal"}`}>{roleTimer}s</span>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="np-content">
+            {showActionComponent ? (
+              <div className="np-content-inner">
+                <div className="np-action-enter">{renderActionComponent()}</div>
+                {roleQueue.length > 0 && (
+                  <div className="np-progress-below">
+                    <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="np-waiting-layout">
+                {showGenericResult && (
+                  <div className="np-result-section">
+                    <ActionComplete result={actionResult} />
+                  </div>
+                )}
+                {roleQueue.length > 0 && <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />}
               </div>
             )}
           </div>
-        ) : (
-          <div className="np-waiting-layout">
-            {showGenericResult && (
-              <div className="np-result-section">
-                <ActionComplete result={actionResult} />
-              </div>
-            )}
-            {roleQueue.length > 0 && <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />}
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

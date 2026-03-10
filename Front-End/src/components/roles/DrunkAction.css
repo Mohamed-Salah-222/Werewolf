@@ -14,7 +14,7 @@
   flex-shrink: 0;
 }
 
-/* ===== CARD SLOT ===== */
+/* ===== SLOT (shared by players and ground cards) ===== */
 .dk-slot {
   position: absolute;
   transform: translate(-50%, -50%);
@@ -23,10 +23,34 @@
   align-items: center;
   gap: 5px;
   z-index: 2;
+  transition:
+    left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dk-slot--self {
   z-index: 5;
+}
+
+.dk-slot--swapping {
+  z-index: 20;
+}
+
+.dk-slot--ground {
+  z-index: 3;
+}
+
+.dk-slot--clickable {
+  cursor: pointer;
+}
+
+.dk-slot--clickable:hover .dk-card {
+  border-color: rgba(42, 138, 74, 0.4);
+  box-shadow: 0 0 14px rgba(42, 138, 74, 0.2);
+}
+
+.dk-slot--selected .dk-card {
+  border-color: rgba(201, 168, 76, 0.5);
 }
 
 /* ===== PLAYER NAME ===== */
@@ -49,75 +73,36 @@
   letter-spacing: 3px;
 }
 
-/* ===== FLIP CARD (portrait card shape) ===== */
-.dk-flip {
+/* ===== CARD (simple image, no flip) ===== */
+.dk-card {
+  position: relative;
   width: clamp(56px, 6.8vw, 82px);
   height: clamp(78px, 9.5vw, 115px);
-  perspective: 800px;
-}
-
-.dk-flip--ground {
-  width: clamp(50px, 6vw, 74px);
-  height: clamp(70px, 8.4vw, 104px);
-}
-
-.dk-flip--tappable {
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.dk-flip-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 5px;
-}
-
-.dk-flip--up .dk-flip-inner {
-  transform: rotateY(180deg);
-}
-
-.dk-flip-face {
-  position: absolute;
-  inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
   border-radius: 5px;
   overflow: hidden;
   border: 1px solid var(--color-border-dark);
 }
 
-.dk-flip-face img {
+.dk-card--face {
+  border-color: rgba(42, 138, 74, 0.35);
+}
+
+.dk-card--ground {
+  width: clamp(50px, 6vw, 74px);
+  height: clamp(70px, 8.4vw, 104px);
+}
+
+.dk-card--tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.dk-card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
-}
-
-.dk-flip-face--front {
-  transform: rotateY(180deg);
-}
-
-.dk-slot--self .dk-flip-face {
-  border-color: rgba(42, 138, 74, 0.3);
-}
-
-/* ===== CARD ARRIVE ANIMATION ===== */
-.dk-card-arrive {
-  animation: dkCardArrive 0.6s ease-out;
-}
-
-@keyframes dkCardArrive {
-  0% {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  border-radius: 5px;
 }
 
 /* ===== GLOW EFFECTS ===== */
@@ -186,39 +171,6 @@
     box-shadow: 0 0 16px rgba(42, 138, 74, 0.12);
     opacity: 1;
   }
-}
-
-/* ===== GROUND CARDS ===== */
-.dk-ground {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: clamp(6px, 0.8vw, 10px);
-  z-index: 3;
-}
-
-.dk-ground-card {
-  position: relative;
-}
-
-.dk-ground-card--clickable {
-  cursor: pointer;
-}
-
-.dk-ground-card--clickable:hover .dk-flip-inner {
-  box-shadow: 0 0 14px rgba(42, 138, 74, 0.25);
-}
-
-.dk-ground-card--clickable:hover .dk-flip-face--back {
-  border-color: rgba(42, 138, 74, 0.3);
-}
-
-.dk-ground-card--selected .dk-flip-face--back {
-  border-color: rgba(201, 168, 76, 0.4);
 }
 
 /* ===== CENTER HINTS & MESSAGES ===== */
@@ -322,7 +274,7 @@
 }
 
 /* ============================================================
-   RESPONSIVE — MOBILE FIRST
+   RESPONSIVE — MOBILE
    ============================================================ */
 
 @media (max-width: 768px) {
@@ -331,12 +283,12 @@
     height: min(90vw, 370px);
   }
 
-  .dk-flip {
+  .dk-card {
     width: clamp(46px, 13vw, 62px);
     height: clamp(64px, 18.2vw, 87px);
   }
 
-  .dk-flip--ground {
+  .dk-card--ground {
     width: clamp(42px, 12vw, 56px);
     height: clamp(59px, 16.8vw, 78px);
   }
@@ -370,12 +322,12 @@
     height: min(94vw, 330px);
   }
 
-  .dk-flip {
+  .dk-card {
     width: clamp(40px, 12vw, 54px);
     height: clamp(56px, 16.8vw, 76px);
   }
 
-  .dk-flip--ground {
+  .dk-card--ground {
     width: clamp(36px, 11vw, 48px);
     height: clamp(50px, 15.4vw, 67px);
   }

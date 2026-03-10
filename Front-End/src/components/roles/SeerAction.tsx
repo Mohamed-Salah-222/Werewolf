@@ -17,6 +17,7 @@ interface SeerResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   groundCards: Array<{ id: string; label: string }>;
@@ -55,7 +56,7 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 // ===== COMPONENT =====
 
-function SeerAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+function SeerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const [mode, setMode] = useState<"player" | "ground" | null>(null);
   const [submitted, setSubmitted] = useState(!!actionResult);
 
@@ -77,6 +78,13 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
+  // Ground peek modal (2 cards side by side)
+  const [groundModalOpen, setGroundModalOpen] = useState(false);
+  const [groundModalCards, setGroundModalCards] = useState<Array<{ name: string; image: string }>>([]);
+
+  // Track if auto-modal has fired
+  const hasAutoModalFired = useRef(false);
+
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
@@ -93,6 +101,16 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
         setTimeout(() => {
           setRevealedPlayerId(target.id);
         }, 400);
+
+        // Auto-open single card modal
+        setTimeout(() => {
+          if (hasAutoModalFired.current) return;
+          hasAutoModalFired.current = true;
+          setModalImage(getFullCardImage(actionResult.role!));
+          setModalName(actionResult.role!);
+          setModalSubtitle(actionResult.playerName);
+          setModalOpen(true);
+        }, 1100);
       }
     } else if (actionResult.actionType === "ground") {
       setMode("ground");
@@ -114,6 +132,23 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
           400 + i * 400,
         );
       });
+
+      // Auto-open ground peek modal after both flip
+      const totalFlipTime = 400 + (entries.length - 1) * 400;
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+
+        const cards: Array<{ name: string; image: string }> = [];
+        if (actionResult.groundRole1) {
+          cards.push({ name: actionResult.groundRole1, image: getFullCardImage(actionResult.groundRole1) });
+        }
+        if (actionResult.groundRole2) {
+          cards.push({ name: actionResult.groundRole2, image: getFullCardImage(actionResult.groundRole2) });
+        }
+        setGroundModalCards(cards);
+        setGroundModalOpen(true);
+      }, totalFlipTime + 600);
     }
   }, [actionResult, players, groundCards, selectedGroundIds]);
 
@@ -167,8 +202,8 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
     setModalOpen(false);
   }, []);
 
-  const canClickPlayers = !submitted && mode !== "ground";
-  const canClickGround = !submitted && mode !== "player";
+  const canClickPlayers = !locked && !submitted && mode !== "ground";
+  const canClickGround = !locked && !submitted && mode !== "player";
 
   return (
     <div className="sr-action">
@@ -186,14 +221,19 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
               <span className={`sr-name ${isSelf ? "sr-name--self" : ""} ${isRevealed ? "sr-name--revealed" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
               <div
-                className={`sr-flip ${isFaceUp ? "sr-flip--up" : ""} ${isFaceUp ? "sr-flip--tappable" : ""}`}
+                className={`sr-flip ${isFaceUp ? "sr-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "sr-flip--tappable" : ""}`}
                 onClick={
-                  isFaceUp
+                  isSelf
                     ? (e) => {
                         e.stopPropagation();
-                        openModal(isSelf ? getFullCardImage("seer") : getFullCardImage(revealedPlayerRole), isSelf ? "Seer" : revealedPlayerRole, isSelf ? "You" : player.name);
+                        openModal(getFullCardImage("seer"), "Seer", "You");
                       }
-                    : undefined
+                    : isFaceUp && !locked
+                      ? (e) => {
+                          e.stopPropagation();
+                          openModal(getFullCardImage(revealedPlayerRole), revealedPlayerRole, player.name);
+                        }
+                      : undefined
                 }
               >
                 <div className="sr-flip-inner">
@@ -259,7 +299,9 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
 
       {/* Bottom status */}
       <div className="sr-bottom">
-        {!submitted ? (
+        {locked ? (
+          <span className="sr-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : !submitted ? (
           <span className="sr-bottom-hint">{mode === "ground" ? `${selectedGroundIds.length}/2 ground cards selected` : "Choose a player's card or two ground cards"}</span>
         ) : !actionResult ? (
           <span className="sr-bottom-status">REVEALING...</span>
@@ -268,8 +310,28 @@ function SeerAction({ onAction, playerId, players, groundCards, actionResult }: 
         )}
       </div>
 
-      {/* Card Modal */}
+      {/* Single Card Modal (player peek) */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
+
+      {/* Ground Peek Modal (2 cards side by side) */}
+      {groundModalOpen && (
+        <div className="sr-ground-modal-overlay" onClick={() => setGroundModalOpen(false)}>
+          <div className="sr-ground-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="sr-ground-modal-title">GROUND CARDS</span>
+            <div className="sr-ground-modal-cards">
+              {groundModalCards.map((card, i) => (
+                <div key={i} className="sr-ground-modal-card">
+                  <img src={card.image} alt={card.name} className="sr-ground-modal-img" />
+                  <span className="sr-ground-modal-name">{card.name}</span>
+                </div>
+              ))}
+            </div>
+            <button className="sr-ground-modal-close" onClick={() => setGroundModalOpen(false)}>
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

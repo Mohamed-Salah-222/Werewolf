@@ -14,6 +14,7 @@ interface WerewolfResult {
 
 interface Props {
   onAction: (action: Record<string, unknown>) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   groundCards: Array<{ id: string; label: string }>;
@@ -67,7 +68,7 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
 
 // ===== COMPONENT =====
 
-function WerewolfAction({ onAction, playerId, players, groundCards, actionResult }: Props) {
+function WerewolfAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const [submitted, setSubmitted] = useState(!!actionResult);
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [revealedGroundIdx, setRevealedGroundIdx] = useState<number | null>(null);
@@ -79,6 +80,13 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
+
+  // Pack modal state (2 werewolves)
+  const [packModalOpen, setPackModalOpen] = useState(false);
+  const [packWolves, setPackWolves] = useState<Array<{ name: string; image: string }>>([]);
+
+  // Track if auto-modal has fired
+  const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
@@ -95,7 +103,10 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
     hasProcessedResult.current = true;
 
     if (!actionResult.isAlone && actionResult.werewolves) {
+      // Pack reveal — flip cards then auto-open pack modal
       const wwIds = actionResult.werewolves.map((w) => w.id);
+      const totalFlipTime = 500 + (wwIds.length - 1) * 400;
+
       wwIds.forEach((id, i) => {
         setTimeout(
           () => {
@@ -104,12 +115,48 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
           500 + i * 400,
         );
       });
+
+      // After all cards flip, auto-open modal
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+
+        if (actionResult.werewolves!.length === 1) {
+          // Single wolf — use big CardModal
+          const wolf = actionResult.werewolves![0];
+          setModalImage(getWerewolfCard());
+          setModalName("Werewolf");
+          setModalSubtitle(wolf.name);
+          setModalOpen(true);
+        } else {
+          // Multiple wolves — use pack modal
+          const wolves = actionResult.werewolves!.map((w) => ({
+            name: w.name,
+            image: getWerewolfCard(),
+          }));
+          setPackWolves(wolves);
+          setPackModalOpen(true);
+        }
+      }, totalFlipTime + 600);
     } else if (actionResult.isAlone && actionResult.groundCard) {
+      // Lone wolf — flip ground card then auto-open single modal
       setGroundCardName(actionResult.groundCard);
       const randomIdx = Math.floor(Math.random() * Math.max(groundCards.length, 1));
+
       setTimeout(() => {
         setRevealedGroundIdx(randomIdx);
       }, 500);
+
+      // After card flips, auto-open modal
+      setTimeout(() => {
+        if (hasAutoModalFired.current) return;
+        hasAutoModalFired.current = true;
+
+        setModalImage(getFullCardImage(actionResult.groundCard!));
+        setModalName(actionResult.groundCard!);
+        setModalSubtitle("You peeked at this ground card");
+        setModalOpen(true);
+      }, 1400);
     }
   }, [actionResult, groundCards.length]);
 
@@ -158,7 +205,7 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
             <div key={player.id} className={`ww-slot ${isSelf ? "ww-slot--self" : ""} ${isRevealed ? "ww-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
               <span className={`ww-name ${isSelf ? "ww-name--self" : ""} ${isRevealed ? "ww-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`ww-flip ${isFaceUp ? "ww-flip--up" : ""} ${isFaceUp ? "ww-flip--tappable" : ""}`} onClick={isFaceUp ? () => openModal(getWerewolfCard(), "Werewolf", isSelf ? "You" : player.name) : undefined}>
+              <div className={`ww-flip ${isFaceUp ? "ww-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "ww-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getWerewolfCard(), "Werewolf", "You") : isFaceUp && !locked ? () => openModal(getWerewolfCard(), "Werewolf", player.name) : undefined}>
                 <div className="ww-flip-inner">
                   <div className="ww-flip-face ww-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
@@ -213,7 +260,9 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
 
       {/* Button area */}
       <div className="ww-bottom">
-        {!submitted ? (
+        {locked ? (
+          <span className="ww-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : !submitted ? (
           <button className="ww-btn" onClick={handleOpenEyes}>
             OPEN EYES
           </button>
@@ -224,8 +273,28 @@ function WerewolfAction({ onAction, playerId, players, groundCards, actionResult
         )}
       </div>
 
-      {/* Card Modal */}
+      {/* Single Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
+
+      {/* Pack Modal (multiple werewolves) */}
+      {packModalOpen && (
+        <div className="ww-pack-overlay" onClick={() => setPackModalOpen(false)}>
+          <div className="ww-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="ww-pack-title">YOUR PACK</span>
+            <div className="ww-pack-cards">
+              {packWolves.map((wolf, i) => (
+                <div key={i} className="ww-pack-card">
+                  <span className="ww-pack-name">{wolf.name}</span>
+                  <img src={wolf.image} alt={wolf.name} className="ww-pack-img" />
+                </div>
+              ))}
+            </div>
+            <button className="ww-pack-close" onClick={() => setPackModalOpen(false)}>
+              CLOSE
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

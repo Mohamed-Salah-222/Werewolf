@@ -13,6 +13,7 @@ interface TroublemakerResult {
 
 interface Props {
   onAction: (action: { type: string; player1: { id: string }; player2: { id: string } }) => void;
+  locked?: boolean;
   playerId: string;
   players: Array<{ id: string; name: string }>;
   actionResult?: TroublemakerResult | null;
@@ -52,7 +53,7 @@ type Phase = "picking" | "submitted" | "swap" | "done";
 
 // ===== COMPONENT =====
 
-function TroublemakerAction({ onAction, playerId, players, actionResult }: Props) {
+function TroublemakerAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
   const isRejoin = !!actionResult;
 
   const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "picking");
@@ -168,7 +169,7 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
           const isSelf = player.id === playerId;
           const isTarget = player.id === target1Id || player.id === target2Id;
           const isSelected = selectedIds.includes(player.id);
-          const isClickable = phase === "picking" && !isSelf;
+          const isClickable = !locked && phase === "picking" && !isSelf;
           const pos = getSlotPosition(i);
           const isAnimating = phase === "swap" && isTarget;
 
@@ -250,14 +251,20 @@ function TroublemakerAction({ onAction, playerId, players, actionResult }: Props
       </div>
 
       <div className="tm-bottom">
-        {phase === "picking" && selectedIds.length < 2 && <span className="tm-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
-        {phase === "picking" && selectedIds.length === 2 && (
-          <button className="tm-btn" onClick={handleConfirm}>
-            <span className="tm-btn-text">SWAP ROLES</span>
-          </button>
+        {locked ? (
+          <span className="tm-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : (
+          <>
+            {phase === "picking" && selectedIds.length < 2 && <span className="tm-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
+            {phase === "picking" && selectedIds.length === 2 && (
+              <button className="tm-btn" onClick={handleConfirm}>
+                <span className="tm-btn-text">SWAP ROLES</span>
+              </button>
+            )}
+            {(phase === "submitted" || phase === "swap") && <span className="tm-bottom-status">SWAPPING...</span>}
+            {phase === "done" && <span className="tm-bottom-status tm-bottom-status--done">Roles have been swapped</span>}
+          </>
         )}
-        {(phase === "submitted" || phase === "swap") && <span className="tm-bottom-status">SWAPPING...</span>}
-        {phase === "done" && <span className="tm-bottom-status tm-bottom-status--done">Roles have been swapped</span>}
       </div>
 
       {/* Card Modal */}

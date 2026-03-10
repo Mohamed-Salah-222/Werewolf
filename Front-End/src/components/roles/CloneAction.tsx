@@ -26,6 +26,7 @@ interface CloneResult {
 
 interface Props {
   playerId: string;
+  locked?: boolean;
   players: Array<{ id: string; name: string }>;
   groundCards: Array<{ id: string; label: string }>;
   onAction: (action: Record<string, unknown>) => void;
@@ -70,7 +71,7 @@ type ClonePhase = "pick" | "cloning" | "morph" | "phase2";
 
 // ===== COMPONENT =====
 
-function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAction, cloneResult, actionResult }: Props) {
+function CloneAction({ playerId, locked = false, players, groundCards, onAction, onCloneFirstAction, cloneResult, actionResult }: Props) {
   const initialClonedRole = cloneResult?.clonedRole || "";
 
   const [phase, setPhase] = useState<ClonePhase>(cloneResult ? "phase2" : "pick");
@@ -84,9 +85,13 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
+  // Auto-modal ref
+  const hasAutoModalFired = useRef(false);
+
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
+  // Process clone result — morph animation then transition to phase 2
   useEffect(() => {
     if (!cloneResult || hasProcessedCloneResult.current) return;
     hasProcessedCloneResult.current = true;
@@ -96,15 +101,28 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       setPhase("morph");
     });
 
-    const timer = setTimeout(() => {
+    // Auto-open modal showing the cloned role
+    const modalTimer = setTimeout(() => {
+      if (hasAutoModalFired.current) return;
+      hasAutoModalFired.current = true;
+      setModalImage(getFullCardImage(cloneResult.clonedRole));
+      setModalName(cloneResult.clonedRole);
+      setModalSubtitle("You cloned this role");
+      setModalOpen(true);
+    }, 1200);
+
+    const phaseTimer = setTimeout(() => {
       setPhase("phase2");
     }, 2000);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(modalTimer);
+      clearTimeout(phaseTimer);
+    };
   }, [cloneResult]);
 
   const handlePlayerClick = (clickedId: string) => {
-    if (phase !== "pick" || clickedId === playerId) return;
+    if (locked || phase !== "pick" || clickedId === playerId) return;
 
     setTargetId(clickedId);
     setPhase("cloning");
@@ -123,7 +141,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
     setModalOpen(false);
   }, []);
 
-  const isClickable = phase === "pick";
+  const isClickable = !locked && phase === "pick";
 
   const buildPlayerListForPhase2 = (): Array<{ id: string; name: string }> => {
     const selfPlayer = players.find((p) => p.id === playerId);
@@ -149,11 +167,11 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           <div className="cl-banner">
             <span className="cl-banner-text">CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
           </div>
-          {roleLower === "seer" && <SeerAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
-          {roleLower === "robber" && <RobberAction onAction={onAction} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
-          {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
-          {roleLower === "drunk" && <DrunkAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
-          {roleLower === "joker" && <JokerAction onAction={onAction} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "seer" && <SeerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "robber" && <RobberAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
+          {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
+          {roleLower === "drunk" && <DrunkAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "joker" && <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
         </div>
       );
     }
@@ -164,7 +182,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           <div className="cl-banner">
             <span className="cl-banner-text">CLONED → WEREWOLF</span>
           </div>
-          <WerewolfAction onAction={onAction} playerId={playerId} players={players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
+          <WerewolfAction onAction={onAction} locked={locked} playerId={playerId} players={players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
         </div>
       );
     }
@@ -175,7 +193,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           <div className="cl-banner">
             <span className="cl-banner-text">CLONED → MASON</span>
           </div>
-          <MasonAction onAction={onAction} playerId={playerId} players={players} actionResult={cloneResult.autoResult as never} />
+          <MasonAction onAction={onAction} locked={locked} playerId={playerId} players={players} actionResult={cloneResult.autoResult as never} />
         </div>
       );
     }
@@ -186,7 +204,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           <div className="cl-banner">
             <span className="cl-banner-text">CLONED → INSOMNIAC</span>
           </div>
-          <InsomniacAction onAction={onAction} actionResult={actionResult as never} autoSubmitted />
+          <InsomniacAction onAction={onAction} locked={locked} actionResult={actionResult as never} autoSubmitted />
         </div>
       );
     }
@@ -225,8 +243,6 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           const isMorphing = isSelf && phase === "morph";
           const isMorphed = isSelf && phase === "phase2";
 
-          // const isFaceUp = isSelf || showTargetFace;
-
           return (
             <div key={player.id} className={`cl-slot ${isSelf ? "cl-slot--self" : ""} ${showTargetFace ? "cl-slot--revealed" : ""} ${isClickable && !isSelf ? "cl-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>
               <span className={`cl-name ${isSelf ? "cl-name--self" : ""} ${showTargetFace ? "cl-name--target" : ""}`}>{isSelf ? "YOU" : player.name}</span>
@@ -251,9 +267,9 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
                 </div>
               ) : (
                 <div
-                  className={`cl-flip ${showTargetFace ? "cl-flip--up" : ""}${showTargetFace ? " cl-flip--tappable" : ""}`}
+                  className={`cl-flip ${showTargetFace ? "cl-flip--up" : ""} ${isSelf || (showTargetFace && !locked) ? "cl-flip--tappable" : ""}`}
                   onClick={
-                    showTargetFace
+                    showTargetFace && !locked
                       ? (e) => {
                           e.stopPropagation();
                           openModal(getFullCardImage(clonedRoleName), clonedRoleName, player.name);
@@ -278,7 +294,7 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
           );
         })}
 
-        {phase === "pick" && (
+        {phase === "pick" && !locked && (
           <div className="cl-center-hint">
             <span className="cl-hint-text">PICK A PLAYER TO CLONE</span>
           </div>
@@ -296,9 +312,15 @@ function CloneAction({ playerId, players, groundCards, onAction, onCloneFirstAct
       </div>
 
       <div className="cl-bottom">
-        {phase === "pick" && <span className="cl-bottom-hint">Tap a player to copy their role</span>}
-        {phase === "cloning" && <span className="cl-bottom-status">CLONING...</span>}
-        {phase === "morph" && <span className="cl-bottom-status cl-bottom-status--morph">Becoming {clonedRoleName}...</span>}
+        {locked ? (
+          <span className="cl-bottom-status">WAITING FOR YOUR TURN...</span>
+        ) : (
+          <>
+            {phase === "pick" && <span className="cl-bottom-hint">Tap a player to copy their role</span>}
+            {phase === "cloning" && <span className="cl-bottom-status">CLONING...</span>}
+            {phase === "morph" && <span className="cl-bottom-status cl-bottom-status--morph">Becoming {clonedRoleName}...</span>}
+          </>
+        )}
       </div>
 
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
