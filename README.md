@@ -1,4 +1,4 @@
-# 🐺 Werewolf — One Night Ultimate Werewolf Online
+# 🐺 Werewolf One Night Ultimate Werewolf Online
 
 A real-time, multiplayer browser implementation of **One Night Ultimate Werewolf**, the social deduction board game. 6 – 10 players join a lobby via a game code, receive secret roles, perform hidden night actions, discuss, and vote to eliminate a suspect all in real time.
 
