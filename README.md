@@ -4,7 +4,7 @@ A real-time, multiplayer browser implementation of **One Night Ultimate Werewolf
 
 ## Features
 
-- **10 unique roles** : Werewolf, Minion, Clone, Seer, Mason, Robber, Troublemaker, Drunk, Insomniac, Joker — each with interactive night action UIs
+- **10 unique roles** : Werewolf, Minion, Clone, Seer, Mason, Robber, Troublemaker, Drunk, Insomniac, Joker each with interactive night action UIs
 - **Real-time multiplayer** : Socket.IO for instant state sync, room-scoped broadcasts, and typed event contracts
 - **Session reconnection** : Drop connection mid-game? Rejoin from any phase with full state recovery
 - **Voice chat** : WebRTC peer-to-peer audio with echo cancellation and noise suppression
