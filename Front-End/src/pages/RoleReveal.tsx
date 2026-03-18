@@ -61,6 +61,7 @@ function RoleReveal() {
 
   const [playerStatuses, setPlayerStatuses] = useState<Array<{ id: string; name: string; confirmed: boolean }>>([]);
   const [showSlackers, setShowSlackers] = useState(false);
+  const [showPhaseInfo, setShowPhaseInfo] = useState(false);
 
   // Refs to avoid stale closures and unnecessary effect re-runs
   const roleNameRef = useRef(role?.roleName ?? null);
@@ -157,7 +158,7 @@ function RoleReveal() {
   }, [gameCode, playerId, navigate, playerName, isHost]);
 
   const handleFlip = useCallback(() => {
-    setFlipped(true);
+    setFlipped((prev) => !prev);
   }, []);
 
   const handleConfirm = useCallback(() => {
@@ -193,7 +194,7 @@ function RoleReveal() {
       <div className="rr-vignette" />
 
       <div className="rr-content">
-        {/* Player status bar */}
+        {/* Status bar */}
         <div className="rr-status-bar">
           <div className={`rr-status-line ${allReady ? "rr-status-line--all-ready" : ""}`}>
             <span className="rr-status-label">Players</span>
@@ -204,17 +205,26 @@ function RoleReveal() {
             </span>
           </div>
           {notReady.length > 0 && (
-            <button className="rr-info-btn" onClick={() => setShowSlackers(true)} aria-label="Show unready players">
-              !
+            <button className="rr-info-btn rr-info-btn--slackers" onClick={() => setShowSlackers(true)} aria-label="Show unready players">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+              </svg>
             </button>
           )}
+          <button className="rr-info-btn rr-info-btn--hint" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+            !
+          </button>
         </div>
 
-        {!flipped && <p className="rr-sub-text">Tap the card to reveal your role</p>}
+        {!flipped && <p className="rr-sub-text">Tap to reveal your role</p>}
+        {flipped && !confirmed && <p className="rr-sub-text">Tap card again to hide it</p>}
         {flipped && confirmed && <p className="rr-waiting-text">Waiting for other players</p>}
 
         {/* Card with flip */}
-        <div className={`rr-card-container ${!flipped ? "rr-card-container--clickable" : ""}`} onClick={!flipped ? handleFlip : undefined}>
+        <div className="rr-card-container rr-card-container--clickable" onClick={handleFlip}>
           <div className={`rr-card-inner ${flipped ? "rr-card-inner--flipped" : ""}`}>
             {/* Front: card back */}
             <div className="rr-card-face rr-card-face--front">
@@ -255,6 +265,63 @@ function RoleReveal() {
             <button className="rr-modal-close" onClick={() => setShowSlackers(false)}>
               DISMISS
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Phase info modal */}
+      {showPhaseInfo && (
+        <div className="rr-modal-overlay" onClick={() => setShowPhaseInfo(false)}>
+          <div className="rr-phase-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="rr-phase-header">
+              <h2 className="rr-phase-title">ROLE REVEAL</h2>
+              <button className="rr-phase-close" onClick={() => setShowPhaseInfo(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="rr-phase-body">
+              <p className="rr-phase-flavor">Everyone secretly discovers who they are. Remember your role you'll need it.</p>
+
+              <div className="rr-phase-item">
+                <div>
+                  <span className="rr-phase-item-title"> 👁️👁️ REVEAL YOUR ROLE</span>
+                  <p className="rr-phase-item-desc">Tap the face-down card to flip it and see which role you've been assigned. This is your identity for the round.</p>
+                </div>
+              </div>
+
+              <div className="rr-phase-item">
+                <div>
+                  <span className="rr-phase-item-title"> 🫣 HIDE YOUR CARD</span>
+                  <p className="rr-phase-item-desc">Tap the card again to flip it back face-down. Useful if someone nearby is peeking at your screen.</p>
+                </div>
+              </div>
+
+              <div className="rr-phase-item">
+                <div>
+                  <span className="rr-phase-item-title"> ✅ CONFIRM READY</span>
+                  <p className="rr-phase-item-desc">Once you've memorized your role, hit the "I'M READY" button. The night phase begins when everyone confirms.</p>
+                </div>
+              </div>
+
+              <div className="rr-phase-item">
+                <div>
+                  <span className="rr-phase-item-title"> 🔢 PLAYER COUNTER</span>
+                  <p className="rr-phase-item-desc">The status bar shows how many players have confirmed. The red button reveals who's still not ready.</p>
+                </div>
+              </div>
+
+              <div className="rr-phase-item">
+                <div>
+                  <span className="rr-phase-item-title"> 🤫 KEEP IT SECRET</span>
+                  <p className="rr-phase-item-desc">Don't tell anyone your role. Not yet. The lying, bluffing, and accusing comes later during discussion.</p>
+                </div>
+              </div>
+            </div>
+            <div className="rr-phase-footer">
+              <button className="rr-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
+                GOT IT
+              </button>
+            </div>
           </div>
         </div>
       )}

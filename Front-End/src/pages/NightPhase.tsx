@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ComponentType } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
+
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { API_URL } from "../config";
@@ -91,6 +92,9 @@ function NightPhase() {
   const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
+
+  // Phase info modal
+  const [showPhaseInfo, setShowPhaseInfo] = useState(false);
 
   // Clone two-phase state
   const [cloneResult, setCloneResult] = useState<CloneResult | null>(null);
@@ -261,8 +265,6 @@ function NightPhase() {
       actionResultRef.current = result;
       setActionDone(true);
       setIsMyTurn(false);
-      // Don't null cloneResult — CloneAction needs it to stay in Phase 2
-      // setCloneResult(null);
       setRoleTimer(0);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
@@ -449,6 +451,9 @@ function NightPhase() {
               <div className="np-header-divider" />
               <p className="np-role-label">{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>
             </div>
+            <button className="np-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+              !
+            </button>
           </div>
 
           {/* Timer bar — only when it's your turn */}
@@ -484,6 +489,63 @@ function NightPhase() {
             )}
           </div>
         </>
+      )}
+
+      {/* ===== PHASE INFO MODAL ===== */}
+      {showPhaseInfo && (
+        <div className="np-phase-overlay" onClick={() => setShowPhaseInfo(false)}>
+          <div className="np-phase-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="np-phase-header">
+              <h2 className="np-phase-title-modal">NIGHT PHASE</h2>
+              <button className="np-phase-close" onClick={() => setShowPhaseInfo(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="np-phase-body">
+              <p className="np-phase-flavor">The village sleeps. Roles wake one by one to perform their secret actions.</p>
+
+              <div className="np-phase-item">
+                <div>
+                  <span className="np-phase-item-title">YOUR ACTION</span>
+                  <p className="np-phase-item-desc">When it's your turn, perform your role's unique ability. Each role has a limited time window to act before the game auto-performs for you.</p>
+                </div>
+              </div>
+
+              <div className="np-phase-item">
+                <div>
+                  <span className="np-phase-item-title">PLAYER CIRCLE</span>
+                  <p className="np-phase-item-desc">All other players' cards are spread around you face-down. Tap on them to interact based on your role's ability.</p>
+                </div>
+              </div>
+
+              <div className="np-phase-item">
+                <div>
+                  <span className="np-phase-item-title">ACTIVE ROLE TRACKER</span>
+                  <p className="np-phase-item-desc">The face-up card at the bottom shows which role is currently acting. Roles are called in a fixed order from Werewolf to Joker.</p>
+                </div>
+              </div>
+
+              <div className="np-phase-item">
+                <div>
+                  <span className="np-phase-item-title">ROLE DETAILS</span>
+                  <p className="np-phase-item-desc">Tap the face-up active role card to open a detail view and check what that role's ability does.</p>
+                </div>
+              </div>
+
+              <div className="np-phase-item">
+                <div>
+                  <span className="np-phase-item-title">TIMER</span>
+                  <p className="np-phase-item-desc">When it's your turn a timer bar appears at the top. If time runs out, the game picks a random valid action for you.</p>
+                </div>
+              </div>
+            </div>
+            <div className="np-phase-footer">
+              <button className="np-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
+                GOT IT
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

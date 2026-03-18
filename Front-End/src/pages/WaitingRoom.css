@@ -189,10 +189,17 @@
 .wr-title-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
   margin-bottom: clamp(16px, 2vw, 24px);
   position: relative;
+}
+
+.wr-title-btn--left,
+.wr-title-btn--right {
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
 }
 
 .wr-title {
@@ -204,11 +211,6 @@
   text-align: center;
   text-shadow: 0 0 30px rgba(201, 168, 76, 0.2);
   font-family: var(--font-display);
-}
-
-.wr-title-row .wr-settings-btn {
-  position: absolute;
-  right: 0;
 }
 
 /* ===== SETTINGS BUTTON (gear icon) ===== */
@@ -233,6 +235,76 @@
 .wr-settings-btn:hover {
   border-color: var(--color-gold);
   transform: rotate(45deg);
+}
+
+/* ===== HINT BUTTON (!) ===== */
+.wr-hint-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  color: var(--color-gold);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 400;
+  padding: 0;
+  transition:
+    border-color 0.25s ease,
+    color 0.25s ease;
+}
+
+.wr-hint-btn:hover {
+  border-color: var(--color-gold);
+}
+
+.wr-hint-btn--pulse {
+  animation: hintPulse 2s ease-in-out infinite;
+}
+
+@keyframes hintPulse {
+  0%,
+  100% {
+    border-color: var(--color-border);
+    box-shadow: 0 0 0 0 rgba(201, 168, 76, 0);
+  }
+  50% {
+    border-color: var(--color-gold);
+    box-shadow: 0 0 12px 3px rgba(201, 168, 76, 0.35);
+  }
+}
+
+/* ===== SETTINGS TOGGLE ===== */
+.wr-settings-toggle-row {
+  margin-top: 8px;
+}
+
+.wr-settings-toggle {
+  padding: 8px 20px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  font-family: var(--font-display);
+  background-color: rgba(201, 168, 76, 0.03);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 4px;
+  color: #5a4a30;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wr-settings-toggle:hover {
+  border-color: #3d2e1a;
+}
+
+.wr-settings-toggle--active {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+  background-color: rgba(201, 168, 76, 0.1);
 }
 
 /* ===== CODE SECTION ===== */
@@ -848,6 +920,10 @@
     color: #ffc800;
     font-size: 80%;
     text-shadow: 0 0 12px rgba(201, 168, 76, 0.3);
+    background-color: rgba(0, 0, 0, 0.45);
+    padding: 10px 14px;
+    border-radius: 4px;
+    border: 1px solid rgba(201, 168, 76, 0.12);
   }
 
   /* Player section */
@@ -890,20 +966,20 @@
   }
 
   .wr-start-btn:disabled {
-    border-color: rgba(80, 70, 55, 0.25);
-    color: rgba(240, 230, 208, 0.25);
+    border-color: rgba(201, 168, 76, 0.2);
+    color: rgba(201, 168, 76, 0.4);
   }
 
   /* Ready button */
   .wr-ready-btn {
     background-color: rgba(0, 0, 0, 0.5);
-    border-color: rgba(240, 230, 208, 0.2);
-    color: rgba(240, 230, 208, 0.65);
+    border-color: rgba(109, 214, 109, 0.3);
+    color: #6dd66d;
   }
 
   .wr-ready-btn:hover {
-    border-color: rgba(109, 214, 109, 0.3);
-    color: rgba(240, 230, 208, 0.65);
+    border-color: rgba(109, 214, 109, 0.45);
+    color: #80e680;
     background-color: rgba(0, 0, 0, 0.5);
   }
 
@@ -922,28 +998,39 @@
   /* Leave button */
   .wr-leave-btn {
     background-color: rgba(0, 0, 0, 0.35);
-    border-color: rgba(232, 112, 112, 0.2);
-    color: rgba(232, 112, 112, 0.55);
+    border-color: rgba(232, 112, 112, 0.35);
+    color: #e87070;
   }
 
   .wr-leave-btn:hover {
-    border-color: rgba(232, 112, 112, 0.45);
-    color: #e87070;
-    background-color: rgba(232, 112, 112, 0.06);
+    border-color: rgba(232, 112, 112, 0.55);
+    color: #f09090;
+    background-color: rgba(232, 112, 112, 0.1);
   }
 
   /* Error message */
   .wr-error-message {
-    background-color: rgba(180, 70, 70, 0.2);
-    border-color: rgba(232, 112, 112, 0.35);
+    background-color: rgba(180, 70, 70, 0.25);
+    border-color: rgba(232, 112, 112, 0.45);
     color: #f09090;
   }
 
-  /* Settings button on mobile */
+  /* Settings & hint buttons on mobile */
   .wr-settings-btn {
     width: 32px;
     height: 32px;
     border-color: rgba(201, 168, 76, 0.35);
+  }
+
+  .wr-hint-btn {
+    border-color: rgba(201, 168, 76, 0.35);
+  }
+
+  .wr-title-btn--left,
+  .wr-title-btn--right {
+    flex: 0 0 32px;
+    width: 32px;
+    height: 32px;
   }
 }
 
@@ -971,5 +1058,9 @@
     opacity: 1 !important;
     transform: none !important;
     transition: none !important;
+  }
+
+  .wr-hint-btn--pulse {
+    animation: none !important;
   }
 }

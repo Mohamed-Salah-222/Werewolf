@@ -63,6 +63,7 @@ function Discussion() {
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [showResult, setShowResult] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useLeaveWarning(true);
@@ -116,12 +117,14 @@ function Discussion() {
       <div className="disc-vignette" />
 
       <div className="disc-content">
+        <button className="disc-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+          !
+        </button>
+
         <h1 className="disc-title">DISCUSSION</h1>
 
         {/* Voice Chat */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-          {/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}
-        </div>
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>{/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}</div>
 
         {/* Timer */}
         <div className="disc-timer-section">
@@ -172,6 +175,49 @@ function Discussion() {
           </button>
         )}
       </div>
+
+      {/* Phase info modal */}
+      {showPhaseInfo && (
+        <div className="disc-phase-overlay" onClick={() => setShowPhaseInfo(false)}>
+          <div className="disc-phase-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="disc-phase-header">
+              <h2 className="disc-phase-title-modal">DISCUSSION</h2>
+              <button className="disc-phase-close" onClick={() => setShowPhaseInfo(false)}>
+                ✕
+              </button>
+            </div>
+            <div className="disc-phase-body">
+              <p className="disc-phase-flavor">The village is awake. Time to find the wolves or throw everyone off your trail.</p>
+
+              <div className="disc-phase-item">
+                <div>
+                  <span className="disc-phase-item-title">TALK IT OUT</span>
+                  <p className="disc-phase-item-desc">This is where everyone discusses, accuses, defends, and bluffs. Use what you learned during the night to figure out who the werewolves are or mislead the village if you are one.</p>
+                </div>
+              </div>
+
+              <div className="disc-phase-item">
+                <div>
+                  <span className="disc-phase-item-title">NIGHT RECAP</span>
+                  <p className="disc-phase-item-desc">Tap "SHOW NIGHT RECAP" to review your role and what happened during your night action. Only you can see your own recap.</p>
+                </div>
+              </div>
+
+              <div className="disc-phase-item">
+                <div>
+                  <span className="disc-phase-item-title">TIMER</span>
+                  <p className="disc-phase-item-desc">The circular timer counts down the discussion period. When it hits zero, voting begins automatically. The host can skip to vote early if everyone is ready.</p>
+                </div>
+              </div>
+            </div>
+            <div className="disc-phase-footer">
+              <button className="disc-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
+                GOT IT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

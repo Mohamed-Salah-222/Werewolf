@@ -5,6 +5,7 @@ import { API_URL } from "../config";
 import { clearSession } from "../utils/gameSession";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
+import HowToPlay from "../components/HowToPlay";
 // import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
@@ -34,6 +35,7 @@ type TimerOption = (typeof TimerOption)[keyof typeof TimerOption];
 
 interface Settings {
   timer: TimerOption;
+  showHint: boolean;
 }
 
 interface GridCard {
@@ -82,7 +84,7 @@ function WaitingRoom() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
 
-  const [settings, setSettings] = useState<Settings>(state?.settings || { timer: DEFAULT_TIMER });
+  const [settings, setSettings] = useState<Settings>(state?.settings || { timer: DEFAULT_TIMER, showHint: true });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const [players, setPlayers] = useState<PlayerStatus[]>([]);
@@ -93,6 +95,12 @@ function WaitingRoom() {
   const [startError, setStartError] = useState<string | null>(null);
   const [cardCount, setCardCount] = useState(42);
   const [hostId, setHostId] = useState<string>("");
+
+  // How to play modal state
+  const [htpOpen, setHtpOpen] = useState(false);
+  const [htpPulsing, setHtpPulsing] = useState(() => {
+    return sessionStorage.getItem("wr_htp_seen") !== "true";
+  });
 
   // Mount animation state
   const [mounted, setMounted] = useState(false);
@@ -326,6 +334,14 @@ function WaitingRoom() {
     [selectedPileCard],
   );
 
+  const handleHintClick = useCallback(() => {
+    setHtpOpen(true);
+    if (htpPulsing) {
+      setHtpPulsing(false);
+      sessionStorage.setItem("wr_htp_seen", "true");
+    }
+  }, [htpPulsing]);
+
   // ===== DERIVED =====
 
   const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
@@ -361,15 +377,20 @@ function WaitingRoom() {
       {/* ===== MIDDLE: WAITING ROOM ===== */}
       <div className="wr-center">
         <div className="wr-title-row wr-anim-title">
-          <h1 className="wr-title">WAITING ROOM</h1>
-          {isHost && (
-            <button className="wr-settings-btn" onClick={() => setSettingsModalOpen(true)} aria-label="Settings">
+          {isHost ? (
+            <button className="wr-settings-btn wr-title-btn--left" onClick={() => setSettingsModalOpen(true)} aria-label="Settings">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
             </button>
+          ) : (
+            <div className="wr-title-btn--left" />
           )}
+          <h1 className="wr-title">WAITING ROOM</h1>
+          <button className={`wr-hint-btn wr-title-btn--right${htpPulsing && settings.showHint ? " wr-hint-btn--pulse" : ""}`} onClick={handleHintClick} aria-label="How to play">
+            !
+          </button>
         </div>
 
         <div className="wr-code-section wr-anim-code">
@@ -451,6 +472,24 @@ function WaitingRoom() {
                   ))}
                 </div>
               </div>
+              <div className="wr-settings-option" style={{ marginTop: "20px" }}>
+                {/* <span className="wr-settings-option-label">HELP HINTS</span> */}
+                {/* <span className="wr-settings-option-hint">Pulse the help button for new players</span> */}
+                <div className="wr-settings-toggle-row">
+                  {/* <button
+                    className={`wr-settings-toggle ${settings.showHint ? "wr-settings-toggle--active" : ""}`}
+                    onClick={() => {
+                      setSettings((prev) => {
+                        const updated = { ...prev, showHint: !prev.showHint };
+                        settingsRef.current = updated;
+                        return updated;
+                      });
+                    }}
+                  >
+                    {settings.showHint ? "ON" : "OFF"}
+                  </button> */}
+                </div>
+              </div>
             </div>
             <div className="wr-settings-footer">
               <button className="wr-settings-cancel" onClick={() => setSettingsModalOpen(false)}>
@@ -463,6 +502,9 @@ function WaitingRoom() {
           </div>
         </div>
       )}
+
+      {/* ===== HOW TO PLAY MODAL ===== */}
+      {htpOpen && <HowToPlay onClose={() => setHtpOpen(false)} />}
 
       {/* ===== RIGHT: REVEALED CARD ===== */}
       <div className="wr-reveal">
