@@ -85,7 +85,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       });
 
       socket.emit(
-        "rejoinGame" as "joinGame",
+        "rejoinGame",
         {
           gameCode: saved.gameCode,
           playerId: saved.playerId,

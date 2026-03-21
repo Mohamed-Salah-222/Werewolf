@@ -11,7 +11,7 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
       id: r.id,
       label: `Ground Card ${index + 1}`,
     }));
-    io.to(gameCode).emit("groundCards" as any, { cards: groundCardIds });
+    io.to(gameCode).emit("groundCards", { cards: groundCardIds });
   });
 
   // Listen for role action queue
@@ -23,7 +23,7 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   // Night role progress — fires for EVERY role in the queue (UI only)
   game.on("nightRoleProgress", (data: { roleName: string; seconds: number }) => {
     console.log(`🌙 Emitting nightRoleProgress to ${gameCode}:`, data.roleName, `${data.seconds}s`);
-    io.to(gameCode).emit("nightRoleProgress" as any, data);
+    io.to(gameCode).emit("nightRoleProgress", data);
   });
 
   // Listen for next action
@@ -62,7 +62,7 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
 
   // Role timer info
   game.on("roleTimer", (data: { roleName: string; seconds: number }) => {
-    io.to(gameCode).emit("roleTimer" as any, data);
+    io.to(gameCode).emit("roleTimer", data);
   });
 
   // Auto action result — send to specific player
@@ -84,7 +84,8 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
     const sockets = io.sockets.sockets;
     for (const [, s] of sockets) {
       if (s.rooms.has(gameCode) && (s as any).playerId === data.playerId) {
-        s.emit("cloneInsomniacResult" as any, data.result);
+        s.emit("cloneInsomniacResult", data.result);
+
         break;
       }
     }

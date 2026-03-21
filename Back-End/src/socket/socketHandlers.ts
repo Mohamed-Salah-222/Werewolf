@@ -113,7 +113,7 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     });
 
     // REJOIN GAME
-    socket.on("rejoinGame" as any, (data: { gameCode: string; playerId: string; playerName: string }, callback: (response: any) => void) => {
+    socket.on("rejoinGame", (data: { gameCode: string; playerId: string; playerName: string }, callback: (response: any) => void) => {
       try {
         const { gameCode, playerId, playerName } = data;
 
@@ -257,7 +257,6 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
           socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
           console.log("host only");
           return;
-
         }
         console.log("settings updated by player", player.name, settings);
 
