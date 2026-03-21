@@ -172,10 +172,11 @@ function NightPhase() {
       setQueueTimer(data.seconds);
 
       if (queueTimerRef.current) clearInterval(queueTimerRef.current);
-      let remaining = data.seconds;
+      const slotStartedAt = Date.now();
       queueTimerRef.current = setInterval(() => {
-        remaining--;
-        setQueueTimer(Math.max(remaining, 0));
+        const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
+        const remaining = Math.max(data.seconds - elapsed, 0);
+        setQueueTimer(remaining);
         if (remaining <= 0 && queueTimerRef.current) {
           clearInterval(queueTimerRef.current);
         }
@@ -230,9 +231,10 @@ function NightPhase() {
         timerMaxRef.current = data.seconds;
         setRoleTimer(data.seconds);
         if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-        let remaining = data.seconds;
+        const slotStartedAt = Date.now();
         timerIntervalRef.current = setInterval(() => {
-          remaining--;
+          const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
+          const remaining = Math.max(data.seconds - elapsed, 0);
           setRoleTimer(remaining);
           if (remaining <= 0 && timerIntervalRef.current) {
             clearInterval(timerIntervalRef.current);

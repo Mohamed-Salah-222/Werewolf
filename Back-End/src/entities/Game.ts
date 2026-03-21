@@ -353,21 +353,9 @@ export class Game extends EventEmitter {
     }
 
     const timerSeconds = this.roleTimers.get(nextRole) || 10;
-
-    // Find players who should act for this role slot (by original role)
     const playersWithRole = this.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
 
     this.currentActiveRole = nextRole;
-    this.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
-
-    if (playersWithRole.length > 0) {
-      console.log(`📢 Role slot: ${nextRole} (${playersWithRole.length} players) — ${timerSeconds}s`);
-      this.newEmit("roleActionQueue", nextRole);
-    } else {
-      console.log(`⏭️ Role slot: ${nextRole} — no players, waiting ${timerSeconds}s`);
-    }
-
-    this.newEmit("roleTimer", { roleName: nextRole, seconds: timerSeconds });
 
     // Handle Clone→Insomniac: when Insomniac slot fires, auto-perform for clones who copied Insomniac
     if (nextRole.toLowerCase() === "insomniac") {
@@ -387,14 +375,12 @@ export class Game extends EventEmitter {
             message: hasChanged ? `Your role changed from Insomniac to ${currentRole.name}!` : "Your role is still Insomniac — no one swapped you.",
           };
 
-          // Update the stored result
           (player as any).lastActionResult = {
             ...(player as any).lastActionResult,
             insomniacResult: result,
             message: result.message,
           };
 
-          // Emit to the specific player
           this.newEmit("cloneInsomniacResult", { playerId: player.id, result });
         } catch (error: any) {
           console.error(`Error performing Clone-Insomniac check for ${player.name}:`, error.message);
@@ -402,6 +388,7 @@ export class Game extends EventEmitter {
       });
     }
 
+    // Start server timer FIRST — before emitting to clients
     this.roleSlotTimer = setTimeout(() => {
       if (playersWithRole.length > 0) {
         playersWithRole.forEach((player) => {
@@ -420,6 +407,18 @@ export class Game extends EventEmitter {
 
       this.advanceToNextRole();
     }, timerSeconds * 1000);
+
+    // THEN emit to clients — bar animation starts after server countdown has begun
+    this.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
+
+    if (playersWithRole.length > 0) {
+      console.log(`📢 Role slot: ${nextRole} (${playersWithRole.length} players) — ${timerSeconds}s`);
+      this.newEmit("roleActionQueue", nextRole);
+    } else {
+      console.log(`⏭️ Role slot: ${nextRole} — no players, waiting ${timerSeconds}s`);
+    }
+
+    this.newEmit("roleTimer", { roleName: nextRole, seconds: timerSeconds });
   }
 
   private roleTimers: Map<string, number> = new Map([
@@ -526,9 +525,9 @@ export class Game extends EventEmitter {
 
   startDay() {
     this.phase = Phase.Discussion;
-
     this.startedAt = Date.now();
-    this.currentTimerSec = this.timer * 60;
+    const totalSeconds = this.timer * 60;
+    this.currentTimerSec = totalSeconds;
 
     this.newEmit("dayStarted", {
       timer: this.timer,
@@ -536,20 +535,17 @@ export class Game extends EventEmitter {
       startedAt: this.startedAt,
     });
 
-    const tick = () => {
-      this.currentTimerSec--;
+    this.timerInterval = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - this.startedAt!) / 1000);
+      this.currentTimerSec = totalSeconds - elapsed;
 
       if (this.currentTimerSec <= 0) {
         this.currentTimerSec = 0;
+        clearInterval(this.timerInterval);
         this.newEmit("timerFinished");
         this.startVoting();
-        return;
       }
-
-      this.timerInterval = setTimeout(tick, 1000);
-    };
-
-    this.timerInterval = setTimeout(tick, 1000);
+    }, 1000);
   }
 
   skipToVote(playerId: PlayerId): void {
