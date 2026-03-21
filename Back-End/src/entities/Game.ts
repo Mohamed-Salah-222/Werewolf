@@ -513,7 +513,8 @@ export class Game extends EventEmitter {
       }
     });
     this.endedAt = Date.now();
-    this.newEmit("gameEnded", this.calculateResults(votes));
+    const result = this.calculateResults(votes);
+    this.newEmit("gameEnded", result);
     this.logger.info(`number of events: ${this.numberOfEvents}`);
   }
 
@@ -602,71 +603,67 @@ export class Game extends EventEmitter {
     return mapVotes;
   }
 
-  calculateResults(mapVotes: Map<PlayerId, number>): string {
-    let prev = 0;
-    let voted = "";
+  calculateResults(mapVotes: Map<PlayerId, number>): { winners: string; isDraw: boolean; eliminatedPlayerId: string | null } {
+    const maxVotes = Math.max(...Array.from(mapVotes.values()));
+    const topVoted = Array.from(mapVotes.entries()).filter(([_, count]) => count === maxVotes);
 
-    // need to check for draw
-    let drawCheck = 0;
+    // Draw — no elimination
+    if (topVoted.length > 1) {
+      // Check if ALL tied players are werewolves → villagers win
+      const tiedPlayerIds = topVoted.map(([id]) => id).filter((id) => id !== "noWerewolf");
+      const allWerewolves =
+        tiedPlayerIds.length > 0 &&
+        tiedPlayerIds.every((id) => {
+          const player = this.getPlayerById(id);
+          return player.getRole().name === "Werewolf";
+        });
 
-    mapVotes.forEach((value, key) => {
-      if (prev === value) {
-        prev = value;
-        drawCheck++;
+      if (allWerewolves) {
+        this.winners = Team.Heroes;
+      } else {
+        // Check if a Joker is among the tied
+        const jokerTied = tiedPlayerIds.some((id) => {
+          const player = this.getPlayerById(id);
+          return player.getRole().team === Team.Joker;
+        });
+
+        if (jokerTied) {
+          this.winners = Team.Joker;
+        } else {
+          this.winners = Team.Villains;
+        }
       }
 
-      if (prev < value) {
-        prev = value;
-        voted = key;
-      }
-    });
+      return { winners: this.winners, isDraw: true, eliminatedPlayerId: null };
+    }
+
+    // Single top-voted target
+    const voted = topVoted[0][0];
 
     if (voted === "noWerewolf") {
       for (const player of this.players) {
         if (player.getRole().name === "Werewolf") {
           this.winners = Team.Villains;
-          return this.winners;
+          return { winners: this.winners, isDraw: false, eliminatedPlayerId: null };
         }
       }
       this.winners = Team.Heroes;
-      console.log("how?");
-      return this.winners;
+      return { winners: this.winners, isDraw: false, eliminatedPlayerId: null };
     }
 
-    let votedPlayerRole = this.getPlayerById(voted).getRole();
-    if (drawCheck === mapVotes.size) {
-      console.log("drawCheck");
-      if (votedPlayerRole.team === Team.Joker) {
-        this.winners = Team.Joker;
-        console.log("winner is the joker wwith draw");
-        return this.winners;
-      }
+    const votedPlayerRole = this.getPlayerById(voted).getRole();
 
-      console.log("drawCheck2");
-      this.winners = Team.Villains;
-      return this.winners;
-    }
-
-    if (votedPlayerRole.team === Team.Villains) {
-      this.winners = Team.Heroes;
-      console.log("winner is the heroes");
-    } else {
-      this.winners = Team.Villains;
-      console.log("winner is the villains");
-    }
-
-    if (votedPlayerRole.name === "Minion" || votedPlayerRole.name === "minion") {
-      this.winners = Team.Villains;
-      console.log("winner is the minion");
-    }
     if (votedPlayerRole.team === Team.Joker) {
       this.winners = Team.Joker;
-      console.log("winner is the joker");
+    } else if (votedPlayerRole.name === "Minion") {
+      this.winners = Team.Villains;
+    } else if (votedPlayerRole.team === Team.Villains) {
+      this.winners = Team.Heroes;
+    } else {
+      this.winners = Team.Villains;
     }
 
-    console.log(`winners: ${this.winners}`);
-    this.logger.info(`winners: ${this.winners}`);
-    return this.winners;
+    return { winners: this.winners, isDraw: false, eliminatedPlayerId: voted };
   }
 
   restart(): void {

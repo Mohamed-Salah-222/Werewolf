@@ -63,10 +63,11 @@ function Vote() {
       });
     });
 
-    socket.on("gameEnded", (data: { winners: string; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory?: Array<{ role: string; playerName: string; description: string }> }) => {
-      console.log("gameEnded data:", JSON.stringify(data));
+    socket.on("gameEnded", (data: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory?: Array<{ role: string; playerName: string; description: string }> }) => {
+      //---- debug
+      // console.log("gameEnded data:", JSON.stringify(data));
       navigate(`/results/${gameCode}`, {
-        state: { playerName, playerId, isHost, winners: data.winners, votes: data.votes, playerRoles: data.playerRoles, actionHistory: data.actionHistory || [] },
+        state: { playerName, playerId, isHost, winners: data.winners, isDraw: data.isDraw, eliminatedPlayerId: data.eliminatedPlayerId, votes: data.votes, playerRoles: data.playerRoles, actionHistory: data.actionHistory || [] },
       });
     });
 

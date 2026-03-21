@@ -16,6 +16,8 @@ interface LocationState {
   playerId: string;
   isHost: boolean;
   winners: string;
+  isDraw: boolean;
+  eliminatedPlayerId: string | null;
   votes: Array<{ voter: string; vote: string }>;
   playerRoles: Array<{ playerId: string; name: string; role: string }>;
   actionHistory?: ActionHistoryItem[];
@@ -50,6 +52,8 @@ function Results() {
   const playerId = state?.playerId || "";
   const isHost = state?.isHost || false;
   const winners = state?.winners || "";
+  const isDraw = state?.isDraw || false;
+  const eliminatedPlayerId = state?.eliminatedPlayerId || null;
   const votes = state?.votes || [];
   const playerRoles = state?.playerRoles || [];
   const actionHistory = state?.actionHistory || [];
@@ -83,22 +87,8 @@ function Results() {
     socket.emit("restartGame", { gameCode });
   };
 
-  const voteCounts = new Map<string, number>();
-  votes.forEach((v) => {
-    voteCounts.set(v.vote, (voteCounts.get(v.vote) || 0) + 1);
-  });
-
-  let mostVotedId = "";
-  let maxVotes = 0;
-  voteCounts.forEach((count, id) => {
-    if (count > maxVotes) {
-      maxVotes = count;
-      mostVotedId = id;
-    }
-  });
-
-  const isNoWerewolfVote = mostVotedId === "noWerewolf";
-  const mostVotedPlayer = isNoWerewolfVote ? null : playerRoles.find((p) => p.playerId === mostVotedId);
+  const isNoWerewolfVote = !isDraw && !eliminatedPlayerId;
+  const mostVotedPlayer = eliminatedPlayerId ? playerRoles.find((p) => p.playerId === eliminatedPlayerId) : null;
   const myRole = playerRoles.find((p) => p.playerId === playerId);
 
   const didIWin = () => {
@@ -139,15 +129,18 @@ function Results() {
           <p className="res-personal-result">{didIWin() ? "You won" : "You lost"}</p>
         </div>
 
-        {/* Eliminated */}
-        {isNoWerewolfVote ? (
+        {/* Eliminated / Draw / No Werewolf */}
+        {isDraw ? (
+          <div className="res-eliminated">
+            <p className="res-eliminated-label">VOTE RESULT</p>
+            <p className="res-eliminated-name">Draw</p>
+            <p className="res-eliminated-role res-color--neutral">No one was eliminated</p>
+          </div>
+        ) : isNoWerewolfVote ? (
           <div className="res-eliminated">
             <p className="res-eliminated-label">VILLAGE DECISION</p>
             <p className="res-eliminated-name">No Werewolf</p>
             <p className="res-eliminated-role res-color--neutral">The village believes all werewolves are on the ground</p>
-            <p className="res-eliminated-votes">
-              {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
-            </p>
           </div>
         ) : (
           mostVotedPlayer && (
@@ -155,9 +148,6 @@ function Results() {
               <p className="res-eliminated-label">ELIMINATED</p>
               <p className="res-eliminated-name">{mostVotedPlayer.name}</p>
               <p className={`res-eliminated-role ${getColorClass(mostVotedPlayer.role)}`}>{mostVotedPlayer.role}</p>
-              <p className="res-eliminated-votes">
-                {maxVotes} vote{maxVotes !== 1 ? "s" : ""}
-              </p>
             </div>
           )
         )}

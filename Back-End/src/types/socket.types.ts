@@ -120,6 +120,8 @@ export interface DiscussionStartedData {
 
 interface GameEndedData {
   winners: string;
+  isDraw: boolean;
+  eliminatedPlayerId: string | null;
   votes: Array<{ voter: string; vote: string }>;
   playerRoles: Array<{ playerId: string; name: string; role: string }>;
   actionHistory: Array<{ role: string; playerName: string; description: string }>;

@@ -47,9 +47,11 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
   });
 
   // When game ends
-  game.on("gameEnded", (winners: string) => {
+  game.on("gameEnded", (result: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null }) => {
     io.to(gameCode).emit("gameEnded", {
-      winners,
+      winners: result.winners,
+      isDraw: result.isDraw,
+      eliminatedPlayerId: result.eliminatedPlayerId,
       votes: game.votes,
       playerRoles: game.players.map((p) => ({
         playerId: p.id,
