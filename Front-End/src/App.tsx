@@ -23,8 +23,6 @@ function App() {
             <Route path="/vote/:gameCode" element={<Vote />} />
             <Route path="/results/:gameCode" element={<Results />} />
           </Routes>
-          <Routes>
-          </Routes>
         </VoiceProvider>
       </GameProvider>
     </BrowserRouter>

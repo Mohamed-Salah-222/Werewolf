@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
-import { useGame } from "../hooks/useGame";
+import { useGameStore } from "../store/gameStore";
+
 import { characters, type CharacterData } from "../characters";
 import "./HomePage.css";
 import HowToPlay from "../components/HowToPlay";
@@ -39,7 +40,8 @@ function emitJoinGame(gameCode: string, playerName: string): Promise<JoinRespons
 
 function HomePage() {
   const navigate = useNavigate();
-  const { setSession } = useGame();
+  const setSession = useGameStore((s) => s.setSession);
+  const setPhase = useGameStore((s) => s.setPhase);
 
   const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -136,14 +138,9 @@ function HomePage() {
           playerName: response.playerName || "",
           isHost: true,
         });
+        setPhase("waiting");
         setShowCreateModal(false);
-        navigate(`/waiting/${code}`, {
-          state: {
-            playerName: response.playerName,
-            playerId: response.playerId,
-            isHost: true,
-          },
-        });
+        navigate(`/waiting/${code}`);
       } else {
         setError(response.error || "Failed to join game");
       }
@@ -151,7 +148,7 @@ function HomePage() {
       setError("Could not connect to server");
       setLoading(false);
     }
-  }, [playerName, navigate, setSession]);
+  }, [playerName, navigate, setSession, setPhase]);
 
   const handleJoinGame = useCallback(async () => {
     if (playerName.trim().length < 2) {
@@ -177,14 +174,9 @@ function HomePage() {
           playerName: response.playerName || "",
           isHost: false,
         });
+        setPhase("waiting");
         setShowJoinModal(false);
-        navigate(`/waiting/${code}`, {
-          state: {
-            playerName: response.playerName,
-            playerId: response.playerId,
-            isHost: false,
-          },
-        });
+        navigate(`/waiting/${code}`);
       } else {
         setError(response.error || "Failed to join game");
       }
@@ -192,7 +184,7 @@ function HomePage() {
       setError("Could not connect to server");
       setLoading(false);
     }
-  }, [playerName, gameCode, navigate, setSession]);
+  }, [playerName, gameCode, navigate, setSession, setPhase]);
 
   return (
     <div className={`home-page ${mounted ? "home-page--mounted" : ""}`}>

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
-import { clearSession } from "../utils/gameSession";
+import { useGameStore } from "../store/gameStore";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
 import HowToPlay from "../components/HowToPlay";
@@ -14,13 +14,6 @@ import "./WaitingRoom.css";
 const MIN_PLAYERS = 6;
 
 // ===== TYPES =====
-
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  settings: Settings;
-}
 
 const TimerOption = {
   Short: 4,
@@ -76,15 +69,17 @@ function shuffleGridCards(): GridCard[] {
 
 function WaitingRoom() {
   const { gameCode } = useParams();
-  const location = useLocation();
+  const playerName = useGameStore((s) => s.playerName) || "Unknown";
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const setIsHost = useGameStore((s) => s.setIsHost);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const setRoleInfo = useGameStore((s) => s.setRoleInfo);
+  const reset = useGameStore((s) => s.reset);
+
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerName = state?.playerName || "Unknown";
-  const playerId = state?.playerId || "";
-  const [isHost, setIsHost] = useState(state?.isHost || false);
-
-  const [settings, setSettings] = useState<Settings>(state?.settings || { timer: DEFAULT_TIMER, showHint: true });
+  const [settings, setSettings] = useState<Settings>({ timer: DEFAULT_TIMER, showHint: true });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
   const [players, setPlayers] = useState<PlayerStatus[]>([]);
@@ -176,8 +171,18 @@ function WaitingRoom() {
           if (seededSet.has(playerId)) setPlayerReady(true);
         }
 
-        if (gameCode && playerId) {
-          socket.emit("rejoinGame", { gameCode, playerId, playerName }, () => {});
+        if (gameCode && playerName) {
+          socket.emit("joinGame", { gameCode, playerName }, (response: { success: boolean; playerId?: string; error?: string }) => {
+            if (response.success && response.playerId) {
+              // Update store in case playerId changed (re-added as new player)
+              useGameStore.getState().setSession({
+                gameCode: gameCode,
+                playerId: response.playerId,
+                playerName: playerName,
+                isHost: false,
+              });
+            }
+          });
         }
       } catch (err) {
         console.error("Failed to fetch players", err);
@@ -191,8 +196,8 @@ function WaitingRoom() {
   useEffect(() => {
     socket.on("playerKicked", (data: { kickedPlayerId: string }) => {
       if (data.kickedPlayerId === playerId) {
-        clearSession();
-        navigate("/", { state: { kicked: true } });
+        reset();
+        navigate("/");
       }
     });
 
@@ -241,22 +246,14 @@ function WaitingRoom() {
     });
 
     socket.on("gameStarted", () => {
-      navigate(`/role-reveal/${gameCode}`, { state: { playerName, playerId, isHost } });
+      setPhase("role");
+      navigate(`/role-reveal/${gameCode}`);
     });
 
     socket.on("roleReveal", (data: { playerId: string; roleName: string; roleTeam: string; roleDescription: string }) => {
-      navigate(`/role-reveal/${gameCode}`, {
-        state: {
-          playerName,
-          playerId,
-          isHost,
-          rejoinRoleInfo: {
-            roleName: data.roleName,
-            roleTeam: data.roleTeam,
-            roleDescription: data.roleDescription,
-          },
-        },
-      });
+      setRoleInfo({ roleName: data.roleName, roleTeam: data.roleTeam, roleDescription: data.roleDescription });
+      setPhase("role");
+      navigate(`/role-reveal/${gameCode}`);
     });
 
     return () => {
@@ -306,9 +303,9 @@ function WaitingRoom() {
 
   const handleLeave = useCallback(() => {
     socket.emit("leaveGame", { gameCode, playerId });
-    clearSession();
+    reset();
     navigate("/");
-  }, [gameCode, playerId, navigate]);
+  }, [gameCode, playerId, navigate, reset]);
 
   const handleKick = useCallback(
     (kickedPlayerId: string) => {
