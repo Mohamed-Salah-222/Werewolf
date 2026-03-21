@@ -4,6 +4,7 @@ import { SOCKET_EVENTS, ERROR_MESSAGES, VALIDATION, Phase } from "../config/cons
 import { ClientToServerEvents, ServerToClientEvents, JoinGameData, JoinGameResponse } from "../types/socket.types";
 import { PlayerId } from "../types/game.types";
 import { voiceRooms } from "../types/voice.types";
+import { Game } from "../entities/Game";
 
 export function initializeSocketHandlers(io: Server<ClientToServerEvents, ServerToClientEvents>, manager: Manager): void {
   io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {
@@ -12,6 +13,14 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
     // Store player info in socket data
     let currentGameCode: string | null = null;
     let currentPlayerId: PlayerId | null = null;
+
+    function transferHostIfNeeded(game: Game, removedPlayerId: string, gameCode: string) {
+      if (game.host === removedPlayerId && game.players.length > 0) {
+        game.host = game.players[0].id;
+        io.to(gameCode).emit("hostChanged", { newHostId: game.host });
+        console.log(`👑 Host transferred to ${game.players[0].name} (${game.host})`);
+      }
+    }
 
     // JOIN GAME
     socket.on("joinGame", (data: JoinGameData, callback) => {
@@ -277,10 +286,9 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         const player = game.getPlayerById(kickedPlayerId);
         if (!player) return;
 
-        // Remove player from game
         game.players = game.players.filter((p) => p.id !== player.id);
-
         game.readyPlayers.delete(kickedPlayerId);
+        transferHostIfNeeded(game, kickedPlayerId, gameCode);
 
         // Notify others
         io.to(gameCode).emit("playerKicked", {
@@ -313,12 +321,9 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         const player = game.players.find((p) => p.id === playerId);
         if (!player) return;
 
-        // Remove player from game
         game.players = game.players.filter((p) => p.id !== playerId);
-
         game.readyPlayers.delete(playerId);
-
-        // Leave socket room
+        transferHostIfNeeded(game, playerId, gameCode);
         socket.leave(gameCode);
 
         // Notify others
@@ -584,8 +589,9 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
             // Only remove player if game hasn't started yet
             if (game.phase === Phase.Waiting) {
               game.players = game.players.filter((p) => p.id !== currentPlayerId);
-
               game.readyPlayers.delete(currentPlayerId);
+
+              transferHostIfNeeded(game, currentPlayerId, currentGameCode);
 
               io.to(currentGameCode).emit("playerLeft", {
                 playerId: currentPlayerId,

@@ -82,7 +82,7 @@ function WaitingRoom() {
 
   const playerName = state?.playerName || "Unknown";
   const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
+  const [isHost, setIsHost] = useState(state?.isHost || false);
 
   const [settings, setSettings] = useState<Settings>(state?.settings || { timer: DEFAULT_TIMER, showHint: true });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
@@ -237,6 +237,7 @@ function WaitingRoom() {
 
     socket.on("hostChanged", (data: { newHostId: string }) => {
       setHostId(data.newHostId);
+      setIsHost(data.newHostId === playerId);
     });
 
     socket.on("gameStarted", () => {

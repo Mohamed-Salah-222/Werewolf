@@ -55,6 +55,7 @@ export interface ServerToClientEvents {
   nightRoleProgress: (data: { roleName: string; seconds: number }) => void;
   roleTimer: (data: { roleName: string; seconds: number }) => void;
   cloneInsomniacResult: (data: any) => void;
+  hostChanged: (data: { newHostId: string }) => void;
 }
 
 // Data structures
