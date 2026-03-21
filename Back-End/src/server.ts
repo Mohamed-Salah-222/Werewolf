@@ -16,8 +16,9 @@ const server = http.createServer(app);
 
 const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: {
-    origin: "*", // In production, specify your frontend URL
+    origin: process.env.NODE_ENV === "production" ? process.env.FRONTEND_URL : ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
