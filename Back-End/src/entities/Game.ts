@@ -34,6 +34,7 @@ export class Game extends EventEmitter {
   host: PlayerId;
   currentActiveRole: string = "";
   endedAt: number | null = null;
+  lastActivityAt: number = Date.now();
   actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
   private availableRoles: Role[] = [];
 
@@ -693,6 +694,7 @@ export class Game extends EventEmitter {
     this.availableRoles = this.createRoles();
     this.roleQueue = this.createRoleQueue();
     this.currentActiveRole = "";
+    this.lastActivityAt = Date.now();
 
     this.endedAt = null;
 
@@ -808,6 +810,7 @@ export class Game extends EventEmitter {
 
   newEmit(event: string, data?: any) {
     this.numberOfEvents++;
+    this.lastActivityAt = Date.now();
     this.emit(event, data);
   }
 }
