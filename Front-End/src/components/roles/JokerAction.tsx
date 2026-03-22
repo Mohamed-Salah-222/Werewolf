@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./JokerAction.css";
 
 // ===== TYPES =====
@@ -19,36 +21,6 @@ interface Props {
   actionResult?: JokerResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 // ===== COMPONENT =====
 
 function JokerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
@@ -58,7 +30,6 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
   const hasProcessedResult = useRef(!!actionResult);
   const hasAutoModalFired = useRef(false);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
@@ -74,7 +45,6 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
     if (actionResult.groundRole) {
       setRevealedRole(actionResult.groundRole);
 
-      // Auto-open modal after card flips
       setTimeout(() => {
         if (hasAutoModalFired.current) return;
         hasAutoModalFired.current = true;
@@ -114,44 +84,42 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
   const isClickable = !locked && !submitted;
 
   return (
-    <div className="jk-action">
-      <div className="jk-circle-area">
-        {/* Player cards around the circle */}
+    <div className="role-action">
+      <div className="role-circle-area">
         {players.map((player, i) => {
           const isSelf = player.id === playerId;
           const pos = positions[i];
 
           return (
-            <div key={player.id} className={`jk-slot ${isSelf ? "jk-slot--self" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
-              <span className={`jk-name ${isSelf ? "jk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+            <div key={player.id} className={`role-slot ${isSelf ? "role-slot--self" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <span className={`role-name ${isSelf ? "role-name--self jk-name--self" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`jk-flip ${isSelf ? "jk-flip--up" : ""}${isSelf ? " jk-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("joker"), "Joker", "You") : undefined}>
-                <div className="jk-flip-inner">
-                  <div className="jk-flip-face jk-flip-face--back">
+              <div className={`role-flip ${isSelf ? "role-flip--up" : ""}${isSelf ? " role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("joker"), "Joker", "You") : undefined}>
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="jk-flip-face jk-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("joker") : backCardImage} alt={isSelf ? "Joker" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {isSelf && <div className="jk-glow jk-glow--gold jk-glow--subtle" />}
+              {isSelf && <div className="role-glow role-glow--subtle-gold" />}
             </div>
           );
         })}
 
-        {/* Ground cards in the center */}
-        <div className="jk-ground">
+        <div className="role-ground">
           {groundCards.slice(0, 3).map((gc) => {
             const isSelected = gc.id === selectedGroundId;
             const isRevealed = isSelected && !!revealedRole;
             const canClick = isClickable;
 
             return (
-              <div key={gc.id} className={`jk-ground-card ${canClick ? "jk-ground-card--clickable" : ""} ${isRevealed ? "jk-ground-card--revealed" : ""}`} onClick={() => canClick && handleGroundClick(gc.id)}>
+              <div key={gc.id} className={`role-ground-card ${canClick ? "role-ground-card--clickable jk-ground-card--clickable" : ""} ${isRevealed ? "role-ground-card--revealed" : ""}`} onClick={() => canClick && handleGroundClick(gc.id)}>
                 <div
-                  className={`jk-flip jk-flip--ground ${isRevealed ? "jk-flip--up" : ""}${isRevealed ? " jk-flip--tappable" : ""}`}
+                  className={`role-flip role-flip--ground ${isRevealed ? "role-flip--up" : ""}${isRevealed ? " role-flip--tappable" : ""}`}
                   onClick={
                     isRevealed
                       ? (e) => {
@@ -161,38 +129,35 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
                       : undefined
                   }
                 >
-                  <div className="jk-flip-inner">
-                    <div className="jk-flip-face jk-flip-face--back">
+                  <div className="role-flip-inner">
+                    <div className="role-flip-face role-flip-face--back">
                       <img src={backCardImage} alt="Ground card" draggable={false} />
                     </div>
-                    <div className="jk-flip-face jk-flip-face--front">
+                    <div className="role-flip-face role-flip-face--front">
                       <img src={isRevealed ? getSquareImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
                     </div>
                   </div>
                 </div>
-                {isRevealed && <div className="jk-glow jk-glow--gold" />}
+                {isRevealed && <div className="role-glow role-glow--gold" />}
               </div>
             );
           })}
         </div>
 
-        {/* Center hints */}
         {!submitted && (
-          <div className="jk-center-hint">
-            <span className="jk-hint-text">PEEK AT A GROUND CARD</span>
+          <div className="role-center-hint">
+            <span className="role-hint-text">PEEK AT A GROUND CARD</span>
           </div>
         )}
         {submitted && !revealedRole && (
-          <div className="jk-center-hint">
-            <span className="jk-hint-text">PEEKING...</span>
+          <div className="role-center-hint">
+            <span className="role-hint-text">PEEKING...</span>
           </div>
         )}
       </div>
 
-      {/* Bottom */}
-      <div className="jk-bottom">{locked ? <span className="jk-bottom-status">WAITING FOR YOUR TURN...</span> : !submitted ? <span className="jk-bottom-hint">Tap a ground card to see what it is</span> : !revealedRole ? <span className="jk-bottom-status">PEEKING...</span> : <span className="jk-bottom-status jk-bottom-status--done">You saw a {revealedRole}</span>}</div>
+      <div className="role-bottom">{locked ? <span className="role-bottom-status">WAITING FOR YOUR TURN...</span> : !submitted ? <span className="role-bottom-hint">Tap a ground card to see what it is</span> : !revealedRole ? <span className="role-bottom-status">PEEKING...</span> : <span className="role-bottom-status role-bottom-status--done">You saw a {revealedRole}</span>}</div>
 
-      {/* Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
 import HowToPlay from "../components/HowToPlay";
 // import VoiceChat from "../components/VoiceChat";
@@ -109,8 +108,6 @@ function WaitingRoom() {
   const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
-
-  useLeaveWarning(true);
 
   // Trigger mount animation
   useEffect(() => {

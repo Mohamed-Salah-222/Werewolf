@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./DrunkAction.css";
 
 // ===== TYPES =====
@@ -19,36 +21,6 @@ interface Props {
   actionResult?: DrunkResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 type Phase = "idle" | "submitted" | "swap" | "done";
 
 // ===== COMPONENT =====
@@ -60,7 +32,6 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
   const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
   const hasProcessedResult = useRef(isRejoin);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
@@ -72,7 +43,6 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
   const visibleGround = groundCards.slice(0, 3);
 
-  // Ground card positions as percentages within circle area
   const groundPositions: Array<{ x: number; y: number }> = visibleGround.map((_, idx) => {
     const spacing = 16;
     const startX = 50 - ((visibleGround.length - 1) * spacing) / 2;
@@ -81,15 +51,33 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
   const selectedGroundIndex = selectedGroundId ? visibleGround.findIndex((gc) => gc.id === selectedGroundId) : -1;
 
-  // Process result — trigger swap animation
+  // Process result — handles both manual and auto-action
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
     if (phase === "done") return;
 
-    setPhase("swap");
-    setTimeout(() => setPhase("done"), 900);
-  }, [actionResult, phase]);
+    const isAutoAction = !selectedGroundId;
+
+    if (isAutoAction) {
+      // Server auto-picked — pick a random ground card visually
+      const randomGround = visibleGround[Math.floor(Math.random() * visibleGround.length)];
+      if (randomGround) {
+        setSelectedGroundId(randomGround.id);
+      }
+      // Lock clicks and let the card render at original position first
+      setPhase("submitted");
+
+      setTimeout(() => {
+        setPhase("swap");
+        setTimeout(() => setPhase("done"), 900);
+      }, 100);
+    } else {
+      // Manual action — go straight to swap
+      setPhase("swap");
+      setTimeout(() => setPhase("done"), 900);
+    }
+  }, [actionResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleGroundClick = (groundId: string) => {
     if (locked || phase !== "idle") return;
@@ -112,7 +100,6 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
   const shouldSwap = phase === "swap" || phase === "done";
 
-  // Position getters — exact same pattern as Troublemaker
   const getSelfPos = (): { x: number; y: number } => {
     if (shouldSwap && selectedGroundIndex >= 0) {
       return groundPositions[selectedGroundIndex];
@@ -128,9 +115,9 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
   };
 
   return (
-    <div className="dk-action">
-      <div className="dk-circle-area">
-        {/* ===== Player slots ===== */}
+    <div className="role-action">
+      <div className="role-circle-area dk-circle-area">
+        {/* Player slots */}
         {players.map((player, i) => {
           const isSelf = player.id === playerId;
           const pos = isSelf ? getSelfPos() : playerPositions[i];
@@ -138,18 +125,18 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
           return (
             <div key={player.id} className={`dk-slot ${isSelf ? "dk-slot--self" : ""} ${isSwapping ? "dk-slot--swapping" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
-              <span className={`dk-name ${isSelf ? "dk-name--self" : ""}`}>{isSelf ? (shouldSwap ? "" : "YOU") : player.name}</span>
+              <span className={`role-name ${isSelf ? "role-name--self dk-name--self" : ""}`}>{isSelf ? (shouldSwap ? "" : "YOU") : player.name}</span>
 
               <div className={`dk-card ${isSelf ? "dk-card--face dk-card--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("drunk"), "Drunk", "You") : undefined}>
                 <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "Drunk" : "Card back"} className="dk-card-img" draggable={false} />
               </div>
 
-              {isSelf && !shouldSwap && <div className="dk-glow dk-glow--green dk-glow--subtle" />}
+              {isSelf && !shouldSwap && <div className="role-glow role-glow--subtle-green" />}
             </div>
           );
         })}
 
-        {/* ===== Ground card slots ===== */}
+        {/* Ground card slots */}
         {visibleGround.map((gc, idx) => {
           const isSelected = gc.id === selectedGroundId;
           const canClick = !locked && phase === "idle";
@@ -158,44 +145,43 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
           return (
             <div key={gc.id} className={`dk-slot dk-slot--ground ${canClick ? "dk-slot--clickable" : ""} ${isSelected ? "dk-slot--selected" : ""} ${isSwapping ? "dk-slot--swapping" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => canClick && handleGroundClick(gc.id)}>
-              <span className={`dk-name ${isSwapping ? "dk-name--self" : ""}`}>{isSwapping ? "YOU" : "\u00A0"}</span>
+              <span className={`role-name ${isSwapping ? "dk-name--self" : ""}`}>{isSwapping ? "YOU" : "\u00A0"}</span>
               <div className="dk-card dk-card--ground">
                 <img src={backCardImage} alt="Ground card" className="dk-card-img" draggable={false} />
               </div>
 
-              {isSwapping && <div className="dk-glow dk-glow--gold" />}
+              {isSwapping && <div className="role-glow role-glow--gold" />}
             </div>
           );
         })}
 
-        {/* ===== Center messages ===== */}
+        {/* Center messages */}
         {phase === "idle" && !locked && (
-          <div className="dk-center-hint">
-            <span className="dk-hint-text">PICK A GROUND CARD</span>
+          <div className="role-center-hint">
+            <span className="role-hint-text">PICK A GROUND CARD</span>
           </div>
         )}
         {phase === "swap" && (
-          <div className="dk-center-message">
-            <span className="dk-msg-text">SWAPPING...</span>
+          <div className="role-center-message dk-center-message">
+            <span className="role-status-text role-status-text--gold">SWAPPING...</span>
           </div>
         )}
         {phase === "done" && (
-          <div className="dk-center-message">
-            <span className="dk-msg-text">SWAPPED</span>
+          <div className="role-center-message dk-center-message">
+            <span className="role-status-text role-status-text--gold">SWAPPED</span>
           </div>
         )}
       </div>
 
-      {/* Bottom */}
-      <div className="dk-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="dk-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : (
           <>
-            {phase === "idle" && <span className="dk-bottom-hint">Tap a ground card to swap your role</span>}
-            {phase === "submitted" && <span className="dk-bottom-status">SWAPPING...</span>}
-            {phase === "swap" && <span className="dk-bottom-status">SWAPPING...</span>}
-            {phase === "done" && <span className="dk-bottom-status dk-bottom-status--done">You swapped with a ground card</span>}
+            {phase === "idle" && <span className="role-bottom-hint">Tap a ground card to swap your role</span>}
+            {phase === "submitted" && <span className="role-bottom-status">SWAPPING...</span>}
+            {phase === "swap" && <span className="role-bottom-status">SWAPPING...</span>}
+            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">You swapped with a ground card</span>}
           </>
         )}
       </div>

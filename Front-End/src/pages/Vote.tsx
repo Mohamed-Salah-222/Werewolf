@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 // import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
 import { useGameStore } from "../store/gameStore";
@@ -34,7 +33,6 @@ function Vote() {
   const [viewState, setViewState] = useState<ViewState>(hasVotedStore ? "waiting" : "voting");
   const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
 
-  useLeaveWarning(true);
 
   useEffect(() => {
     const fetchPlayers = async () => {

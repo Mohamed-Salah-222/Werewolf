@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./MasonAction.css";
 
 // ===== TYPES =====
@@ -18,36 +20,6 @@ interface Props {
   actionResult?: MasonResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 // ===== COMPONENT =====
 
 function MasonAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
@@ -56,17 +28,14 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
   const [showAlone, setShowAlone] = useState(false);
   const hasProcessedResult = useRef(false);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
-  // Brotherhood modal (2 masons)
   const [packModalOpen, setPackModalOpen] = useState(false);
   const [packMasons, setPackMasons] = useState<Array<{ name: string; image: string }>>([]);
 
-  // Track if auto-modal has fired
   const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
@@ -95,7 +64,6 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
         );
       });
 
-      // After all cards flip, auto-open modal
       setTimeout(() => {
         if (hasAutoModalFired.current) return;
         hasAutoModalFired.current = true;
@@ -139,9 +107,8 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
   }, []);
 
   return (
-    <div className="ms-action">
-      <div className="ms-circle-area">
-        {/* Player cards around the circle */}
+    <div className="role-action">
+      <div className="role-circle-area">
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelf = player.id === playerId;
@@ -149,74 +116,69 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
           const isFaceUp = isSelf || isRevealed;
 
           return (
-            <div key={player.id} className={`ms-slot ${isSelf ? "ms-slot--self" : ""} ${isRevealed ? "ms-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
-              <span className={`ms-name ${isSelf ? "ms-name--self" : ""} ${isRevealed ? "ms-name--mason" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+            <div key={player.id} className={`role-slot ${isSelf ? "role-slot--self" : ""} ${isRevealed ? "role-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <span className={`role-name ${isSelf ? "role-name--self ms-name--self" : ""} ${isRevealed ? "ms-name--mason" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`ms-flip ${isFaceUp ? "ms-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "ms-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("mason"), "Mason", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("mason"), "Mason", player.name) : undefined}>
-                <div className="ms-flip-inner">
-                  <div className="ms-flip-face ms-flip-face--back">
+              <div className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("mason"), "Mason", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("mason"), "Mason", player.name) : undefined}>
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="ms-flip-face ms-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={isFaceUp ? getSquareImage("mason") : backCardImage} alt={isFaceUp ? "Mason" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {isRevealed && <div className="ms-glow ms-glow--green" />}
-              {isSelf && <div className="ms-glow ms-glow--green ms-glow--subtle" />}
+              {isRevealed && <div className="role-glow role-glow--green" />}
+              {isSelf && <div className="role-glow role-glow--subtle-green" />}
             </div>
           );
         })}
 
-        {/* Center message — alone */}
         {showAlone && (
-          <div className="ms-center-message">
+          <div className="role-center-message">
             <span className="ms-alone-text">LONE MASON</span>
             <span className="ms-alone-sub">No brothers found</span>
           </div>
         )}
 
-        {/* Center message — found masons */}
         {revealedIds.size > 0 && (
-          <div className="ms-center-message">
-            <span className="ms-found-text">BROTHERHOOD</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--green">BROTHERHOOD</span>
           </div>
         )}
       </div>
 
-      {/* Button — below the circle */}
-      <div className="ms-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="ms-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : !submitted ? (
-          <button className="ms-btn" onClick={handleAction}>
-            <span className="ms-btn-text">SEE MASONS</span>
+          <button className="role-btn" onClick={handleAction}>
+            SEE MASONS
           </button>
         ) : !actionResult ? (
-          <span className="ms-bottom-status">LOOKING...</span>
+          <span className="role-bottom-status">LOOKING...</span>
         ) : (
-          <span className="ms-bottom-status ms-bottom-status--done">{actionResult.masons.length > 0 ? "You found your brothers" : "You stand alone"}</span>
+          <span className="role-bottom-status role-bottom-status--done">{actionResult.masons.length > 0 ? "You found your brothers" : "You stand alone"}</span>
         )}
       </div>
 
-      {/* Single Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
 
-      {/* Brotherhood Modal (2 masons) */}
       {packModalOpen && (
-        <div className="ms-pack-overlay" onClick={() => setPackModalOpen(false)}>
-          <div className="ms-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="ms-pack-title">BROTHERHOOD</span>
-            <div className="ms-pack-cards">
+        <div className="role-pack-overlay" onClick={() => setPackModalOpen(false)}>
+          <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="role-pack-title role-pack-title--green">BROTHERHOOD</span>
+            <div className="role-pack-cards">
               {packMasons.map((mason, i) => (
-                <div key={i} className="ms-pack-card">
-                  <span className="ms-pack-name">{mason.name}</span>
-                  <img src={mason.image} alt={mason.name} className="ms-pack-img" />
+                <div key={i} className="role-pack-card">
+                  <span className="role-pack-name">{mason.name}</span>
+                  <img src={mason.image} alt={mason.name} className="role-pack-img role-pack-img--green" />
                 </div>
               ))}
             </div>
-            <button className="ms-pack-close" onClick={() => setPackModalOpen(false)}>
+            <button className="role-pack-close" onClick={() => setPackModalOpen(false)}>
               CLOSE
             </button>
           </div>

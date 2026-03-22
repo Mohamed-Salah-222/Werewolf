@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./TroublemakerAction.css";
 
 // ===== TYPES =====
@@ -19,36 +21,6 @@ interface Props {
   actionResult?: TroublemakerResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 type Phase = "picking" | "submitted" | "swap" | "done";
 
 // ===== COMPONENT =====
@@ -62,7 +34,6 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
   const [target2Id, setTarget2Id] = useState<string | null>(null);
   const hasProcessedResult = useRef(isRejoin);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
@@ -80,11 +51,12 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     if (p2) setTarget2Id(p2.id);
   }, [isRejoin, actionResult, players]);
 
-  // Process result and run animation
+  // Process result — handles both manual and auto-action
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
 
+    // Resolve targets from result if not already set (auto-action case)
     let t1Id = target1Id;
     let t2Id = target2Id;
 
@@ -106,13 +78,14 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     if (phase === "done") return;
     if (!t1Id || !t2Id) return;
 
+    // Lock interactivity and animate
     setPhase("swap");
     const t = setTimeout(() => setPhase("done"), 900);
     return () => clearTimeout(t);
   }, [actionResult, players]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayerClick = (clickedId: string) => {
-    if (phase !== "picking" || clickedId === playerId) return;
+    if (phase !== "picking" || locked || clickedId === playerId) return;
 
     setSelectedIds((prev) => {
       if (prev.includes(clickedId)) return prev.filter((id) => id !== clickedId);
@@ -135,7 +108,6 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     });
   };
 
-  // Modal handlers
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
     setModalName(name);
@@ -147,7 +119,6 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     setModalOpen(false);
   }, []);
 
-  // Position logic: during swap and done, targets exchange positions
   const getSlotPosition = (playerIndex: number): { x: number; y: number } => {
     const t1Idx = target1Id ? players.findIndex((p) => p.id === target1Id) : -1;
     const t2Idx = target2Id ? players.findIndex((p) => p.id === target2Id) : -1;
@@ -163,8 +134,8 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
   const hasTargets = target1Id !== null && target2Id !== null;
 
   return (
-    <div className="tm-action">
-      <div className="tm-circle-area">
+    <div className="role-action">
+      <div className="role-circle-area tm-circle-area">
         {players.map((player, i) => {
           const isSelf = player.id === playerId;
           const isTarget = player.id === target1Id || player.id === target2Id;
@@ -191,17 +162,17 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
           return (
             <div
               key={player.id}
-              className={`tm-slot ${isSelf ? "tm-slot--self" : ""} ${isSelected ? "tm-slot--selected" : ""} ${isTarget && phase !== "picking" ? "tm-slot--target" : ""} ${isClickable ? "tm-slot--clickable" : ""} ${isAnimating ? "tm-slot--swapping" : ""}`}
+              className={`role-slot ${isSelf ? "role-slot--self" : ""} ${isSelected ? "tm-slot--selected" : ""} ${isTarget && phase !== "picking" ? "tm-slot--target" : ""} ${isClickable ? "role-slot--clickable tm-slot--clickable" : ""} ${isAnimating ? "tm-slot--swapping" : ""}`}
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
               }}
               onClick={() => isClickable && handlePlayerClick(player.id)}
             >
-              <span className={`tm-name ${isSelf ? "tm-name--self" : ""} ${isSelected || isTarget ? "tm-name--highlight" : ""}`}>{displayName}</span>
+              <span className={`role-name ${isSelf ? "role-name--self tm-name--self" : ""} ${isSelected || isTarget ? "tm-name--highlight" : ""}`}>{displayName}</span>
 
               <div
-                className={`tm-flip ${isSelf ? "tm-flip--up" : ""}${isSelf ? " tm-flip--tappable" : ""}`}
+                className={`role-flip ${isSelf ? "role-flip--up" : ""}${isSelf ? " role-flip--tappable" : ""}`}
                 onClick={
                   isSelf
                     ? (e) => {
@@ -211,63 +182,62 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
                     : undefined
                 }
               >
-                <div className="tm-flip-inner">
-                  <div className="tm-flip-face tm-flip-face--back">
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="tm-flip-face tm-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("troublemaker") : backCardImage} alt={isSelf ? "Troublemaker" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {isSelf && <div className="tm-glow tm-glow--green tm-glow--subtle" />}
+              {isSelf && <div className="role-glow role-glow--subtle-green" />}
               {isSelected && !isSelf && <div className="tm-select-ring" />}
-              {isTarget && (phase === "swap" || phase === "done") && <div className="tm-glow tm-glow--gold" />}
+              {isTarget && (phase === "swap" || phase === "done") && <div className="role-glow role-glow--gold" />}
             </div>
           );
         })}
 
         {phase === "picking" && selectedIds.length === 0 && (
-          <div className="tm-center-hint">
-            <span className="tm-hint-text">PICK TWO PLAYERS</span>
+          <div className="role-center-message">
+            <span className="role-hint-text">PICK TWO PLAYERS</span>
           </div>
         )}
         {phase === "picking" && selectedIds.length === 1 && (
-          <div className="tm-center-hint">
-            <span className="tm-hint-text">PICK ONE MORE</span>
+          <div className="role-center-message">
+            <span className="role-hint-text">PICK ONE MORE</span>
           </div>
         )}
         {phase === "swap" && (
-          <div className="tm-center-message">
-            <span className="tm-msg-text">SWAPPING...</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--gold">SWAPPING...</span>
           </div>
         )}
         {phase === "done" && hasTargets && (
-          <div className="tm-center-message">
-            <span className="tm-msg-text">SWAPPED</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--gold">SWAPPED</span>
           </div>
         )}
       </div>
 
-      <div className="tm-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="tm-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : (
           <>
-            {phase === "picking" && selectedIds.length < 2 && <span className="tm-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
+            {phase === "picking" && selectedIds.length < 2 && <span className="role-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
             {phase === "picking" && selectedIds.length === 2 && (
-              <button className="tm-btn" onClick={handleConfirm}>
-                <span className="tm-btn-text">SWAP ROLES</span>
+              <button className="role-btn" onClick={handleConfirm}>
+                SWAP ROLES
               </button>
             )}
-            {(phase === "submitted" || phase === "swap") && <span className="tm-bottom-status">SWAPPING...</span>}
-            {phase === "done" && <span className="tm-bottom-status tm-bottom-status--done">Roles have been swapped</span>}
+            {(phase === "submitted" || phase === "swap") && <span className="role-bottom-status">SWAPPING...</span>}
+            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">Roles have been swapped</span>}
           </>
         )}
       </div>
 
-      {/* Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );

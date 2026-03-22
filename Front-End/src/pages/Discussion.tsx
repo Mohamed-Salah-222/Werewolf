@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 // import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
@@ -53,7 +52,6 @@ function Discussion() {
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useLeaveWarning(true);
 
   // Timer synced to server timestamp
   useEffect(() => {

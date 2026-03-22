@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback, type ComponentType } from "re
 import { useParams, useNavigate } from "react-router-dom";
 
 import socket from "../socket";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { API_URL } from "../config";
 
 import ActionComplete from "../components/roles/ActionComplete";
@@ -109,8 +108,6 @@ function NightPhase() {
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timerMaxRef = useRef<number>(0);
   const actionDoneRef = useRef(actionDone);
-
-  useLeaveWarning(true);
 
   // Keep refs in sync
   useEffect(() => {

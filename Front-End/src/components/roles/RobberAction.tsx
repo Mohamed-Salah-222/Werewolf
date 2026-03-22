@@ -41,57 +41,67 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
   const hasAutoModalFired = useRef(false);
+  const autoActionTargetRef = useRef<string | null>(null);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
   const targetIndex = targetId ? players.findIndex((p) => p.id === targetId) : -1;
 
-  // Animation sequencer — handles both manual action and auto-action
+  // Step 1: When auto-action arrives, set targetId and lock clicks — but DON'T animate yet
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
+    if (targetId) return; // Manual action — targetId already set, skip this effect
 
-    // For auto-action: extract targetId from result if we don't have one
-    const resolvedTargetId = targetId || actionResult.targetPlayerId || null;
+    const resolvedTargetId = actionResult.targetPlayerId || null;
     if (!resolvedTargetId) return;
 
+    // Store for step 2 and lock clicks
+    autoActionTargetRef.current = resolvedTargetId;
+    setTargetId(resolvedTargetId);
+    setNewRole(actionResult.newRole);
+    setPhase("submitted"); // locks clicks, card renders at original position
+  }, [actionResult, targetId]);
+
+  // Step 2: Once targetId is set and rendered, start the animation
+  useEffect(() => {
+    if (!actionResult || hasProcessedResult.current) return;
+    if (!targetId) return;
+
     hasProcessedResult.current = true;
-
-    // Set targetId if it came from auto-action
-    if (!targetId) {
-      setTargetId(resolvedTargetId);
-    }
-
     setNewRole(actionResult.newRole);
 
-    // Lock interactivity immediately
-    if (phase === "idle") {
+    // Small delay so the target card renders at its original position first
+    const isAutoAction = autoActionTargetRef.current !== null;
+    const startDelay = isAutoAction ? 100 : 0;
+
+    const t0 = setTimeout(() => {
       setPhase("reveal");
-    } else {
-      setPhase("reveal");
-    }
 
-    const t1 = setTimeout(() => {
-      setPhase("swap");
+      const t1 = setTimeout(() => {
+        setPhase("swap");
 
-      const t2 = setTimeout(() => {
-        setPhase("done");
+        const t2 = setTimeout(() => {
+          setPhase("done");
 
-        setTimeout(() => {
-          if (hasAutoModalFired.current) return;
-          hasAutoModalFired.current = true;
-          const targetPlayer = players.find((p) => p.id === resolvedTargetId);
-          setModalImage(getFullCardImage(actionResult.newRole));
-          setModalName(actionResult.newRole);
-          setModalSubtitle(targetPlayer?.name);
-          setModalOpen(true);
-        }, 400);
+          setTimeout(() => {
+            if (hasAutoModalFired.current) return;
+            hasAutoModalFired.current = true;
+            const targetPlayer = players.find((p) => p.id === targetId);
+            setModalImage(getFullCardImage(actionResult.newRole));
+            setModalName(actionResult.newRole);
+            setModalSubtitle(targetPlayer?.name);
+            setModalOpen(true);
+          }, 400);
+        }, 900);
+
+        return () => clearTimeout(t2);
       }, 900);
 
-      return () => clearTimeout(t2);
-    }, 900);
+      return () => clearTimeout(t1);
+    }, startDelay);
 
-    return () => clearTimeout(t1);
+    return () => clearTimeout(t0);
   }, [actionResult, targetId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayerClick = (clickedId: string) => {

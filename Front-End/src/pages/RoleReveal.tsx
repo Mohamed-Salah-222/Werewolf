@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
-import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
 import "./RoleReveal.css";
 
@@ -69,8 +68,6 @@ function RoleReveal() {
   useEffect(() => {
     roleNameRef.current = role?.roleName ?? null;
   }, [role]);
-
-  useLeaveWarning(true);
 
   // Fetch players + listen for confirmations
   useEffect(() => {
