@@ -1,22 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 // import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
-// ===== TYPES =====
-
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  timerSeconds: number;
-  currentTimerSec: number;
-  startedAt: number;
-  roleName?: string;
-  actionResult?: { message?: string } | null;
-}
+import { useGameStore } from "../store/gameStore";
 
 // ===== HELPERS =====
 
@@ -47,18 +36,16 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 
 function Discussion() {
   const { gameCode } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerName = state?.playerName || "Unknown";
-  const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
-  const totalSeconds = state?.timerSeconds || 360;
-  // eslint-disable-next-line react-hooks/purity
-  const startedAt = state?.startedAt || Date.now();
-  const roleName = state?.roleName || "";
-  const actionResult = state?.actionResult || null;
+  const playerName = useGameStore((s) => s.playerName) || "Unknown";
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const totalSeconds = useGameStore((s) => s.timerSeconds) || 360;
+  const startedAt = useGameStore((s) => s.startedAt) || Date.now();
+  const roleName = useGameStore((s) => s.roleName) || "";
+  const actionResult = useGameStore((s) => s.lastActionResult) as { message?: string } | null;
+  const setPhase = useGameStore((s) => s.setPhase);
 
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
   const [showResult, setShowResult] = useState(false);
@@ -88,9 +75,8 @@ function Discussion() {
     if (!socket.connected) socket.connect();
 
     socket.on("votingStarted", () => {
-      navigate(`/vote/${gameCode}`, {
-        state: { playerName, playerId, isHost },
-      });
+      setPhase("vote");
+      navigate(`/vote/${gameCode}`);
     });
 
     return () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, type ComponentType } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import socket from "../socket";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
@@ -20,19 +20,9 @@ import NightRoleProgress from "../components/roles/NightRoleProgress";
 // import VoiceChat from "../components/VoiceChat";
 import "./NightPhase.css";
 
-// ===== TYPES =====
+import { useGameStore } from "../store/gameStore";
 
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  roleQueue: { roleName: string; seconds: number }[];
-  roleName?: string;
-  initialActiveRole?: string;
-  initialGroundCards?: Array<{ id: string; label: string }>;
-  hasPerformedAction?: boolean;
-  lastActionResult?: { message?: string } | null;
-}
+// ===== TYPES =====
 
 interface CloneResult {
   clonedRole: string;
@@ -67,30 +57,34 @@ const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mas
 
 function NightPhase() {
   const { gameCode } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerName = state?.playerName || "Unknown";
-  const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
-  const hasAlreadyActed = state?.hasPerformedAction || false;
-  const roleQueue = state?.roleQueue || [];
+  const playerName = useGameStore((s) => s.playerName) || "Unknown";
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const hasAlreadyActed = useGameStore((s) => s.hasPerformedAction);
+  const roleQueue = useGameStore((s) => s.roleQueue);
+  const storeGroundCards = useGameStore((s) => s.groundCards);
+  const storeInitialActiveRole = useGameStore((s) => s.initialActiveRole);
+  const storeLastActionResult = useGameStore((s) => s.lastActionResult);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const setDiscussionData = useGameStore((s) => s.setDiscussionData);
+  const setHasPerformedAction = useGameStore((s) => s.setHasPerformedAction);
+  const setLastActionResult = useGameStore((s) => s.setLastActionResult);
 
-  const [myRole] = useState<string>(state?.roleName || "");
+  const [myRole] = useState<string>(useGameStore.getState().roleName || "");
   const [showSplash, setShowSplash] = useState(!hasAlreadyActed);
   const [isMyTurn, setIsMyTurn] = useState(() => {
     if (hasAlreadyActed) return false;
-    const initialRole = state?.initialActiveRole;
-    if (initialRole && state?.roleName) {
-      return initialRole.toLowerCase() === state.roleName.toLowerCase();
+    if (storeInitialActiveRole && myRole) {
+      return storeInitialActiveRole.toLowerCase() === myRole.toLowerCase();
     }
     return false;
   });
   const [actionDone, setActionDone] = useState(hasAlreadyActed);
-  const [actionResult, setActionResult] = useState<{ message?: string } | null>(hasAlreadyActed ? state?.lastActionResult || { message: "Action was performed" } : null);
+  const [actionResult, setActionResult] = useState<{ message?: string } | null>(hasAlreadyActed ? storeLastActionResult || { message: "Action was performed" } : null);
   const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
-  const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(state?.initialGroundCards || []);
+  const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(storeGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
   // Phase info modal
@@ -101,7 +95,7 @@ function NightPhase() {
   const awaitingCloneResultRef = useRef(false);
 
   // Queue-level tracking
-  const [activeRole, setActiveRole] = useState<string>(state?.initialActiveRole || "");
+  const [activeRole, setActiveRole] = useState<string>(storeInitialActiveRole || "");
   const [queueTimer, setQueueTimer] = useState<number>(0);
   const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -154,14 +148,14 @@ function NightPhase() {
 
   // Sync rejoin state
   useEffect(() => {
-    if (state?.hasPerformedAction && !actionDone) {
+    if (hasAlreadyActed && !actionDone) {
       setActionDone(true);
       setIsMyTurn(false);
-      const result = state.lastActionResult || { message: "Action was performed" };
+      const result = storeLastActionResult || { message: "Action was performed" };
       setActionResult(result);
       actionResultRef.current = result;
     }
-  }, [state?.hasPerformedAction, state?.lastActionResult]);
+  }, [hasAlreadyActed, storeLastActionResult]);
 
   // Queue progress listener
   useEffect(() => {
@@ -256,6 +250,9 @@ function NightPhase() {
           actionResultRef.current = result;
           setActionDone(true);
           setIsMyTurn(false);
+
+          setHasPerformedAction(true);
+          setLastActionResult(result);
           setRoleTimer(0);
           if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
         }
@@ -267,6 +264,9 @@ function NightPhase() {
       actionResultRef.current = result;
       setActionDone(true);
       setIsMyTurn(false);
+
+      setHasPerformedAction(true);
+      setLastActionResult(result);
       setRoleTimer(0);
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
@@ -274,18 +274,9 @@ function NightPhase() {
         const navData = pendingNavigationRef.current;
         pendingNavigationRef.current = null;
         setTimeout(() => {
-          navigate(`/discussion/${gameCode}`, {
-            state: {
-              playerName,
-              playerId,
-              isHost,
-              timerSeconds: navData.timerSeconds,
-              currentTimerSec: navData.currentTimerSec,
-              startedAt: navData.startedAt,
-              roleName: myRole,
-              actionResult: actionResultRef.current,
-            },
-          });
+          setDiscussionData({ timerSeconds: navData.timerSeconds, currentTimerSec: navData.currentTimerSec, startedAt: navData.startedAt });
+          setPhase("discussion");
+          navigate(`/discussion/${gameCode}`);
         }, 1000);
       }
     });
@@ -302,18 +293,9 @@ function NightPhase() {
         return;
       }
 
-      navigate(`/discussion/${gameCode}`, {
-        state: {
-          playerName,
-          playerId,
-          isHost,
-          timerSeconds: data.timerSeconds,
-          currentTimerSec: data.currentTimerSec,
-          startedAt: data.startedAt,
-          roleName: myRole,
-          actionResult: actionResultRef.current,
-        },
-      });
+      setDiscussionData({ timerSeconds: data.timerSeconds, currentTimerSec: data.currentTimerSec, startedAt: data.startedAt });
+      setPhase("discussion");
+      navigate(`/discussion/${gameCode}`);
     });
 
     return () => {
@@ -335,18 +317,9 @@ function NightPhase() {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
         if (data.success && data.data.phase === "discussion") {
-          navigate(`/discussion/${gameCode}`, {
-            state: {
-              playerName,
-              playerId,
-              isHost,
-              timerSeconds: data.data.timerSeconds,
-              currentTimerSec: data.data.currentTimerSec,
-              startedAt: data.data.startedAt,
-              roleName: myRole,
-              actionResult: actionResultRef.current,
-            },
-          });
+          setDiscussionData({ timerSeconds: data.data.timerSeconds, currentTimerSec: data.data.currentTimerSec, startedAt: data.data.startedAt });
+          setPhase("discussion");
+          navigate(`/discussion/${gameCode}`);
         }
       } catch {
         /* ignore */

@@ -1,17 +1,11 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 // import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
-
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  hasVoted?: boolean;
-}
+import { useGameStore } from "../store/gameStore";
 
 interface PlayerInfo {
   id: string;
@@ -22,17 +16,22 @@ type ViewState = "voting" | "sealing" | "waiting";
 
 function Vote() {
   const { gameCode } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerName = state?.playerName || "Unknown";
-  const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
+  const playerName = useGameStore((s) => s.playerName) || "Unknown";
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const hasVotedStore = useGameStore((s) => s.hasVoted);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const setResultsData = useGameStore((s) => s.setResultsData);
+  const setHasVoted = useGameStore((s) => s.setHasVoted);
+
+  const votedForId = useGameStore((s) => s.votedForId);
+  const setVotedForId = useGameStore((s) => s.setVotedForId);
 
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [selected, setSelected] = useState<string | null>(null);
-  const [viewState, setViewState] = useState<ViewState>(state?.hasVoted ? "waiting" : "voting");
+  const [selected, setSelected] = useState<string | null>(votedForId);
+  const [viewState, setViewState] = useState<ViewState>(hasVotedStore ? "waiting" : "voting");
   const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
 
   useLeaveWarning(true);
@@ -64,11 +63,16 @@ function Vote() {
     });
 
     socket.on("gameEnded", (data: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory?: Array<{ role: string; playerName: string; description: string }> }) => {
-      //---- debug
-      // console.log("gameEnded data:", JSON.stringify(data));
-      navigate(`/results/${gameCode}`, {
-        state: { playerName, playerId, isHost, winners: data.winners, isDraw: data.isDraw, eliminatedPlayerId: data.eliminatedPlayerId, votes: data.votes, playerRoles: data.playerRoles, actionHistory: data.actionHistory || [] },
+      setResultsData({
+        winners: data.winners,
+        isDraw: data.isDraw,
+        eliminatedPlayerId: data.eliminatedPlayerId,
+        votes: data.votes,
+        playerRoles: data.playerRoles,
+        actionHistory: data.actionHistory || [],
       });
+      setPhase("results");
+      navigate(`/results/${gameCode}`);
     });
 
     return () => {
@@ -81,9 +85,10 @@ function Vote() {
     if (!selected || viewState !== "voting") return;
 
     setViewState("sealing");
+    setHasVoted(true);
+    setVotedForId(selected);
     socket.emit("vote", { gameCode, playerId, votedPlayerId: selected });
 
-    // Brief seal animation, then show waiting
     setTimeout(() => {
       setViewState("waiting");
     }, 1200);

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./MinionAction.css";
 
 // ===== TYPES =====
@@ -18,36 +20,6 @@ interface Props {
   actionResult?: MinionResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 // ===== COMPONENT =====
 
 function MinionAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
@@ -56,17 +28,14 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
   const [showNoWolves, setShowNoWolves] = useState(false);
   const hasProcessedResult = useRef(false);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
-  // Pack modal state (werewolves reveal)
   const [packModalOpen, setPackModalOpen] = useState(false);
   const [packWolves, setPackWolves] = useState<Array<{ name: string; image: string }>>([]);
 
-  // Track if auto-modal has fired
   const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
@@ -95,20 +64,17 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
         );
       });
 
-      // After all cards flip, auto-open modal
       setTimeout(() => {
         if (hasAutoModalFired.current) return;
         hasAutoModalFired.current = true;
 
         if (actionResult.werewolves.length === 1) {
-          // Single wolf — use big CardModal
           const wolf = actionResult.werewolves[0];
           setModalImage(getFullCardImage("werewolf"));
           setModalName("Werewolf");
           setModalSubtitle(wolf.name);
           setModalOpen(true);
         } else {
-          // Multiple wolves — use pack modal
           const wolves = actionResult.werewolves.map((w) => ({
             name: w.name,
             image: getFullCardImage("werewolf"),
@@ -141,9 +107,8 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
   }, []);
 
   return (
-    <div className="mn-action">
-      <div className="mn-circle-area">
-        {/* Player cards around the circle */}
+    <div className="role-action">
+      <div className="role-circle-area">
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelf = player.id === playerId;
@@ -151,75 +116,70 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
           const isFaceUp = isSelf || isRevealed;
 
           return (
-            <div key={player.id} className={`mn-slot ${isSelf ? "mn-slot--self" : ""} ${isRevealed ? "mn-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
-              <span className={`mn-name ${isSelf ? "mn-name--self" : ""} ${isRevealed ? "mn-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+            <div key={player.id} className={`role-slot ${isSelf ? "role-slot--self" : ""} ${isRevealed ? "role-slot--revealed" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <span className={`role-name ${isSelf ? "role-name--self mn-name--self" : ""} ${isRevealed ? "mn-name--wolf" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
-              <div className={`mn-flip ${isFaceUp ? "mn-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "mn-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("minion"), "Minion", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("werewolf"), "Werewolf", player.name) : undefined}>
-                <div className="mn-flip-inner">
-                  <div className="mn-flip-face mn-flip-face--back">
+              <div className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("minion"), "Minion", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("werewolf"), "Werewolf", player.name) : undefined}>
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="mn-flip-face mn-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("minion") : isRevealed ? getSquareImage("werewolf") : backCardImage} alt={isSelf ? "Minion" : isRevealed ? "Werewolf" : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {isRevealed && <div className="mn-glow mn-glow--red" />}
-              {isSelf && <div className="mn-glow mn-glow--red mn-glow--subtle" />}
+              {isRevealed && <div className="role-glow role-glow--red" />}
+              {isSelf && <div className="role-glow role-glow--subtle-red" />}
             </div>
           );
         })}
 
-        {/* Center message — no werewolves */}
         {showNoWolves && (
-          <div className="mn-center-message">
-            <span className="mn-no-wolves-icon">☽</span>
-            <span className="mn-no-wolves-text">NO WEREWOLVES</span>
-            <span className="mn-no-wolves-sub">You're on your own</span>
+          <div className="role-center-message">
+            <span className="role-no-result-icon">☽</span>
+            <span className="role-no-result-text">NO WEREWOLVES</span>
+            <span className="role-no-result-sub">You're on your own</span>
           </div>
         )}
 
-        {/* Center message — wolves found */}
         {revealedIds.size > 0 && (
-          <div className="mn-center-message">
-            <span className="mn-found-text">YOUR MASTERS</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--red">YOUR MASTERS</span>
           </div>
         )}
       </div>
 
-      {/* Button — below the circle */}
-      <div className="mn-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="mn-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : !submitted ? (
-          <button className="mn-btn" onClick={handleAction}>
+          <button className="role-btn" onClick={handleAction}>
             SEE WEREWOLVES
           </button>
         ) : !actionResult ? (
-          <span className="mn-bottom-status">LOOKING...</span>
+          <span className="role-bottom-status">LOOKING...</span>
         ) : (
-          <span className="mn-bottom-status mn-bottom-status--done">{actionResult.werewolves.length > 0 ? "Serve them well" : "No wolves to serve"}</span>
+          <span className="role-bottom-status role-bottom-status--done">{actionResult.werewolves.length > 0 ? "Serve them well" : "No wolves to serve"}</span>
         )}
       </div>
 
-      {/* Single Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
 
-      {/* Pack Modal (werewolves reveal) */}
       {packModalOpen && (
-        <div className="mn-pack-overlay" onClick={() => setPackModalOpen(false)}>
-          <div className="mn-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="mn-pack-title">YOUR MASTERS</span>
-            <div className="mn-pack-cards">
+        <div className="role-pack-overlay" onClick={() => setPackModalOpen(false)}>
+          <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="role-pack-title role-pack-title--red">YOUR MASTERS</span>
+            <div className="role-pack-cards">
               {packWolves.map((wolf, i) => (
-                <div key={i} className="mn-pack-card">
-                  <span className="mn-pack-name">{wolf.name}</span>
-                  <img src={wolf.image} alt={wolf.name} className="mn-pack-img" />
+                <div key={i} className="role-pack-card">
+                  <span className="role-pack-name">{wolf.name}</span>
+                  <img src={wolf.image} alt={wolf.name} className="role-pack-img role-pack-img--red" />
                 </div>
               ))}
             </div>
-            <button className="mn-pack-close" onClick={() => setPackModalOpen(false)}>
+            <button className="role-pack-close" onClick={() => setPackModalOpen(false)}>
               CLOSE
             </button>
           </div>

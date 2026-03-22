@@ -1,24 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
+import { useGameStore } from "../store/gameStore";
 import { useLeaveWarning } from "../hooks/useLeaveWarning";
 import { allCards, backCardImage } from "../characters";
 import "./RoleReveal.css";
 
 // ===== TYPES =====
-
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  rejoinRoleInfo?: {
-    roleName: string;
-    roleTeam: string;
-    roleDescription: string;
-  } | null;
-  hasConfirmedRole?: boolean;
-}
 
 interface RoleInfo {
   roleName: string;
@@ -38,23 +27,28 @@ function getCardImage(roleName: string): string {
 
 function RoleReveal() {
   const { gameCode } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerName = state?.playerName || "Unknown";
-  const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
+  const playerName = useGameStore((s) => s.playerName) || "Unknown";
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const storeRoleName = useGameStore((s) => s.roleName);
+  const storeRoleTeam = useGameStore((s) => s.roleTeam);
+  const storeRoleDescription = useGameStore((s) => s.roleDescription);
+  const hasConfirmedRoleStore = useGameStore((s) => s.hasConfirmedRole);
+  const setHasConfirmedRole = useGameStore((s) => s.setHasConfirmedRole);
+  const setRoleInfo = useGameStore((s) => s.setRoleInfo);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const setNightData = useGameStore((s) => s.setNightData);
 
-  const [flipped, setFlipped] = useState(() => !!state?.rejoinRoleInfo);
-  const [confirmed, setConfirmed] = useState(state?.hasConfirmedRole || false);
+  const [flipped, setFlipped] = useState(() => !!storeRoleName);
+  const [confirmed, setConfirmed] = useState(hasConfirmedRoleStore);
   const [role, setRole] = useState<RoleInfo | null>(() => {
-    const info = state?.rejoinRoleInfo;
-    return info
+    return storeRoleName
       ? {
-          roleName: info.roleName,
-          roleTeam: info.roleTeam,
-          roleDescription: info.roleDescription,
+          roleName: storeRoleName,
+          roleTeam: storeRoleTeam || "",
+          roleDescription: storeRoleDescription || "",
         }
       : null;
   });
@@ -122,30 +116,29 @@ function RoleReveal() {
           roleTeam: data.roleTeam,
           roleDescription: data.roleDescription || "",
         });
+        setRoleInfo({ roleName: data.roleName, roleTeam: data.roleTeam, roleDescription: data.roleDescription });
       }
     });
 
     socket.on("roleActionQueue", (roleName: string) => {
       pendingActiveRoleRef.current = roleName;
+      useGameStore.getState().setInitialActiveRole(roleName);
     });
 
     socket.on("groundCards", (data: { cards: Array<{ id: string; label: string }> }) => {
       pendingGroundCardsRef.current = data.cards;
+      useGameStore.getState().setGroundCards(data.cards);
     });
 
     socket.on("nightStarted", (roleQueue: { roleName: string; seconds: number }[]) => {
+      setNightData({
+        roleQueue,
+        initialActiveRole: pendingActiveRoleRef.current,
+        groundCards: pendingGroundCardsRef.current || [],
+      });
+      setPhase("night");
       setTimeout(() => {
-        navigate(`/night/${gameCode}`, {
-          state: {
-            playerName,
-            playerId,
-            isHost,
-            roleQueue,
-            roleName: roleNameRef.current,
-            initialActiveRole: pendingActiveRoleRef.current,
-            initialGroundCards: pendingGroundCardsRef.current,
-          },
-        });
+        navigate(`/night/${gameCode}`);
       }, 300);
     });
 
@@ -163,9 +156,10 @@ function RoleReveal() {
 
   const handleConfirm = useCallback(() => {
     setConfirmed(true);
+    setHasConfirmedRole(true);
     setPlayerStatuses((prev) => prev.map((p) => (p.id === playerId ? { ...p, confirmed: true } : p)));
     socket.emit("confirmRoleReveal", { gameCode, playerId });
-  }, [gameCode, playerId]);
+  }, [gameCode, playerId, setHasConfirmedRole]);
 
   // Derived counts
   const readyCount = playerStatuses.filter((p) => p.confirmed).length;

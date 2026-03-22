@@ -32,6 +32,7 @@ export interface GameStore {
 
   // Vote
   hasVoted: boolean;
+  votedForId: string | null;
 
   // Results
   winners: string | null;
@@ -41,7 +42,7 @@ export interface GameStore {
   playerRoles: Array<{ playerId: string; name: string; role: string }>;
   actionHistory: Array<{ role: string; playerName: string; description: string }>;
 
-  // Players list (used across multiple pages)
+  // Players list
   players: Array<{ id: string; name: string }>;
 
   // Actions
@@ -57,6 +58,7 @@ export interface GameStore {
   setInitialActiveRole: (role: string | null) => void;
   setDiscussionData: (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => void;
   setHasVoted: (value: boolean) => void;
+  setVotedForId: (id: string | null) => void;
   setResultsData: (data: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory: Array<{ role: string; playerName: string; description: string }> }) => void;
   setPlayers: (players: Array<{ id: string; name: string }>) => void;
   reset: () => void;
@@ -81,6 +83,7 @@ const initialState = {
   currentTimerSec: null,
   startedAt: null,
   hasVoted: false,
+  votedForId: null,
   winners: null,
   isDraw: false,
   eliminatedPlayerId: null,
@@ -134,6 +137,8 @@ export const useGameStore = create<GameStore>()(
         }),
 
       setHasVoted: (value) => set({ hasVoted: value }),
+
+      setVotedForId: (id) => set({ votedForId: id }),
 
       setResultsData: (data) =>
         set({

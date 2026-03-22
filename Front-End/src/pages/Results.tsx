@@ -1,27 +1,10 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
-import { clearSession, saveSession } from "../utils/gameSession";
+import { useGameStore } from "../store/gameStore";
+
 // import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
-
-interface ActionHistoryItem {
-  role: string;
-  playerName: string;
-  description: string;
-}
-
-interface LocationState {
-  playerName: string;
-  playerId: string;
-  isHost: boolean;
-  winners: string;
-  isDraw: boolean;
-  eliminatedPlayerId: string | null;
-  votes: Array<{ voter: string; vote: string }>;
-  playerRoles: Array<{ playerId: string; name: string; role: string }>;
-  actionHistory?: ActionHistoryItem[];
-}
 
 function getTeam(role: string): string {
   const villains = ["werewolf", "minion"];
@@ -45,18 +28,19 @@ function getWinnerColorClass(winners: string): string {
 
 function Results() {
   const { gameCode } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const state = location.state as LocationState | null;
 
-  const playerId = state?.playerId || "";
-  const isHost = state?.isHost || false;
-  const winners = state?.winners || "";
-  const isDraw = state?.isDraw || false;
-  const eliminatedPlayerId = state?.eliminatedPlayerId || null;
-  const votes = state?.votes || [];
-  const playerRoles = state?.playerRoles || [];
-  const actionHistory = state?.actionHistory || [];
+  const navigate = useNavigate();
+
+  const playerId = useGameStore((s) => s.playerId) || "";
+  const isHost = useGameStore((s) => s.isHost);
+  const winners = useGameStore((s) => s.winners) || "";
+  const isDraw = useGameStore((s) => s.isDraw);
+  const eliminatedPlayerId = useGameStore((s) => s.eliminatedPlayerId);
+  const votes = useGameStore((s) => s.votes);
+  const playerRoles = useGameStore((s) => s.playerRoles);
+  const actionHistory = useGameStore((s) => s.actionHistory);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const reset = useGameStore((s) => s.reset);
 
   const [showVotes, setShowVotes] = useState(false);
   const [showSequence, setShowSequence] = useState(false);
@@ -66,21 +50,17 @@ function Results() {
     if (!socket.connected) socket.connect();
 
     socket.on("gameRestarted", () => {
-      saveSession({
-        gameCode: gameCode || "",
-        playerId: state?.playerId || "",
-        playerName: state?.playerName || "",
-        isHost: state?.isHost || false,
-      });
-      navigate(`/waiting/${gameCode}`, {
-        state: { playerName: state?.playerName, playerId: state?.playerId, isHost: state?.isHost },
-      });
+      const { gameCode: gc, playerId: pid, playerName: pn, isHost: ih } = useGameStore.getState();
+      useGameStore.getState().reset();
+      useGameStore.getState().setSession({ gameCode: gc!, playerId: pid!, playerName: pn!, isHost: ih });
+      useGameStore.getState().setPhase("waiting");
+      navigate(`/waiting/${gameCode}`);
     });
 
     return () => {
       socket.off("gameRestarted");
     };
-  }, [gameCode, navigate, state]);
+  }, [gameCode, navigate, setPhase]);
 
   const handleRestart = () => {
     setRestarting(true);
@@ -223,7 +203,7 @@ function Results() {
           <button
             className="res-home-btn"
             onClick={() => {
-              clearSession();
+              reset();
               navigate("/");
             }}
           >

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { GameProvider } from "./contexts/GameContext";
 import { VoiceProvider } from "./contexts/VoiceConext";
+import { useSocketRejoin } from "./hooks/useSocketRejoin";
 import HomePage from "./pages/HomePage";
 import WaitingRoom from "./pages/WaitingRoom";
 import RoleReveal from "./pages/RoleReveal";
@@ -9,22 +9,28 @@ import Discussion from "./pages/Discussion";
 import Vote from "./pages/Vote";
 import Results from "./pages/Results";
 
+function AppRoutes() {
+  useSocketRejoin();
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
+      <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
+      <Route path="/night/:gameCode" element={<NightPhase />} />
+      <Route path="/discussion/:gameCode" element={<Discussion />} />
+      <Route path="/vote/:gameCode" element={<Vote />} />
+      <Route path="/results/:gameCode" element={<Results />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <BrowserRouter>
-      <GameProvider>
-        <VoiceProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
-            <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
-            <Route path="/night/:gameCode" element={<NightPhase />} />
-            <Route path="/discussion/:gameCode" element={<Discussion />} />
-            <Route path="/vote/:gameCode" element={<Vote />} />
-            <Route path="/results/:gameCode" element={<Results />} />
-          </Routes>
-        </VoiceProvider>
-      </GameProvider>
+      <VoiceProvider>
+        <AppRoutes />
+      </VoiceProvider>
     </BrowserRouter>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./RobberAction.css";
 
 // ===== TYPES =====
@@ -21,36 +23,6 @@ interface Props {
   actionResult?: RobberResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 type Phase = "idle" | "submitted" | "reveal" | "swap" | "done";
 
 // ===== COMPONENT =====
@@ -59,11 +31,10 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
   const isRejoin = !!actionResult;
 
   const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "idle");
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(isRejoin && actionResult.targetPlayerId ? actionResult.targetPlayerId : null);
   const [newRole, setNewRole] = useState<string>(isRejoin ? actionResult.newRole : "");
   const hasProcessedResult = useRef(isRejoin);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
@@ -76,24 +47,29 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
 
   const targetIndex = targetId ? players.findIndex((p) => p.id === targetId) : -1;
 
-  // Auto-submit: if actionResult arrives while still idle, extract targetId
-  useEffect(() => {
-    if (actionResult && phase === "idle" && actionResult.targetPlayerId) {
-      setTargetId(actionResult.targetPlayerId);
-    }
-  }, [actionResult, phase]);
-
-  // Animation sequencer: reveal target card → swap positions → done
+  // Animation sequencer — handles both manual action and auto-action
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
-    if (!targetId) return;
+
+    // For auto-action: extract targetId from result if we don't have one
+    const resolvedTargetId = targetId || actionResult.targetPlayerId || null;
+    if (!resolvedTargetId) return;
+
     hasProcessedResult.current = true;
+
+    // Set targetId if it came from auto-action
+    if (!targetId) {
+      setTargetId(resolvedTargetId);
+    }
 
     setNewRole(actionResult.newRole);
 
-    if (phase === "done") return;
-
-    setPhase("reveal");
+    // Lock interactivity immediately
+    if (phase === "idle") {
+      setPhase("reveal");
+    } else {
+      setPhase("reveal");
+    }
 
     const t1 = setTimeout(() => {
       setPhase("swap");
@@ -101,11 +77,10 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
       const t2 = setTimeout(() => {
         setPhase("done");
 
-        // Auto-open modal for the stolen role
         setTimeout(() => {
           if (hasAutoModalFired.current) return;
           hasAutoModalFired.current = true;
-          const targetPlayer = players.find((p) => p.id === targetId);
+          const targetPlayer = players.find((p) => p.id === resolvedTargetId);
           setModalImage(getFullCardImage(actionResult.newRole));
           setModalName(actionResult.newRole);
           setModalSubtitle(targetPlayer?.name);
@@ -117,10 +92,10 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
     }, 900);
 
     return () => clearTimeout(t1);
-  }, [actionResult]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [actionResult, targetId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayerClick = (clickedId: string) => {
-    if (phase !== "idle" || clickedId === playerId) return;
+    if (phase !== "idle" || locked || clickedId === playerId) return;
 
     setTargetId(clickedId);
     setPhase("submitted");
@@ -136,7 +111,6 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
     return positions[playerIndex];
   };
 
-  // Modal handlers
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
     setModalName(name);
@@ -149,12 +123,11 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
   }, []);
 
   const isClickable = !locked && phase === "idle";
-
   const hasTarget = targetId !== null;
 
   return (
-    <div className="rb-action">
-      <div className="rb-circle-area">
+    <div className="role-action">
+      <div className="role-circle-area rb-circle-area">
         {players.map((player, i) => {
           const isSelf = player.id === playerId;
           const isTarget = player.id === targetId;
@@ -164,7 +137,6 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
           const pos = getSlotPosition(i);
           const isSwapping = phase === "swap" && (isSelf || isTarget);
 
-          // Square image for board display
           let faceImage = backCardImage;
           let faceAlt = "Card";
           let faceRole = "";
@@ -183,16 +155,17 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
           return (
             <div
               key={player.id}
-              className={`rb-slot${isSelf ? " rb-slot--self" : ""}${showTargetFace ? " rb-slot--revealed" : ""}${isClickable && !isSelf ? " rb-slot--clickable" : ""}${isSwapping ? " rb-slot--swapping" : ""}`}
+              className={`role-slot ${isSelf ? "role-slot--self" : ""} ${showTargetFace ? "role-slot--revealed" : ""} ${isClickable && !isSelf ? "role-slot--clickable rb-slot--clickable" : ""} ${isSwapping ? "rb-slot--swapping" : ""}`}
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
               }}
               onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}
             >
-              <span className={`rb-name${isSelf ? " rb-name--self" : ""}${showTargetFace ? " rb-name--target" : ""}`}>{phase === "swap" || phase === "done" ? (isSelf ? players.find((p) => p.id === targetId)?.name || player.name : isTarget ? "YOU" : player.name) : isSelf ? "YOU" : player.name}</span>
+              <span className={`role-name ${isSelf ? "role-name--self rb-name--self" : ""} ${showTargetFace ? "rb-name--target" : ""}`}>{phase === "swap" || phase === "done" ? (isSelf ? players.find((p) => p.id === targetId)?.name || player.name : isTarget ? "YOU" : player.name) : isSelf ? "YOU" : player.name}</span>
+
               <div
-                className={`rb-flip${showFace ? " rb-flip--up" : ""}${isSelf || (showFace && !locked) ? " rb-flip--tappable" : ""}`}
+                className={`role-flip ${showFace ? "role-flip--up" : ""} ${isSelf || (showFace && !locked) ? "role-flip--tappable" : ""}`}
                 onClick={
                   isSelf
                     ? (e) => {
@@ -207,53 +180,52 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
                       : undefined
                 }
               >
-                <div className="rb-flip-inner">
-                  <div className="rb-flip-face rb-flip-face--back">
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="rb-flip-face rb-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={faceImage} alt={faceAlt} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {showTargetFace && <div className="rb-glow rb-glow--gold" />}
-              {isSelf && <div className="rb-glow rb-glow--gold rb-glow--subtle" />}
+              {showTargetFace && <div className="role-glow role-glow--gold" />}
+              {isSelf && <div className="role-glow role-glow--subtle-gold" />}
             </div>
           );
         })}
 
         {phase === "reveal" && (
-          <div className="rb-center-message">
-            <span className="rb-msg-text rb-msg-text--gold">STEALING...</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--gold">STEALING...</span>
           </div>
         )}
         {phase === "swap" && (
-          <div className="rb-center-message">
-            <span className="rb-msg-text rb-msg-text--gold">SWAPPING</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--gold">SWAPPING</span>
           </div>
         )}
         {phase === "done" && newRole && (
-          <div className="rb-center-message">
-            <span className="rb-msg-text rb-msg-text--gold">STOLEN</span>
+          <div className="role-center-message">
+            <span className="role-status-text role-status-text--gold">STOLEN</span>
           </div>
         )}
       </div>
 
-      <div className="rb-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="rb-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : (
           <>
-            {phase === "idle" && <span className="rb-bottom-hint">Tap a player's card to steal their role</span>}
-            {phase === "submitted" && <span className="rb-bottom-status">REACHING OUT...</span>}
-            {(phase === "reveal" || phase === "swap") && <span className="rb-bottom-status">{phase === "reveal" ? "REVEALING..." : "SWAPPING..."}</span>}
-            {phase === "done" && <span className="rb-bottom-status rb-bottom-status--done">{newRole ? `You are now the ${newRole}` : "Role stolen"}</span>}
+            {phase === "idle" && <span className="role-bottom-hint">Tap a player's card to steal their role</span>}
+            {phase === "submitted" && <span className="role-bottom-status">REACHING OUT...</span>}
+            {(phase === "reveal" || phase === "swap") && <span className="role-bottom-status">{phase === "reveal" ? "REVEALING..." : "SWAPPING..."}</span>}
+            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">{newRole ? `You are now the ${newRole}` : "Role stolen"}</span>}
           </>
         )}
       </div>
 
-      {/* Card Modal */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
     </div>
   );

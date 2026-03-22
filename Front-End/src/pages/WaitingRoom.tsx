@@ -141,6 +141,7 @@ function WaitingRoom() {
     if (!socket.connected) socket.connect();
 
     const init = async () => {
+      if (!gameCode || !playerName || playerName === "Unknown") return;
       try {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
@@ -198,6 +199,9 @@ function WaitingRoom() {
       if (data.kickedPlayerId === playerId) {
         reset();
         navigate("/");
+      } else {
+        readySetRef.current.delete(data.kickedPlayerId);
+        setPlayers((prev) => prev.filter((p) => p.id !== data.kickedPlayerId));
       }
     });
 
@@ -221,6 +225,8 @@ function WaitingRoom() {
     });
 
     socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
+      console.log("playerListUpdate:", JSON.stringify(data.players));
+
       setPlayers(
         data.players.map((p) => ({
           id: p.id,

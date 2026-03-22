@@ -39,6 +39,8 @@ function emitJoinGame(gameCode: string, playerName: string): Promise<JoinRespons
 // ===== COMPONENT =====
 
 function HomePage() {
+  const reset = useGameStore((s) => s.reset);
+
   const navigate = useNavigate();
   const setSession = useGameStore((s) => s.setSession);
   const setPhase = useGameStore((s) => s.setPhase);
@@ -58,6 +60,10 @@ function HomePage() {
   const [charSwitching, setCharSwitching] = useState(false);
   const [displayedChar, setDisplayedChar] = useState<CharacterData>(characters[0]);
   const switchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    reset();
+  }, [reset]);
 
   // Trigger mount animation
   useEffect(() => {

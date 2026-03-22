@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { backCardImage } from "../../characters";
+import { getSquareImage, getFullCardImage, getCirclePositions } from "../../utils/roleHelpers";
 import CardModal from "../CardModal";
+import "../roles/shared/RoleShared.css";
 import "./SeerAction.css";
 
 // ===== TYPES =====
@@ -24,71 +26,35 @@ interface Props {
   actionResult?: SeerResult | null;
 }
 
-// ===== HELPERS =====
-
-function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
-}
-
-function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
-}
-
-function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
-  const positions: Array<{ x: number; y: number }> = [];
-  const angleStep = 360 / count;
-
-  for (let i = 0; i < count; i++) {
-    const offset = (i - selfIndex + count) % count;
-    const angleDeg = 270 + offset * angleStep;
-    const angleRad = (angleDeg * Math.PI) / 180;
-
-    positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
-    });
-  }
-
-  return positions;
-}
-
 // ===== COMPONENT =====
 
 function SeerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const [mode, setMode] = useState<"player" | "ground" | null>(null);
   const [submitted, setSubmitted] = useState(!!actionResult);
 
-  // Player selection
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [revealedPlayerId, setRevealedPlayerId] = useState<string | null>(null);
   const [revealedPlayerRole, setRevealedPlayerRole] = useState<string>("");
 
-  // Ground selection
   const [selectedGroundIds, setSelectedGroundIds] = useState<string[]>([]);
   const [revealedGroundMap, setRevealedGroundMap] = useState<Record<string, string>>({});
 
   const hasProcessedResult = useRef(false);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
-  // Ground peek modal (2 cards side by side)
   const [groundModalOpen, setGroundModalOpen] = useState(false);
   const [groundModalCards, setGroundModalCards] = useState<Array<{ name: string; image: string }>>([]);
 
-  // Track if auto-modal has fired
   const hasAutoModalFired = useRef(false);
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
-  // Process action result
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
@@ -102,7 +68,6 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
           setRevealedPlayerId(target.id);
         }, 400);
 
-        // Auto-open single card modal
         setTimeout(() => {
           if (hasAutoModalFired.current) return;
           hasAutoModalFired.current = true;
@@ -133,7 +98,6 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
         );
       });
 
-      // Auto-open ground peek modal after both flip
       const totalFlipTime = 400 + (entries.length - 1) * 400;
       setTimeout(() => {
         if (hasAutoModalFired.current) return;
@@ -190,7 +154,6 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
     [submitted, mode, selectedGroundIds, onAction],
   );
 
-  // Modal handlers
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
     setModalName(name);
@@ -206,9 +169,8 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
   const canClickGround = !locked && !submitted && mode !== "player";
 
   return (
-    <div className="sr-action">
-      <div className="sr-circle-area">
-        {/* Player cards around the circle */}
+    <div className="role-action">
+      <div className="role-circle-area">
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelf = player.id === playerId;
@@ -217,11 +179,11 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
           const isFaceUp = isSelf || isRevealed;
 
           return (
-            <div key={player.id} className={`sr-slot ${isSelf ? "sr-slot--self" : ""} ${isRevealed ? "sr-slot--revealed" : ""} ${isClickable ? "sr-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && handlePlayerClick(player.id)}>
-              <span className={`sr-name ${isSelf ? "sr-name--self" : ""} ${isRevealed ? "sr-name--revealed" : ""}`}>{isSelf ? "YOU" : player.name}</span>
+            <div key={player.id} className={`role-slot ${isSelf ? "role-slot--self" : ""} ${isRevealed ? "role-slot--revealed" : ""} ${isClickable ? "role-slot--clickable sr-slot--clickable" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} onClick={() => isClickable && handlePlayerClick(player.id)}>
+              <span className={`role-name ${isSelf ? "role-name--self sr-name--self" : ""} ${isRevealed ? "sr-name--revealed" : ""}`}>{isSelf ? "YOU" : player.name}</span>
 
               <div
-                className={`sr-flip ${isFaceUp ? "sr-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "sr-flip--tappable" : ""}`}
+                className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`}
                 onClick={
                   isSelf
                     ? (e) => {
@@ -236,24 +198,23 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
                       : undefined
                 }
               >
-                <div className="sr-flip-inner">
-                  <div className="sr-flip-face sr-flip-face--back">
+                <div className="role-flip-inner">
+                  <div className="role-flip-face role-flip-face--back">
                     <img src={backCardImage} alt="Card back" draggable={false} />
                   </div>
-                  <div className="sr-flip-face sr-flip-face--front">
+                  <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("seer") : isRevealed ? getSquareImage(revealedPlayerRole) : backCardImage} alt={isSelf ? "Seer" : isRevealed ? revealedPlayerRole : "Card"} draggable={false} />
                   </div>
                 </div>
               </div>
 
-              {isRevealed && <div className="sr-glow sr-glow--green" />}
-              {isSelf && <div className="sr-glow sr-glow--green sr-glow--subtle" />}
+              {isRevealed && <div className="role-glow role-glow--green" />}
+              {isSelf && <div className="role-glow role-glow--subtle-green" />}
             </div>
           );
         })}
 
-        {/* Ground cards in the center */}
-        <div className="sr-ground">
+        <div className="role-ground">
           {groundCards.slice(0, 3).map((gc) => {
             const isRevealed = !!revealedGroundMap[gc.id];
             const isSelected = selectedGroundIds.includes(gc.id);
@@ -261,9 +222,9 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
             const revealedRole = revealedGroundMap[gc.id] || "";
 
             return (
-              <div key={gc.id} className={`sr-ground-card ${isSelected ? "sr-ground-card--selected" : ""} ${isRevealed ? "sr-ground-card--revealed" : ""} ${isClickable ? "sr-ground-card--clickable" : ""}`} onClick={() => isClickable && handleGroundClick(gc.id)}>
+              <div key={gc.id} className={`role-ground-card ${isSelected ? "sr-ground-card--selected" : ""} ${isRevealed ? "role-ground-card--revealed" : ""} ${isClickable ? "role-ground-card--clickable sr-ground-card--clickable" : ""}`} onClick={() => isClickable && handleGroundClick(gc.id)}>
                 <div
-                  className={`sr-flip sr-flip--ground ${isRevealed ? "sr-flip--up" : ""} ${isRevealed ? "sr-flip--tappable" : ""}`}
+                  className={`role-flip role-flip--ground ${isRevealed ? "role-flip--up" : ""} ${isRevealed ? "role-flip--tappable" : ""}`}
                   onClick={
                     isRevealed
                       ? (e) => {
@@ -273,60 +234,55 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
                       : undefined
                   }
                 >
-                  <div className="sr-flip-inner">
-                    <div className="sr-flip-face sr-flip-face--back">
+                  <div className="role-flip-inner">
+                    <div className="role-flip-face role-flip-face--back">
                       <img src={backCardImage} alt="Ground card" draggable={false} />
                     </div>
-                    <div className="sr-flip-face sr-flip-face--front">
+                    <div className="role-flip-face role-flip-face--front">
                       <img src={isRevealed ? getSquareImage(revealedRole) : backCardImage} alt={isRevealed ? revealedRole : "Ground card"} draggable={false} />
                     </div>
                   </div>
                 </div>
-                {isRevealed && <div className="sr-glow sr-glow--green" />}
+                {isRevealed && <div className="role-glow role-glow--green" />}
               </div>
             );
           })}
         </div>
 
-        {/* Instruction / status in center */}
-
         {!submitted && mode === "ground" && selectedGroundIds.length === 1 && (
-          <div className="sr-center-hint">
-            <span className="sr-hint-text">PICK ONE MORE</span>
+          <div className="role-center-hint">
+            <span className="role-hint-text">PICK ONE MORE</span>
           </div>
         )}
       </div>
 
-      {/* Bottom status */}
-      <div className="sr-bottom">
+      <div className="role-bottom">
         {locked ? (
-          <span className="sr-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
         ) : !submitted ? (
-          <span className="sr-bottom-hint">{mode === "ground" ? `${selectedGroundIds.length}/2 ground cards selected` : "Choose a player's card or two ground cards"}</span>
+          <span className="role-bottom-hint">{mode === "ground" ? `${selectedGroundIds.length}/2 ground cards selected` : "Choose a player's card or two ground cards"}</span>
         ) : !actionResult ? (
-          <span className="sr-bottom-status">REVEALING...</span>
+          <span className="role-bottom-status">REVEALING...</span>
         ) : (
-          <span className="sr-bottom-status sr-bottom-status--done">{actionResult.actionType === "player" ? `You saw ${actionResult.playerName}'s role` : "You peeked at the ground"}</span>
+          <span className="role-bottom-status role-bottom-status--done">{actionResult.actionType === "player" ? `You saw ${actionResult.playerName}'s role` : "You peeked at the ground"}</span>
         )}
       </div>
 
-      {/* Single Card Modal (player peek) */}
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
 
-      {/* Ground Peek Modal (2 cards side by side) */}
       {groundModalOpen && (
-        <div className="sr-ground-modal-overlay" onClick={() => setGroundModalOpen(false)}>
-          <div className="sr-ground-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="sr-ground-modal-title">GROUND CARDS</span>
-            <div className="sr-ground-modal-cards">
+        <div className="role-pack-overlay" onClick={() => setGroundModalOpen(false)}>
+          <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="role-pack-title role-pack-title--green">GROUND CARDS</span>
+            <div className="role-pack-cards">
               {groundModalCards.map((card, i) => (
-                <div key={i} className="sr-ground-modal-card">
-                  <img src={card.image} alt={card.name} className="sr-ground-modal-img" />
-                  <span className="sr-ground-modal-name">{card.name}</span>
+                <div key={i} className="role-pack-card">
+                  <img src={card.image} alt={card.name} className="role-pack-img role-pack-img--green" />
+                  <span className="role-pack-name">{card.name}</span>
                 </div>
               ))}
             </div>
-            <button className="sr-ground-modal-close" onClick={() => setGroundModalOpen(false)}>
+            <button className="role-pack-close" onClick={() => setGroundModalOpen(false)}>
               CLOSE
             </button>
           </div>

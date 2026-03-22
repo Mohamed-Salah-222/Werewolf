@@ -72,6 +72,7 @@ export const getGameByCode = (req: Request, res: Response): void => {
         timer: game.timer,
         host: game.host,
         readyPlayers: readyPLayersArr,
+        confirmedPlayerRoleReveal: game.confirmedPlayerRoleReveal,
       },
     });
   } catch (error) {
