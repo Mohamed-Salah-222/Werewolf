@@ -1,160 +1,168 @@
-/* ===== NIGHT ROLE PROGRESS — STACKED CARD ===== */
-.nrp-stack {
-  position: relative;
+/* ===== NIGHT ROLE PROGRESS — HORIZONTAL CAROUSEL ===== */
+.nrp-carousel {
+  width: 100%;
+  flex-shrink: 0;
+  padding: 16px 0;
+}
+
+.nrp-track {
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(12px, 2vw, 18px);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 12px 0 12px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.nrp-track::-webkit-scrollbar {
+  display: none;
+}
+
+/* ===== SPACER ===== */
+.nrp-spacer {
+  flex-shrink: 0;
+  width: 50%;
+}
+
+/* ===== ITEM ===== */
+.nrp-item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  gap: 4px;
   flex-shrink: 0;
-}
-
-/* ===== CARD ===== */
-.nrp-card {
-  position: relative;
-  width: clamp(80px, 10vw, 115px);
-  height: clamp(112px, 14vw, 161px);
-  border-radius: 5px;
-  overflow: visible;
-  z-index: 3;
-}
-
-.nrp-card-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 5px;
-  display: block;
-  border: 1px solid var(--color-border-dark);
-}
-
-/* Active card entrance */
-.nrp-card--active {
-  animation: cardEnter 0.4s ease-out;
-}
-
-.nrp-card--active .nrp-card-img {
-  border-color: rgba(201, 168, 76, 0.3);
-}
-
-.nrp-card--mine .nrp-card-img {
-  border-color: rgba(201, 168, 76, 0.5);
-  box-shadow: 0 0 16px rgba(201, 168, 76, 0.2);
-}
-
-/* Exit animation */
-.nrp-card--exit {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-  animation: cardExit 0.5s ease-in forwards;
-  pointer-events: none;
-}
-
-@keyframes cardEnter {
-  0% {
-    opacity: 0;
-    transform: translateY(8px) scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes cardExit {
-  0% {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0) scale(1);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(-50%) translateY(-24px) scale(0.9);
-  }
-}
-
-/* Tappable card */
-.nrp-card--tappable {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.3s ease;
 }
 
-/* ===== SVG BORDER TIMER ===== */
-.nrp-border-timer {
-  position: absolute;
-  inset: -3px;
-  width: calc(100% + 6px);
-  height: calc(100% + 6px);
-  z-index: 4;
-  pointer-events: none;
-}
-
-.nrp-border-bg {
-  fill: none;
-  stroke: rgba(201, 168, 76, 0.1);
-  stroke-width: 2.5;
-}
-
-.nrp-border-progress {
-  fill: none;
-  stroke: var(--color-gold);
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  transition:
-    stroke-dashoffset 1s linear,
-    stroke 0.3s ease;
-  filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.5));
-}
-
-.nrp-border-progress--urgent {
-  stroke: var(--color-villain);
-  filter: drop-shadow(0 0 4px rgba(196, 30, 30, 0.6));
-}
-
-/* ===== ROLE NAME LABEL ===== */
-.nrp-role-name {
-  display: block;
-  text-align: center;
-  margin-top: 6px;
-  font-size: clamp(7px, 0.75vw, 10px);
-  font-family: var(--font-display);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: #5a4a30;
-  white-space: nowrap;
-  width: 100%;
-}
-
-.nrp-role-name--mine {
-  color: var(--color-gold);
-}
-
-/* ===== SHADOW CARDS (stack depth) ===== */
-.nrp-shadow {
-  position: absolute;
-  width: clamp(80px, 10vw, 115px);
-  height: clamp(112px, 14vw, 161px);
-  border-radius: 5px;
-  background-color: #0d0a08;
-  border: 1px solid var(--color-border-dark);
-  pointer-events: none;
-}
-
-.nrp-shadow--1 {
-  top: 4px;
-  left: 50%;
-  transform: translateX(calc(-50% + 3px));
-  z-index: 1;
+.nrp-item--completed {
   opacity: 0.4;
 }
 
-.nrp-shadow--2 {
-  top: 8px;
-  left: 50%;
-  transform: translateX(calc(-50% + 6px));
-  z-index: 0;
-  opacity: 0.2;
+.nrp-item--upcoming {
+  opacity: 0.5;
+}
+
+/* ===== THUMBNAIL WRAPPER — CIRCLE ONLY ===== */
+.nrp-thumb-wrapper {
+  position: relative;
+  width: clamp(62px, 10vw, 82px);
+  height: clamp(62px, 10vw, 82px);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid transparent;
+  background-color: #0a0a0a;
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+  flex-shrink: 0;
+}
+
+/* ===== THUMBNAIL IMAGE ===== */
+.nrp-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 20%;
+  display: block;
+  border-radius: 50%;
+}
+
+/* ===== ACTIVE STATE ===== */
+.nrp-item--active .nrp-thumb-wrapper {
+  border-color: var(--color-gold);
+  border-width: 3px;
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.3);
+}
+
+.nrp-item--active .nrp-thumb {
+  filter: brightness(1.1);
+}
+
+/* ===== MY ROLE + ACTIVE ===== */
+.nrp-item--mine .nrp-thumb-wrapper {
+  border-color: var(--color-gold);
+  border-width: 3px;
+  box-shadow: 0 0 28px rgba(201, 168, 76, 0.45);
+}
+
+/* ===== COMPLETED ===== */
+.nrp-item--completed .nrp-thumb-wrapper {
+  border-color: rgba(240, 230, 208, 0.05);
+}
+
+.nrp-item--completed .nrp-thumb {
+  filter: brightness(0);
+}
+
+/* ===== UPCOMING ===== */
+.nrp-item--upcoming .nrp-thumb-wrapper {
+  border-color: rgba(240, 230, 208, 0.08);
+}
+
+.nrp-item--upcoming .nrp-thumb {
+  filter: brightness(0.4);
+}
+
+/* ===== LABEL ===== */
+.nrp-label {
+  font-size: clamp(8px, 1.2vw, 11px);
+  font-family: var(--font-display);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(240, 230, 208, 0.3);
+  white-space: nowrap;
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.nrp-label--active {
+  color: rgba(240, 230, 208, 0.7);
+}
+
+.nrp-label--mine {
+  color: var(--color-gold);
+}
+
+.nrp-label--completed {
+  color: rgba(240, 230, 208, 0.15);
+}
+
+/* ===== TIMER TEXT ===== */
+.nrp-timer-text {
+  font-size: clamp(8px, 1vw, 11px);
+  font-family: var(--font-body);
+  color: var(--color-gold);
+  letter-spacing: 0.5px;
+  animation: nrpPulse 2s ease-in-out infinite;
+}
+
+.nrp-timer-text--urgent {
+  color: var(--color-villain);
+  animation: nrpUrgentPulse 0.8s ease-in-out infinite;
+}
+
+@keyframes nrpPulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes nrpUrgentPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 /* ============================================================
@@ -162,34 +170,39 @@
    ============================================================ */
 
 @media (max-width: 768px) {
-  .nrp-card {
-    width: clamp(68px, 20vw, 90px);
-    height: clamp(95px, 28vw, 126px);
+  .nrp-track {
+    gap: clamp(6px, 3vw, 12px);
+    padding: 8px 0 12px;
   }
 
-  .nrp-shadow {
-    width: clamp(68px, 20vw, 90px);
-    height: clamp(95px, 28vw, 126px);
+  .nrp-thumb-wrapper {
+    width: clamp(52px, 15vw, 66px);
+    height: clamp(52px, 15vw, 66px);
   }
 
-  .nrp-role-name {
-    font-size: clamp(7px, 2.2vw, 9px);
-    color: rgba(240, 230, 208, 0.5);
+  .nrp-label {
+    font-size: clamp(7px, 2.5vw, 10px);
   }
 
-  .nrp-role-name--mine {
-    color: var(--color-gold);
+  .nrp-timer-text {
+    font-size: clamp(7px, 2.2vw, 10px);
   }
 }
 
 @media (max-width: 480px) {
-  .nrp-card {
-    width: clamp(62px, 17vw, 80px);
-    height: clamp(87px, 23.8vw, 112px);
+  .nrp-thumb-wrapper {
+    width: clamp(46px, 14vw, 58px);
+    height: clamp(46px, 14vw, 58px);
   }
 
-  .nrp-shadow {
-    width: clamp(62px, 17vw, 80px);
-    height: clamp(87px, 23.8vw, 112px);
+  .nrp-label {
+    font-size: clamp(6px, 2vw, 9px);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .nrp-thumb-wrapper {
+    width: 48px;
+    height: 48px;
   }
 }

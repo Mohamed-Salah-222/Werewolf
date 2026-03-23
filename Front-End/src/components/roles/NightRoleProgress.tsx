@@ -32,23 +32,33 @@ function getFullCardImage(roleName: string): string {
 // ===== COMPONENT =====
 
 function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
-  const [exitingRole, setExitingRole] = useState<string | null>(null);
-  const prevActiveRef = useRef<string>(activeRole);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
 
+  const activeIndex = roleQueue.findIndex((r) => r.roleName.toLowerCase() === activeRole.toLowerCase());
+  const timerMax = activeIndex >= 0 ? roleQueue[activeIndex]?.seconds || 0 : 0;
+  const isUrgent = timer <= 5 && timer > 0;
+
+  // Auto-scroll to center active role
   useEffect(() => {
-    const prev = prevActiveRef.current;
-    if (prev && prev !== activeRole) {
-      setExitingRole(prev);
-      const timeout = setTimeout(() => setExitingRole(null), 500);
-      return () => clearTimeout(timeout);
-    }
-    prevActiveRef.current = activeRole;
-  }, [activeRole]);
+    if (!scrollRef.current || activeIndex < 0) return;
+
+    const container = scrollRef.current;
+    const activeEl = itemRefs.current[activeIndex];
+    if (!activeEl) return;
+
+    const containerWidth = container.offsetWidth;
+    const elLeft = activeEl.offsetLeft;
+    const elWidth = activeEl.offsetWidth;
+    const scrollTarget = elLeft - containerWidth / 2 + elWidth / 2;
+
+    container.scrollTo({ left: scrollTarget, behavior: "smooth" });
+  }, [activeIndex]);
 
   const openModal = useCallback((roleName: string) => {
     setModalImage(getFullCardImage(roleName));
@@ -60,60 +70,42 @@ function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
     setModalOpen(false);
   }, []);
 
-  const activeIndex = roleQueue.findIndex((r) => r.roleName.toLowerCase() === activeRole.toLowerCase());
-
-  const activeItem = activeIndex >= 0 ? roleQueue[activeIndex] : null;
-  const isMine = activeItem ? myRole.toLowerCase() === activeItem.roleName.toLowerCase() : false;
-  const timerMax = activeItem?.seconds || 0;
-  const timerFraction = timerMax > 0 ? timer / timerMax : 0;
-  const isUrgent = timer <= 5 && timer > 0;
-
-  const remaining = activeIndex >= 0 ? roleQueue.length - activeIndex : 0;
-
-  // SVG perimeter for the border timer
-  const svgW = 70;
-  const svgH = 98;
-  const inset = 2;
-  const rx = 5;
-  const rectW = svgW - inset * 2;
-  const rectH = svgH - inset * 2;
-  const perimeter = 2 * (rectW + rectH - 4 * rx) + 2 * Math.PI * rx;
-  const dashOffset = perimeter * (1 - timerFraction);
-
   return (
-    <div className="nrp-stack">
-      {/* Exiting card */}
-      {exitingRole && (
-        <div className="nrp-card nrp-card--exit" key={`exit-${exitingRole}`}>
-          <img src={getSquareImage(exitingRole)} alt={exitingRole} className="nrp-card-img" draggable={false} />
-        </div>
-      )}
+    <div className="nrp-carousel">
+      <div className="nrp-track" ref={scrollRef}>
+        {/* Left spacer — half container width so first item can center */}
+        <div className="nrp-spacer" />
 
-      {/* Active card */}
-      {activeItem && (
-        <div className={`nrp-card nrp-card--active ${isMine ? "nrp-card--mine" : ""} nrp-card--tappable`} key={`active-${activeItem.roleName}`} onClick={() => openModal(activeItem.roleName)}>
-          <img src={getSquareImage(activeItem.roleName)} alt={activeItem.roleName} className="nrp-card-img" draggable={false} />
+        {roleQueue.map((item, i) => {
+          const isActive = i === activeIndex;
+          const isCompleted = activeIndex >= 0 && i < activeIndex;
+          const isUpcoming = activeIndex >= 0 && i > activeIndex;
+          const isMyRole = myRole.toLowerCase() === item.roleName.toLowerCase();
 
-          {/* SVG border timer circling the card */}
-          <svg className="nrp-border-timer" viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none">
-            <rect className="nrp-border-bg" x={inset} y={inset} width={rectW} height={rectH} rx={rx} ry={rx} />
-            <rect className={`nrp-border-progress ${isUrgent ? "nrp-border-progress--urgent" : ""}`} x={inset} y={inset} width={rectW} height={rectH} rx={rx} ry={rx} strokeDasharray={perimeter} strokeDashoffset={dashOffset} />
-          </svg>
+          return (
+            <div
+              key={item.roleName}
+              ref={(el) => {
+                itemRefs.current[i] = el;
+              }}
+              className={`nrp-item ${isActive ? "nrp-item--active" : ""} ${isCompleted ? "nrp-item--completed" : ""} ${isUpcoming ? "nrp-item--upcoming" : ""} ${isMyRole && isActive ? "nrp-item--mine" : ""}`}
+              onClick={() => openModal(item.roleName)}
+            >
+              <div className="nrp-thumb-wrapper">
+                <img src={getSquareImage(item.roleName)} alt={item.roleName} className="nrp-thumb" draggable={false} />
+              </div>
 
-          {/* Role name label */}
-          <span className={`nrp-role-name ${isMine ? "nrp-role-name--mine" : ""}`}>{activeItem.roleName}</span>
-        </div>
-      )}
+              <span className={`nrp-label ${isActive ? "nrp-label--active" : ""} ${isMyRole && isActive ? "nrp-label--mine" : ""} ${isCompleted ? "nrp-label--completed" : ""}`}>{item.roleName}</span>
 
-      {/* Stack depth shadows */}
-      {remaining > 1 && (
-        <>
-          <div className="nrp-shadow nrp-shadow--1" />
-          {remaining > 2 && <div className="nrp-shadow nrp-shadow--2" />}
-        </>
-      )}
+              {isActive && timer > 0 && <span className={`nrp-timer-text ${isUrgent ? "nrp-timer-text--urgent" : ""}`}>{timer}s</span>}
+            </div>
+          );
+        })}
 
-      {/* Card Modal */}
+        {/* Right spacer — half container width so last item can center */}
+        <div className="nrp-spacer" />
+      </div>
+
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} />
     </div>
   );

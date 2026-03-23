@@ -55,6 +55,14 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
+  // Lock clicks immediately when result arrives
+  useEffect(() => {
+    if (actionResult && !submitted) {
+      setSubmitted(true);
+    }
+  }, [actionResult]);
+
+  // Process result animation
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
@@ -79,13 +87,21 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
       }
     } else if (actionResult.actionType === "ground") {
       setMode("ground");
+
+      // For auto-action: if no ground cards were selected by player, pick first two
+      let groundIds = selectedGroundIds;
+      if (groundIds.length === 0 && groundCards.length >= 2) {
+        groundIds = [groundCards[0].id, groundCards[1].id];
+        setSelectedGroundIds(groundIds);
+      }
+
       const map: Record<string, string> = {};
 
-      if (actionResult.groundRole1 && selectedGroundIds[0]) {
-        map[selectedGroundIds[0]] = actionResult.groundRole1;
+      if (actionResult.groundRole1 && groundIds[0]) {
+        map[groundIds[0]] = actionResult.groundRole1;
       }
-      if (actionResult.groundRole2 && selectedGroundIds[1]) {
-        map[selectedGroundIds[1]] = actionResult.groundRole2;
+      if (actionResult.groundRole2 && groundIds[1]) {
+        map[groundIds[1]] = actionResult.groundRole2;
       }
 
       const entries = Object.entries(map);

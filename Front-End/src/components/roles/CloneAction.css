@@ -16,10 +16,11 @@
 
 .cl-banner {
   padding: 6px 16px;
-  background-color: rgba(42, 138, 74, 0.1);
-  border: 1px solid rgba(42, 138, 74, 0.3);
+  background-color: rgba(201, 168, 76, 0.06);
+  border: 1px solid rgba(201, 168, 76, 0.25);
   border-radius: 4px;
-  margin-bottom: clamp(8px, 1.2vw, 14px);
+  margin-top: -8px;
+  margin-bottom: clamp(12px, 1.5vw, 18px);
   text-align: center;
 }
 
@@ -27,7 +28,7 @@
   font-size: clamp(9px, 0.9vw, 11px);
   font-weight: 400;
   letter-spacing: 3px;
-  color: var(--color-village);
+  color: rgba(240, 230, 208, 0.8);
   font-family: var(--font-display);
 }
 
