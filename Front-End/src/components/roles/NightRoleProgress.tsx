@@ -41,7 +41,6 @@ function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
   const [modalName, setModalName] = useState("");
 
   const activeIndex = roleQueue.findIndex((r) => r.roleName.toLowerCase() === activeRole.toLowerCase());
-  const timerMax = activeIndex >= 0 ? roleQueue[activeIndex]?.seconds || 0 : 0;
   const isUrgent = timer <= 5 && timer > 0;
 
   // Auto-scroll to center active role
