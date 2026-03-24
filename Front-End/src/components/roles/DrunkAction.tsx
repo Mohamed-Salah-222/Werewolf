@@ -60,22 +60,19 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
     const isAutoAction = !selectedGroundId;
 
     if (isAutoAction) {
-      // Server auto-picked — pick a random ground card visually
       const randomGround = visibleGround[Math.floor(Math.random() * visibleGround.length)];
-      if (randomGround) {
-        setSelectedGroundId(randomGround.id);
-      }
-      // Lock clicks and let the card render at original position first
-      setPhase("submitted");
+
+      setTimeout(() => {
+        if (randomGround) {
+          setSelectedGroundId(randomGround.id);
+        }
+        setPhase("submitted");
+      }, 0);
 
       setTimeout(() => {
         setPhase("swap");
         setTimeout(() => setPhase("done"), 900);
       }, 100);
-    } else {
-      // Manual action — go straight to swap
-      setPhase("swap");
-      setTimeout(() => setPhase("done"), 900);
     }
   }, [actionResult]); // eslint-disable-line react-hooks/exhaustive-deps
 

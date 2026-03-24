@@ -32,7 +32,7 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
 
   const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "idle");
   const [targetId, setTargetId] = useState<string | null>(isRejoin && actionResult.targetPlayerId ? actionResult.targetPlayerId : null);
-  const [newRole, setNewRole] = useState<string>(isRejoin ? actionResult.newRole : "");
+  const newRole = actionResult?.newRole || "";
   const hasProcessedResult = useRef(isRejoin);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,16 +51,16 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
   // Step 1: When auto-action arrives, set targetId and lock clicks — but DON'T animate yet
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
-    if (targetId) return; // Manual action — targetId already set, skip this effect
+    if (targetId) return;
 
     const resolvedTargetId = actionResult.targetPlayerId || null;
     if (!resolvedTargetId) return;
 
-    // Store for step 2 and lock clicks
     autoActionTargetRef.current = resolvedTargetId;
-    setTargetId(resolvedTargetId);
-    setNewRole(actionResult.newRole);
-    setPhase("submitted"); // locks clicks, card renders at original position
+    setTimeout(() => {
+      setTargetId(resolvedTargetId);
+      setPhase("submitted");
+    }, 0);
   }, [actionResult, targetId]);
 
   // Step 2: Once targetId is set and rendered, start the animation
@@ -69,7 +69,6 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
     if (!targetId) return;
 
     hasProcessedResult.current = true;
-    setNewRole(actionResult.newRole);
 
     // Small delay so the target card renders at its original position first
     const isAutoAction = autoActionTargetRef.current !== null;

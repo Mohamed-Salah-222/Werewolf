@@ -72,11 +72,9 @@ type ClonePhase = "pick" | "cloning" | "morph" | "phase2";
 // ===== COMPONENT =====
 
 function CloneAction({ playerId, locked = false, players, groundCards, onAction, onCloneFirstAction, cloneResult, actionResult }: Props) {
-  const initialClonedRole = cloneResult?.clonedRole || "";
-
   const [phase, setPhase] = useState<ClonePhase>(cloneResult ? "phase2" : "pick");
   const [targetId, setTargetId] = useState<string | null>(null);
-  const [clonedRoleName, setClonedRoleName] = useState<string>(initialClonedRole);
+  const clonedRoleName = cloneResult?.clonedRole || "";
   const hasProcessedCloneResult = useRef(!!cloneResult);
 
   // Modal state
@@ -96,12 +94,10 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     if (!cloneResult || hasProcessedCloneResult.current) return;
     hasProcessedCloneResult.current = true;
 
-    queueMicrotask(() => {
-      setClonedRoleName(cloneResult.clonedRole);
+    const morphTimer = setTimeout(() => {
       setPhase("morph");
-    });
+    }, 50);
 
-    // Auto-open modal showing the cloned role
     const modalTimer = setTimeout(() => {
       if (hasAutoModalFired.current) return;
       hasAutoModalFired.current = true;
@@ -116,6 +112,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     }, 2000);
 
     return () => {
+      clearTimeout(morphTimer);
       clearTimeout(modalTimer);
       clearTimeout(phaseTimer);
     };
@@ -171,7 +168,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
           {roleLower === "robber" && <RobberAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
           {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
           {roleLower === "drunk" && <DrunkAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
-          {roleLower === "joker" && <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "joker" && <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={(actionResult && "groundRole" in actionResult ? actionResult : null) as never} />}
         </div>
       );
     }

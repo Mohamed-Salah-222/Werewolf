@@ -26,10 +26,11 @@ interface Props {
 // ===== COMPONENT =====
 
 function WerewolfAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
-  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [manuallySubmitted, setManuallySubmitted] = useState(!!actionResult);
+  const submitted = manuallySubmitted || !!actionResult;
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [revealedGroundIdx, setRevealedGroundIdx] = useState<number | null>(null);
-  const [groundCardName, setGroundCardName] = useState<string>("");
+  const groundCardName = actionResult?.isAlone ? actionResult.groundCard || "" : "";
   const hasProcessedResult = useRef(false);
 
   // Modal state
@@ -46,12 +47,6 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
-
-  useEffect(() => {
-    if (actionResult && !submitted) {
-      setSubmitted(true);
-    }
-  }, [actionResult]);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -90,7 +85,6 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
         }
       }, totalFlipTime + 600);
     } else if (actionResult.isAlone && actionResult.groundCard) {
-      setGroundCardName(actionResult.groundCard);
       const randomIdx = Math.floor(Math.random() * Math.max(groundCards.length, 1));
 
       setTimeout(() => {
@@ -110,7 +104,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
   }, [actionResult, groundCards.length]);
 
   const handleOpenEyes = () => {
-    setSubmitted(true);
+    setManuallySubmitted(true);
     onAction({ type: "werewolf" });
   };
 

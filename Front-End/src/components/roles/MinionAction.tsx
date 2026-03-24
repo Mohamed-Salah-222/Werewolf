@@ -23,7 +23,8 @@ interface Props {
 // ===== COMPONENT =====
 
 function MinionAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
-  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [manuallySubmitted, setManuallySubmitted] = useState(!!actionResult);
+  const submitted = manuallySubmitted || !!actionResult;
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [showNoWolves, setShowNoWolves] = useState(false);
   const hasProcessedResult = useRef(false);
@@ -40,12 +41,6 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
-
-  useEffect(() => {
-    if (actionResult && !submitted) {
-      setSubmitted(true);
-    }
-  }, [actionResult]);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -91,7 +86,7 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
   }, [actionResult]);
 
   const handleAction = () => {
-    setSubmitted(true);
+    setManuallySubmitted(true);
     onAction({ type: "minion" });
   };
 

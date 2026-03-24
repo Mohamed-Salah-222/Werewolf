@@ -47,8 +47,10 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     if (!isRejoin || !actionResult) return;
     const p1 = players.find((p) => p.name === actionResult.player1Name);
     const p2 = players.find((p) => p.name === actionResult.player2Name);
-    if (p1) setTarget1Id(p1.id);
-    if (p2) setTarget2Id(p2.id);
+    setTimeout(() => {
+      if (p1) setTarget1Id(p1.id);
+      if (p2) setTarget2Id(p2.id);
+    }, 0);
   }, [isRejoin, actionResult, players]);
 
   // Process result — handles both manual and auto-action
@@ -64,22 +66,27 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
       const p = players.find((pl) => pl.name === actionResult.player1Name);
       if (p) {
         t1Id = p.id;
-        setTarget1Id(p.id);
       }
     }
     if (!t2Id && actionResult.player2Name) {
       const p = players.find((pl) => pl.name === actionResult.player2Name);
       if (p) {
         t2Id = p.id;
-        setTarget2Id(p.id);
       }
     }
 
     if (phase === "done") return;
     if (!t1Id || !t2Id) return;
 
-    // Lock interactivity and animate
-    setPhase("swap");
+    const resolvedT1 = t1Id;
+    const resolvedT2 = t2Id;
+
+    setTimeout(() => {
+      setTarget1Id(resolvedT1);
+      setTarget2Id(resolvedT2);
+      setPhase("swap");
+    }, 0);
+
     const t = setTimeout(() => setPhase("done"), 900);
     return () => clearTimeout(t);
   }, [actionResult, players]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -42,7 +42,7 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
   const isRejoin = !!validResult;
 
   const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : autoSubmitted ? "submitted" : "asleep");
-  const [result, setResult] = useState<InsomniacResult | null>(isRejoin ? validResult : null);
+  const result = validResult;
   const hasProcessedResult = useRef(isRejoin);
 
   useEffect(() => {
@@ -50,8 +50,10 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
     if (!isValidResult(actionResult)) return;
 
     hasProcessedResult.current = true;
-    setResult(actionResult);
-    setPhase("reveal");
+
+    setTimeout(() => {
+      setPhase("reveal");
+    }, 0);
 
     const timer = setTimeout(() => setPhase("done"), 1200);
     return () => clearTimeout(timer);

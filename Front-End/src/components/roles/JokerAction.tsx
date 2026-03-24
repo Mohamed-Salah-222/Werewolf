@@ -24,9 +24,10 @@ interface Props {
 // ===== COMPONENT =====
 
 function JokerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
-  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [manuallySubmitted, setManuallySubmitted] = useState(false);
   const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
-  const [revealedRole, setRevealedRole] = useState<string>("");
+  const submitted = manuallySubmitted || !!actionResult;
+  const revealedRole = actionResult?.groundRole || "";
   const hasProcessedResult = useRef(!!actionResult);
   const hasAutoModalFired = useRef(false);
 
@@ -43,8 +44,6 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
     hasProcessedResult.current = true;
 
     if (actionResult.groundRole) {
-      setRevealedRole(actionResult.groundRole);
-
       setTimeout(() => {
         if (hasAutoModalFired.current) return;
         hasAutoModalFired.current = true;
@@ -55,18 +54,12 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
       }, 1000);
     }
   }, [actionResult]);
-
-  useEffect(() => {
-    if (actionResult?.groundRole && !revealedRole) {
-      setRevealedRole(actionResult.groundRole);
-    }
-  }, [actionResult, revealedRole]);
-
+  
   const handleGroundClick = (groundId: string) => {
     if (submitted) return;
 
     setSelectedGroundId(groundId);
-    setSubmitted(true);
+    setManuallySubmitted(true);
     onAction({ type: "joker", targetRoleId: groundId });
   };
 

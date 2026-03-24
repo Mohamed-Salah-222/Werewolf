@@ -23,7 +23,9 @@ interface Props {
 // ===== COMPONENT =====
 
 function MasonAction({ onAction, locked = false, playerId, players, actionResult }: Props) {
-  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [manuallySubmitted, setManuallySubmitted] = useState(!!actionResult);
+  const submitted = manuallySubmitted || !!actionResult;
+
   const [revealedIds, setRevealedIds] = useState<Set<string>>(new Set());
   const [showAlone, setShowAlone] = useState(false);
   const hasProcessedResult = useRef(false);
@@ -40,12 +42,6 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
 
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
-
-  useEffect(() => {
-    if (actionResult && !submitted) {
-      setSubmitted(true);
-    }
-  }, [actionResult]);
 
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -91,7 +87,7 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
   }, [actionResult]);
 
   const handleAction = () => {
-    setSubmitted(true);
+    setManuallySubmitted(true);
     onAction({ type: "mason" });
   };
 

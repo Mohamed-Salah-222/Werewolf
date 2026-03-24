@@ -30,7 +30,8 @@ interface Props {
 
 function SeerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const [mode, setMode] = useState<"player" | "ground" | null>(null);
-  const [submitted, setSubmitted] = useState(!!actionResult);
+  const [manuallySubmitted, setManuallySubmitted] = useState(!!actionResult);
+  const submitted = manuallySubmitted || !!actionResult;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
@@ -56,11 +57,6 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
   const positions = getCirclePositions(players.length, selfIndex);
 
   // Lock clicks immediately when result arrives
-  useEffect(() => {
-    if (actionResult && !submitted) {
-      setSubmitted(true);
-    }
-  }, [actionResult]);
 
   // Process result animation
   useEffect(() => {
@@ -68,9 +64,11 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
     hasProcessedResult.current = true;
 
     if (actionResult.actionType === "player" && actionResult.role) {
-      setMode("player");
-      setRevealedPlayerRole(actionResult.role);
       const target = players.find((p) => p.name === actionResult.playerName);
+      setTimeout(() => {
+        setMode("player");
+        setRevealedPlayerRole(actionResult.role!);
+      }, 0);
       if (target) {
         setTimeout(() => {
           setRevealedPlayerId(target.id);
@@ -86,14 +84,15 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
         }, 1100);
       }
     } else if (actionResult.actionType === "ground") {
-      setMode("ground");
-
-      // For auto-action: if no ground cards were selected by player, pick first two
       let groundIds = selectedGroundIds;
       if (groundIds.length === 0 && groundCards.length >= 2) {
         groundIds = [groundCards[0].id, groundCards[1].id];
-        setSelectedGroundIds(groundIds);
       }
+
+      setTimeout(() => {
+        setMode("ground");
+        setSelectedGroundIds(groundIds);
+      }, 0);
 
       const map: Record<string, string> = {};
 
@@ -138,7 +137,7 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
 
       setMode("player");
       setSelectedPlayerId(targetId);
-      setSubmitted(true);
+      setManuallySubmitted(true);
 
       onAction({
         type: "seer_player_role",
@@ -159,7 +158,7 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
       setSelectedGroundIds(newSelected);
 
       if (newSelected.length === 2) {
-        setSubmitted(true);
+        setManuallySubmitted(true);
         onAction({
           type: "seer_ground_roles",
           groundRole1: { id: newSelected[0] },
