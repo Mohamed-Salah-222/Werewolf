@@ -160,6 +160,56 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     }
   });
 
+  // CHANGE NAME (waiting room only)
+  socket.on("changeName", (data: { gameCode: string; playerId: string; newName: string }, callback: (response: { success: boolean; error?: string }) => void) => {
+    try {
+      const game = manager.getGameByCode(data.gameCode);
+      if (!game) {
+        callback({ success: false, error: "Game not found" });
+        return;
+      }
+
+      if (game.phase !== Phase.Waiting) {
+        callback({ success: false, error: "Cannot change name after game started" });
+        return;
+      }
+
+      const trimmed = data.newName.trim();
+      if (trimmed.length < 2 || trimmed.length > 20) {
+        callback({ success: false, error: "Name must be 2-20 characters" });
+        return;
+      }
+
+      // Check for duplicate names
+      const duplicate = game.players.find((p) => p.id !== data.playerId && p.name.toLowerCase() === trimmed.toLowerCase());
+      if (duplicate) {
+        callback({ success: false, error: "Name already taken" });
+        return;
+      }
+
+      const player = game.getPlayerById(data.playerId);
+      if (!player) {
+        callback({ success: false, error: "Player not found" });
+        return;
+      }
+
+      player.name = trimmed;
+      callback({ success: true });
+
+      // Broadcast updated player list
+      io.to(data.gameCode).emit("playerListUpdate", {
+        players: game.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+        })),
+      });
+
+      console.log(`✏️ Player ${data.playerId} changed name to "${trimmed}" in game ${data.gameCode}`);
+    } catch (error: any) {
+      callback({ success: false, error: error.message || "Failed to change name" });
+    }
+  });
+
   // KICK PLAYER
   socket.on("kickPlayer", ({ gameCode, hostId, kickedPlayerId }) => {
     try {

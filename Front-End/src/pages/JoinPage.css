@@ -1,0 +1,102 @@
+.join-page {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at 50% 50%, #1a0a0a 0%, #0a0a0a 50%, #000 100%);
+  padding: 1rem;
+  font-family: var(--font-body);
+}
+
+.join-vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%);
+  z-index: 0;
+}
+
+.join-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(20, 18, 30, 0.9);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  box-shadow:
+    0 8px 40px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(255, 215, 0, 0.03);
+  animation: joinCardIn 0.4s ease-out;
+}
+
+@keyframes joinCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.join-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.join-icon.spin {
+  animation: joinSpin 1.2s linear infinite;
+}
+
+@keyframes joinSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.join-title {
+  font-family: var(--font-display, "Creepster", cursive);
+  font-size: 1.5rem;
+  color: var(--color-gold, #ffd700);
+  margin: 0;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.join-subtitle {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.join-home-btn {
+  padding: 0.7rem 2rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 0.5rem;
+}
+
+.join-home-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}

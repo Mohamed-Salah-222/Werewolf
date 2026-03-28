@@ -19,6 +19,8 @@ export function useSocketRejoin() {
       // Don't rejoin if we're on the home page
       if (location.pathname === "/") return;
 
+      if (location.pathname.startsWith("/join/")) return;
+
       // Already attempted this session
       if (hasAttemptedRef.current) return;
       hasAttemptedRef.current = true;

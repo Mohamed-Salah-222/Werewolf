@@ -6,22 +6,17 @@ import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
 import { allCards, backCardImage } from "../characters";
 import HowToPlay from "../components/HowToPlay";
+import ShareButton from "../components/ShareButton";
 // import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
 // ===== CONSTANTS =====
 
 const MIN_PLAYERS = 6;
-
-// Ping interval in ms — how often each client measures latency
 const PING_INTERVAL = 4000;
-
-// Signal strength thresholds (ms)
 const SIGNAL_GREAT = 100;
 const SIGNAL_GOOD = 200;
 const SIGNAL_OKAY = 400;
-
-// Long press duration to trigger kick (ms)
 const LONG_PRESS_DURATION = 600;
 
 // ===== TYPES =====
@@ -142,21 +137,26 @@ function WaitingRoom() {
   const [cardCount, setCardCount] = useState(42);
   const [hostId, setHostId] = useState<string>("");
 
-  // Connection strength state
+  // Connection strength
   const [playerPings, setPlayerPings] = useState<Record<string, number | null>>({});
 
-  // Long-press kick state
+  // Long-press kick
   const [shakingPlayerId, setShakingPlayerId] = useState<string | null>(null);
   const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // How to play modal state
+  // How to play
   const [htpOpen, setHtpOpen] = useState(false);
   const [htpPulsing, setHtpPulsing] = useState(() => {
     return sessionStorage.getItem("wr_htp_seen") !== "true";
   });
 
-  // Mount animation state
+  // Rename modal
+  const [renameModalOpen, setRenameModalOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
+  const [renameError, setRenameError] = useState("");
+
+  // Mount animation
   const [mounted, setMounted] = useState(false);
 
   const readySetRef = useRef<Set<string>>(new Set());
@@ -168,7 +168,9 @@ function WaitingRoom() {
 
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
 
-  // Trigger mount animation
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // Mount animation
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
       setMounted(true);
@@ -176,7 +178,7 @@ function WaitingRoom() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Clear timeouts on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
@@ -194,30 +196,21 @@ function WaitingRoom() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // ===== CONNECTION QUALITY MEASUREMENT =====
-  // Each client measures their own ping via volatile emit round-trip,
-  // reports it to the server, and the server broadcasts the full
-  // ping map to everyone in the room. Every player sees everyone's
-  // real connection strength.
+  // Ping measurement
   useEffect(() => {
     if (!gameCode || !playerId) return;
 
     const measurePing = () => {
       const start = Date.now();
-      // volatile = silently dropped if disconnected (no queuing = no fake latency)
       socket.volatile.emit("pingMeasure", { gameCode, playerId }, () => {
         const latency = Date.now() - start;
-        // Report to server — server stores it and broadcasts full map to room
         socket.emit("reportPing", { gameCode, playerId, ping: latency });
       });
     };
 
-    // Measure immediately, then every PING_INTERVAL
     measurePing();
     pingIntervalRef.current = setInterval(measurePing, PING_INTERVAL);
 
-    // Server broadcasts the full ping map (all players) on every report.
-    // This replaces ALL pings at once so everyone stays in sync.
     socket.on("playerPings", (data: Record<string, number>) => {
       setPlayerPings(data);
     });
@@ -228,7 +221,7 @@ function WaitingRoom() {
     };
   }, [gameCode, playerId]);
 
-  // Fetch players, seed ready state, then rejoin
+  // Fetch players + rejoin
   useEffect(() => {
     if (!socket.connected) socket.connect();
 
@@ -304,14 +297,7 @@ function WaitingRoom() {
     socket.on("playerJoined", (data: { playerId: string; playerName: string }) => {
       setPlayers((prev) => {
         if (prev.find((p) => p.id === data.playerId)) return prev;
-        return [
-          ...prev,
-          {
-            id: data.playerId,
-            name: data.playerName,
-            isReady: readySetRef.current.has(data.playerId),
-          },
-        ];
+        return [...prev, { id: data.playerId, name: data.playerName, isReady: readySetRef.current.has(data.playerId) }];
       });
     });
 
@@ -444,18 +430,15 @@ function WaitingRoom() {
     }
   }, [htpPulsing]);
 
-  // Long press handlers for kick (host only, on other players)
+  // Long press for kick
   const handlePressStart = useCallback(
     (p: PlayerStatus) => {
       if (!isHost || p.id === playerId) return;
       if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
 
       longPressTimerRef.current = setTimeout(() => {
-        // Trigger shake animation
         setShakingPlayerId(p.id);
-        // Open kick confirmation modal
         setKickConfirm({ id: p.id, name: p.name });
-        // Clear shake after animation
         setTimeout(() => setShakingPlayerId(null), 400);
       }, LONG_PRESS_DURATION);
     },
@@ -469,12 +452,44 @@ function WaitingRoom() {
     }
   }, []);
 
+  // Rename handlers
+  const handleRenameOpen = useCallback(() => {
+    setRenameValue(playerName);
+    setRenameError("");
+    setRenameModalOpen(true);
+  }, [playerName]);
+
+  const handleRenameSubmit = useCallback(() => {
+    const trimmed = renameValue.trim();
+    if (trimmed.length < 2) {
+      setRenameError("Name must be at least 2 characters");
+      return;
+    }
+    if (trimmed.length > 20) {
+      setRenameError("Name must be 20 characters or less");
+      return;
+    }
+    socket.emit("changeName", { gameCode, playerId, newName: trimmed }, (res: { success: boolean; error?: string }) => {
+      if (res.success) {
+        localStorage.setItem("werewolf_playerName", trimmed);
+        useGameStore.getState().setSession({
+          gameCode: gameCode || "",
+          playerId,
+          playerName: trimmed,
+          isHost,
+        });
+        setRenameModalOpen(false);
+      } else {
+        setRenameError(res.error || "Failed to change name");
+      }
+    });
+  }, [renameValue, gameCode, playerId, isHost]);
+
   // ===== DERIVED =====
 
   const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
   const notReadyCount = players.filter((p) => !p.isReady).length;
   const needMore = MIN_PLAYERS - players.length;
-
   const startButtonText = needMore > 0 ? `NEED ${needMore} MORE` : canStart ? "START GAME" : `${notReadyCount} NOT READY`;
 
   // ===== RENDER =====
@@ -485,7 +500,7 @@ function WaitingRoom() {
 
       {/* ===== LEFT: CARD GRID ===== */}
       <div className="wr-cards">
-        <div className="wr-card-grid">
+        <div className="wr-card-grid" ref={gridRef}>
           {gridCards.slice(0, cardCount).map((card) => (
             <div key={card.id} className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`} onClick={() => handleCardClick(card.id, card.cardIndex)}>
               <div className="flip-card-inner">
@@ -526,6 +541,7 @@ function WaitingRoom() {
             <span className="wr-code-text">{gameCode?.toUpperCase()}</span>
             <span className="wr-copy-hint">{copied ? "COPIED!" : "TAP TO COPY"}</span>
           </button>
+          <ShareButton gameCode={gameCode || ""} />
         </div>
 
         <div className="wr-player-section wr-anim-players">
@@ -535,6 +551,7 @@ function WaitingRoom() {
               const signal = pingToSignal(playerPings[p.id] ?? null);
               const isShaking = shakingPlayerId === p.id;
               const canLongPress = isHost && p.id !== playerId;
+              const isMe = p.id === playerId;
               return (
                 <div
                   key={p.id}
@@ -550,7 +567,6 @@ function WaitingRoom() {
                     if (canLongPress) e.preventDefault();
                   }}
                 >
-                  {/* Left: name (green if ready) + host crown */}
                   <div className="wr-player-info">
                     <span className={`wr-player-name ${p.isReady ? "wr-player-name--ready" : ""}`}>{p.name}</span>
                     {p.id === hostId && (
@@ -559,10 +575,20 @@ function WaitingRoom() {
                       </span>
                     )}
                   </div>
-
-                  {/* Right: signal bars */}
                   <div className="wr-player-right">
                     <SignalBars level={signal} />
+                    {isMe && (
+                      <button
+                        className="wr-rename-dots"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRenameOpen();
+                        }}
+                        aria-label="Change name"
+                      >
+                        ⋮
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -602,6 +628,25 @@ function WaitingRoom() {
               </button>
               <button className="wr-kick-modal-yes" onClick={handleKickConfirm}>
                 YES, KICK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== RENAME MODAL ===== */}
+      {renameModalOpen && (
+        <div className="wr-kick-overlay" onClick={() => setRenameModalOpen(false)}>
+          <div className="wr-kick-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="wr-kick-modal-title">CHANGE NAME</h3>
+            <input className="wr-rename-input" type="text" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleRenameSubmit()} autoFocus />
+            {renameError && <p className="wr-rename-error">{renameError}</p>}
+            <div className="wr-kick-modal-buttons">
+              <button className="wr-kick-modal-no" onClick={() => setRenameModalOpen(false)}>
+                CANCEL
+              </button>
+              <button className="wr-kick-modal-yes wr-rename-save-btn" onClick={handleRenameSubmit}>
+                SAVE
               </button>
             </div>
           </div>
@@ -657,7 +702,7 @@ function WaitingRoom() {
         </div>
       )}
 
-      {/* ===== HOW TO PLAY MODAL ===== */}
+      {/* ===== HOW TO PLAY ===== */}
       {htpOpen && <HowToPlay onClose={() => setHtpOpen(false)} />}
 
       {/* ===== RIGHT: REVEALED CARD ===== */}

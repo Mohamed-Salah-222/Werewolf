@@ -8,6 +8,7 @@ import NightPhase from "./pages/NightPhase";
 import Discussion from "./pages/Discussion";
 import Vote from "./pages/Vote";
 import Results from "./pages/Results";
+import JoinPage from "./pages/JoinPage";
 
 function AppRoutes() {
   useSocketRejoin();
@@ -21,6 +22,7 @@ function AppRoutes() {
       <Route path="/discussion/:gameCode" element={<Discussion />} />
       <Route path="/vote/:gameCode" element={<Vote />} />
       <Route path="/results/:gameCode" element={<Results />} />
+      <Route path="/join/:gameCode" element={<JoinPage />} />
     </Routes>
   );
 }

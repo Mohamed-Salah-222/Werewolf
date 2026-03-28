@@ -1,0 +1,58 @@
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.1), rgba(201, 168, 76, 0.04));
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-radius: 4px;
+  color: var(--color-gold, #c9a84c);
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.share-btn:hover {
+  background: linear-gradient(135deg, rgba(201, 168, 76, 0.18), rgba(201, 168, 76, 0.08));
+  border-color: rgba(201, 168, 76, 0.4);
+}
+
+.share-btn:active {
+  transform: scale(0.97);
+}
+
+.share-btn--copied {
+  border-color: rgba(74, 124, 63, 0.4);
+  color: #4a7c3f;
+  background: linear-gradient(135deg, rgba(74, 124, 63, 0.12), rgba(74, 124, 63, 0.04));
+}
+
+.share-icon {
+  flex-shrink: 0;
+}
+
+/* Mobile: make it full width under the code */
+@media (max-width: 768px) {
+  .share-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+    background: rgba(0, 0, 0, 0.45);
+    border-color: rgba(201, 168, 76, 0.35);
+    color: #ffc800;
+  }
+
+  .share-btn:hover {
+    background: rgba(0, 0, 0, 0.55);
+    border-color: rgba(201, 168, 76, 0.5);
+  }
+
+  .share-btn--copied {
+    border-color: rgba(109, 214, 109, 0.4);
+    color: #6dd66d;
+    background: rgba(109, 214, 109, 0.08);
+  }
+}
