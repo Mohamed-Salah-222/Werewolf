@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import socket from "../socket";
 import { API_URL } from "../config";
@@ -33,6 +33,9 @@ function Vote() {
   const [viewState, setViewState] = useState<ViewState>(hasVotedStore ? "waiting" : "voting");
   const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
 
+  // Force votes state
+  const [showForceConfirm, setShowForceConfirm] = useState(false);
+  const [forcing, setForcing] = useState(false);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -92,9 +95,25 @@ function Vote() {
     }, 1200);
   };
 
+  const handleForceVotes = useCallback(() => {
+    if (forcing) return;
+    setForcing(true);
+    setShowForceConfirm(false);
+    socket.emit("forceVotes", { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
+      if (response && !response.success) {
+        console.error("Force votes failed:", response.error);
+        setForcing(false);
+      }
+      // On success, gameEnded event will fire and navigate us away
+    });
+  }, [forcing, gameCode, playerId]);
+
   const others = players.filter((p) => p.id !== playerId);
   const totalPlayers = players.length;
   const totalVoted = votedPlayers.size + (!votedPlayers.has(playerId) && (viewState === "waiting" || viewState === "sealing") ? 1 : 0);
+
+  // Count how many haven't voted (for the force button label)
+  const missingVotes = totalPlayers - totalVoted;
 
   const getVotedName = () => {
     if (selected === "noWerewolf") return "No Werewolf";
@@ -172,9 +191,36 @@ function Vote() {
                 );
               })}
             </div>
+
+            {/* Force votes button — host only, only when someone hasn't voted */}
+            {isHost && missingVotes > 0 && (
+              <button className="vote-force-btn" onClick={() => setShowForceConfirm(true)} disabled={forcing}>
+                {forcing ? "FORCING..." : `FORCE VOTES (${missingVotes} missing)`}
+              </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* ===== FORCE VOTES CONFIRMATION MODAL ===== */}
+      {showForceConfirm && (
+        <div className="vote-force-overlay" onClick={() => setShowForceConfirm(false)}>
+          <div className="vote-force-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="vote-force-modal-title">FORCE VOTES</h3>
+            <p className="vote-force-modal-text">
+              <span className="vote-force-modal-count">{missingVotes}</span> player{missingVotes !== 1 ? "s" : ""} haven't voted yet. Their votes will be assigned randomly.
+            </p>
+            <div className="vote-force-modal-buttons">
+              <button className="vote-force-modal-no" onClick={() => setShowForceConfirm(false)}>
+                WAIT
+              </button>
+              <button className="vote-force-modal-yes" onClick={handleForceVotes}>
+                FORCE IT
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

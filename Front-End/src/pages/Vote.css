@@ -510,3 +510,143 @@
     font-size: 11px;
   }
 }
+
+/* ===== FORCE VOTES BUTTON ===== */
+.vote-force-btn {
+  margin-top: 24px;
+  width: 100%;
+  padding: 12px;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 3px;
+  font-family: var(--font-display);
+  color: rgba(180, 180, 195, 0.5);
+  background: transparent;
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.vote-force-btn:hover:not(:disabled) {
+  color: rgba(220, 220, 230, 0.8);
+  border-color: rgba(180, 180, 195, 0.35);
+  background: rgba(180, 180, 195, 0.04);
+}
+
+.vote-force-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ===== FORCE VOTES CONFIRMATION MODAL — silver theme ===== */
+.vote-force-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: voteForceOverlayIn 0.25s ease-out;
+}
+
+@keyframes voteForceOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vote-force-modal {
+  background-color: #0c0c0e;
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 6px;
+  padding: clamp(20px, 3vw, 32px);
+  width: min(320px, 85vw);
+  text-align: center;
+  animation: voteForceModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes voteForceModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.vote-force-modal-title {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  color: rgba(210, 210, 220, 0.85);
+  font-family: var(--font-display);
+  margin: 0 0 16px 0;
+}
+
+.vote-force-modal-text {
+  font-size: 14px;
+  color: rgba(180, 180, 195, 0.5);
+  font-family: var(--font-body);
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+}
+
+.vote-force-modal-count {
+  color: rgba(220, 220, 230, 0.85);
+  font-weight: 600;
+}
+
+.vote-force-modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.vote-force-modal-no {
+  flex: 1;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  background-color: transparent;
+  color: rgba(180, 180, 195, 0.4);
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.vote-force-modal-no:hover {
+  border-color: rgba(180, 180, 195, 0.3);
+  color: rgba(220, 220, 230, 0.7);
+}
+
+.vote-force-modal-yes {
+  flex: 1;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  background-color: rgba(210, 210, 220, 0.85);
+  color: #0c0c0e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition: background-color 0.2s ease;
+}
+
+.vote-force-modal-yes:hover {
+  background-color: rgba(230, 230, 240, 0.95);
+}

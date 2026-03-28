@@ -582,6 +582,34 @@ export class Game extends EventEmitter {
       this.finish();
     }
   }
+  
+  forceVotes(hostId: PlayerId): void {
+    if (hostId !== this.host) {
+      throw new Error("Only the host can force votes");
+    }
+    if (this.phase !== Phase.Vote) {
+      throw new Error("Can only force votes during voting phase");
+    }
+
+    const playersWhoVoted = new Set(this.votes.map((v) => v.voter));
+    const playersWhoHaventVoted = this.players.filter((p) => !playersWhoVoted.has(p.id));
+
+    if (playersWhoHaventVoted.length === 0) return;
+
+    for (const player of playersWhoHaventVoted) {
+      // Pick a random other player (not themselves) or "noWerewolf"
+      const otherPlayers = this.players.filter((p) => p.id !== player.id);
+      const options = [...otherPlayers.map((p) => p.id), "noWerewolf"];
+      const randomVote = options[Math.floor(Math.random() * options.length)];
+
+      this.votes.push({ voter: player.id, vote: randomVote });
+      this.logger.log(`Force vote: ${player.name} randomly voted for ${randomVote === "noWerewolf" ? "No Werewolf" : this.getPlayerById(randomVote).name}`);
+      this.newEmit("voteConfirmed", { playerId: player.id });
+    }
+
+    // All votes are now in — finish the game
+    this.finish();
+  }
 
   getVoteResults(): Map<string, number> {
     let votes = this.votes;

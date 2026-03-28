@@ -554,6 +554,16 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
+    socket.on("forceVotes", (data: { gameCode: string; playerId: string }, callback?: (response: { success: boolean; error?: string }) => void) => {
+      try {
+        const game = manager.getGameByCode(data.gameCode);
+        game.forceVotes(data.playerId);
+        callback?.({ success: true });
+      } catch (error: any) {
+        callback?.({ success: false, error: error.message });
+      }
+    });
+
     socket.on("restartGame", ({ gameCode }) => {
       try {
         const game = manager.getGameByCode(gameCode);

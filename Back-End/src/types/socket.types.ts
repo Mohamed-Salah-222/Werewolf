@@ -22,6 +22,7 @@ export interface ClientToServerEvents {
   rejoinGame: (data: RejoinGameData, callback: (response: RejoinGameResponse) => void) => void;
   pingMeasure: (data: { gameCode: string; playerId: string }, callback: () => void) => void;
   reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;
+  forceVotes: (data: { gameCode: string; playerId: string }, callback?: (response: { success: boolean; error?: string }) => void) => void;
 }
 
 // Server -> Client events (what backend sends)
