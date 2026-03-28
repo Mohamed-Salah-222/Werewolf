@@ -37,6 +37,8 @@ export class Game extends EventEmitter {
   lastActivityAt: number = Date.now();
   actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
   gamePings: Record<string, number> = {};
+  gamePingTimestamps: Record<string, number> = {};
+
   private availableRoles: Role[] = [];
 
   constructor(private logger: Logger) {
@@ -725,6 +727,7 @@ export class Game extends EventEmitter {
 
     this.actionHistory = [];
     this.gamePings = {};
+    this.gamePingTimestamps = {};
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");

@@ -617,6 +617,15 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         if (game) {
           const player = game.players.find((p) => p.id === currentPlayerId);
           if (player) {
+            // Clean up ping data immediately on disconnect — runs regardless of phase
+            if (game.gamePings) {
+              delete game.gamePings[currentPlayerId];
+              if (game.gamePingTimestamps) {
+                delete game.gamePingTimestamps[currentPlayerId];
+              }
+              io.to(currentGameCode).emit("playerPings", game.gamePings);
+            }
+
             // Only remove player if game hasn't started yet
             if (game.phase === Phase.Waiting) {
               game.players = game.players.filter((p) => p.id !== currentPlayerId);
@@ -662,6 +671,10 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
         }
       }
     });
+
+    // =================================
+    // VOICE JOIN
+    // =================================
     socket.on("voiceJoin", ({ gameCode, playerId }) => {
       const game = manager.getGameByCode(gameCode);
       if (!game) {
