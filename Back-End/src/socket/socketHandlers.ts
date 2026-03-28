@@ -350,14 +350,25 @@ export function initializeSocketHandlers(io: Server<ClientToServerEvents, Server
       }
     });
 
-    // 1. Ping measurement — just acknowledge immediately
-    socket.on("pingMeasure", (data, callback) => {
-      callback(); // instant response so client can measure round-trip
+    socket.on("pingMeasure", (_data: any, callback: () => void) => {
+      // Just acknowledge immediately — client measures the round trip
+      if (typeof callback === "function") callback();
     });
 
-    // 2. Receive and broadcast pings to the room
     socket.on("reportPing", (data: { gameCode: string; playerId: string; ping: number }) => {
-      io.to(data.gameCode).emit("playerPings", { [data.playerId]: data.ping });
+      try {
+        const game = manager.getGameByCode(data.gameCode);
+        if (!game) return;
+
+        // Store this player's ping on the game
+        if (!game.gamePings) game.gamePings = {};
+        game.gamePings[data.playerId] = data.ping;
+
+        // Broadcast ALL player pings to the entire room
+        io.to(data.gameCode).emit("playerPings", game.gamePings);
+      } catch {
+        // Game doesn't exist, ignore
+      }
     });
 
     // START GAME

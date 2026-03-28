@@ -98,10 +98,10 @@ function signalColor(level: SignalLevel): string {
 
 function SignalBars({ level }: { level: SignalLevel }) {
   const color = signalColor(level);
-  const dimColor = "rgba(61, 46, 26, 0.4)";
+  const dimColor = "rgba(201, 168, 76, 0.15)";
 
   return (
-    <div className="wr-signal-bars" title={level === 0 ? "Measuring..." : `Signal: ${["", "Poor", "Fair", "Good", "Great"][level]}`}>
+    <div className={`wr-signal-bars ${level === 0 ? "wr-signal-bars--measuring" : ""}`} title={level === 0 ? "Measuring..." : `Signal: ${["", "Poor", "Fair", "Good", "Great"][level]}`}>
       {[1, 2, 3, 4].map((bar) => (
         <div
           key={bar}
@@ -194,24 +194,32 @@ function WaitingRoom() {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // ===== PING MEASUREMENT =====
+  // ===== CONNECTION QUALITY MEASUREMENT =====
+  // Each client measures their own ping via volatile emit round-trip,
+  // reports it to the server, and the server broadcasts the full
+  // ping map to everyone in the room. Every player sees everyone's
+  // real connection strength.
   useEffect(() => {
     if (!gameCode || !playerId) return;
 
     const measurePing = () => {
       const start = Date.now();
-      socket.emit("pingMeasure", { gameCode, playerId }, () => {
+      // volatile = silently dropped if disconnected (no queuing = no fake latency)
+      socket.volatile.emit("pingMeasure", { gameCode, playerId }, () => {
         const latency = Date.now() - start;
+        // Report to server — server stores it and broadcasts full map to room
         socket.emit("reportPing", { gameCode, playerId, ping: latency });
-        setPlayerPings((prev) => ({ ...prev, [playerId]: latency }));
       });
     };
 
+    // Measure immediately, then every PING_INTERVAL
     measurePing();
     pingIntervalRef.current = setInterval(measurePing, PING_INTERVAL);
 
+    // Server broadcasts the full ping map (all players) on every report.
+    // This replaces ALL pings at once so everyone stays in sync.
     socket.on("playerPings", (data: Record<string, number>) => {
-      setPlayerPings((prev) => ({ ...prev, ...data }));
+      setPlayerPings(data);
     });
 
     return () => {

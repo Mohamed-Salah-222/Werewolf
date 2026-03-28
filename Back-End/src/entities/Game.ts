@@ -36,6 +36,7 @@ export class Game extends EventEmitter {
   endedAt: number | null = null;
   lastActivityAt: number = Date.now();
   actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
+  gamePings: Record<string, number> = {};
   private availableRoles: Role[] = [];
 
   constructor(private logger: Logger) {
@@ -582,7 +583,7 @@ export class Game extends EventEmitter {
       this.finish();
     }
   }
-  
+
   forceVotes(hostId: PlayerId): void {
     if (hostId !== this.host) {
       throw new Error("Only the host can force votes");
@@ -723,6 +724,7 @@ export class Game extends EventEmitter {
     this.endedAt = null;
 
     this.actionHistory = [];
+    this.gamePings = {};
 
     this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
     this.logger.info("Game restarted");
