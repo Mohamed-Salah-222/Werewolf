@@ -7,7 +7,6 @@ import { useGameStore } from "../store/gameStore";
 import { allCards, backCardImage } from "../characters";
 import HowToPlay from "../components/HowToPlay";
 import ShareButton from "../components/ShareButton";
-// import VoiceChat from "../components/VoiceChat";
 import "./WaitingRoom.css";
 
 // ===== CONSTANTS =====
@@ -17,7 +16,6 @@ const PING_INTERVAL = 4000;
 const SIGNAL_GREAT = 100;
 const SIGNAL_GOOD = 200;
 const SIGNAL_OKAY = 400;
-const LONG_PRESS_DURATION = 600;
 
 // ===== TYPES =====
 
@@ -140,10 +138,8 @@ function WaitingRoom() {
   // Connection strength
   const [playerPings, setPlayerPings] = useState<Record<string, number | null>>({});
 
-  // Long-press kick
-  const [shakingPlayerId, setShakingPlayerId] = useState<string | null>(null);
-  const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Kick modal (silver theme)
+  const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
 
   // How to play
   const [htpOpen, setHtpOpen] = useState(false);
@@ -167,7 +163,6 @@ function WaitingRoom() {
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
-
   const gridRef = useRef<HTMLDivElement>(null);
 
   // Mount animation
@@ -184,7 +179,6 @@ function WaitingRoom() {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     };
   }, []);
 
@@ -398,12 +392,6 @@ function WaitingRoom() {
     navigate("/");
   }, [gameCode, playerId, navigate, reset]);
 
-  const handleKickConfirm = useCallback(() => {
-    if (!kickConfirm) return;
-    socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId: kickConfirm.id });
-    setKickConfirm(null);
-  }, [gameCode, playerId, kickConfirm]);
-
   const handleReady = useCallback(() => {
     const newReady = !playerReady;
     socket.emit("playerReady", { gameCode, playerId, ready: newReady });
@@ -430,27 +418,14 @@ function WaitingRoom() {
     }
   }, [htpPulsing]);
 
-  // Long press for kick
-  const handlePressStart = useCallback(
-    (p: PlayerStatus) => {
-      if (!isHost || p.id === playerId) return;
-      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-
-      longPressTimerRef.current = setTimeout(() => {
-        setShakingPlayerId(p.id);
-        setKickConfirm({ id: p.id, name: p.name });
-        setTimeout(() => setShakingPlayerId(null), 400);
-      }, LONG_PRESS_DURATION);
+  // Kick handler — direct emit, no intermediate state
+  const handleKick = useCallback(
+    (kickedId: string) => {
+      socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId: kickedId });
+      setKickTarget(null);
     },
-    [isHost, playerId],
+    [gameCode, playerId],
   );
-
-  const handlePressEnd = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-  }, []);
 
   // Rename handlers
   const handleRenameOpen = useCallback(() => {
@@ -549,24 +524,11 @@ function WaitingRoom() {
           <div className="wr-player-list">
             {players.map((p, index) => {
               const signal = pingToSignal(playerPings[p.id] ?? null);
-              const isShaking = shakingPlayerId === p.id;
-              const canLongPress = isHost && p.id !== playerId;
               const isMe = p.id === playerId;
+              const showKickDots = isHost && !isMe;
+
               return (
-                <div
-                  key={p.id}
-                  className={`wr-player-row wr-anim-player-row${isShaking ? " wr-player-row--shake" : ""}`}
-                  style={{ "--player-index": index, cursor: canLongPress ? "grab" : "default" } as React.CSSProperties}
-                  onMouseDown={() => handlePressStart(p)}
-                  onMouseUp={handlePressEnd}
-                  onMouseLeave={handlePressEnd}
-                  onTouchStart={() => handlePressStart(p)}
-                  onTouchEnd={handlePressEnd}
-                  onTouchCancel={handlePressEnd}
-                  onContextMenu={(e) => {
-                    if (canLongPress) e.preventDefault();
-                  }}
-                >
+                <div key={p.id} className="wr-player-row wr-anim-player-row" style={{ "--player-index": index } as React.CSSProperties}>
                   <div className="wr-player-info">
                     <span className={`wr-player-name ${p.isReady ? "wr-player-name--ready" : ""}`}>{p.name}</span>
                     {p.id === hostId && (
@@ -578,14 +540,12 @@ function WaitingRoom() {
                   <div className="wr-player-right">
                     <SignalBars level={signal} />
                     {isMe && (
-                      <button
-                        className="wr-rename-dots"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRenameOpen();
-                        }}
-                        aria-label="Change name"
-                      >
+                      <button className="wr-dots-btn" onClick={handleRenameOpen} aria-label="Change name">
+                        ⋮
+                      </button>
+                    )}
+                    {showKickDots && (
+                      <button className="wr-dots-btn" onClick={() => setKickTarget({ id: p.id, name: p.name })} aria-label="Kick player">
                         ⋮
                       </button>
                     )}
@@ -614,20 +574,20 @@ function WaitingRoom() {
         </div>
       </div>
 
-      {/* ===== KICK CONFIRMATION MODAL ===== */}
-      {kickConfirm && (
-        <div className="wr-kick-overlay" onClick={() => setKickConfirm(null)}>
+      {/* ===== KICK MODAL (silver theme) ===== */}
+      {kickTarget && (
+        <div className="wr-kick-overlay" onClick={() => setKickTarget(null)}>
           <div className="wr-kick-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="wr-kick-modal-title">KICK PLAYER</h3>
             <p className="wr-kick-modal-text">
-              Are you sure you want to kick <span className="wr-kick-modal-name">{kickConfirm.name}</span>?
+              Remove <span className="wr-kick-modal-name">{kickTarget.name}</span> from the game?
             </p>
             <div className="wr-kick-modal-buttons">
-              <button className="wr-kick-modal-no" onClick={() => setKickConfirm(null)}>
-                NO
+              <button className="wr-kick-modal-no" onClick={() => setKickTarget(null)}>
+                CANCEL
               </button>
-              <button className="wr-kick-modal-yes" onClick={handleKickConfirm}>
-                YES, KICK
+              <button className="wr-kick-modal-yes" onClick={() => handleKick(kickTarget.id)}>
+                KICK
               </button>
             </div>
           </div>
@@ -645,7 +605,7 @@ function WaitingRoom() {
               <button className="wr-kick-modal-no" onClick={() => setRenameModalOpen(false)}>
                 CANCEL
               </button>
-              <button className="wr-kick-modal-yes wr-rename-save-btn" onClick={handleRenameSubmit}>
+              <button className="wr-kick-modal-save" onClick={handleRenameSubmit}>
                 SAVE
               </button>
             </div>
