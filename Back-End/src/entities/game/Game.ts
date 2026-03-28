@@ -7,8 +7,8 @@ import { Logger } from "../../utils/Logger";
 import { PlayerId, Settings, Vote } from "../../types/game.types";
 
 import { NightPhaseManager, NightPhaseHost } from "./NightPhaseManager";
-import { VoteResolver } from "./Voteresolver";
-import { RoleAssigner } from "./Roleassigner";
+import { VoteResolver } from "./VoteResolver";
+import { RoleAssigner } from "./RoleAssigner";
 
 export class Game extends EventEmitter implements NightPhaseHost {
   players: Player[] = [];

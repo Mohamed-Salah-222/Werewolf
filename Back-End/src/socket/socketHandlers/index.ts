@@ -4,7 +4,7 @@ import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.t
 import { PlayerId } from "../../types/game.types";
 import { SocketContext } from "./shared";
 import { registerGameHandlers } from "./gameHandlers";
-import { registerPlayerHandlers } from "./Playerhandlers";
+import { registerPlayerHandlers } from "./playerHandlers";
 import { registerVoiceHandlers } from "./voiceHandlers";
 import { registerConnectionHandler } from "./connectionHandler";
 
