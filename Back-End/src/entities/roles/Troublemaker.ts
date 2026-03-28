@@ -1,6 +1,6 @@
 import { Role } from "./Role";
 import { Team } from "../../config/constants";
-import { Game } from "../Game";
+import { Game } from "../game";
 import { Player } from "../Player";
 
 export interface TroublemakerAction {

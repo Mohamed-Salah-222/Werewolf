@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { Game } from "./Game";
+import { Game } from "./game";
 import { Phase } from "../config/constants";
 import { Logger } from "../utils/Logger";
 import { attachGameEventListeners } from "../socket/gameEventListeners";

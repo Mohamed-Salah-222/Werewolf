@@ -1,6 +1,6 @@
 import { Role } from "./roles";
 
-import { Game } from "./Game";
+import { Game } from "./game";
 import { Phase } from "../config/constants";
 
 export class Player {

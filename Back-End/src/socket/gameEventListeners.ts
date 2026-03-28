@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { Game } from "../entities/Game";
+import { Game } from "../entities/game";
 import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.types";
 
 export function attachGameEventListeners(game: Game, io: Server<ClientToServerEvents, ServerToClientEvents>): void {
