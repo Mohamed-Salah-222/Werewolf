@@ -1,4 +1,4 @@
-import { Game } from "../../entities/Game";
+import { Game } from "../../entities/game";
 import { Player } from "../../entities/Player";
 import { Phase, Team } from "../../config/constants";
 import {

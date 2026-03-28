@@ -1,4 +1,4 @@
-import { Game } from './entities/Game';
+import { Game } from './entities/game';
 import { Logger } from './utils/Logger';
 import { Phase } from './config/constants';
 import { PlayerId } from './types/game.types';
