@@ -6,7 +6,7 @@ import { EventEmitter } from "events";
 import { Logger } from "../../utils/Logger";
 import { PlayerId, Settings, Vote } from "../../types/game.types";
 
-import { NightPhaseManager, NightPhaseHost } from "./Nightphasemanager";
+import { NightPhaseManager, NightPhaseHost } from "./NightPhaseManager";
 import { VoteResolver } from "./Voteresolver";
 import { RoleAssigner } from "./Roleassigner";
 

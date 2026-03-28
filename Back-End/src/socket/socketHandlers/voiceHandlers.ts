@@ -1,5 +1,5 @@
 import { voiceRooms } from "../../types/voice.types";
-import { SocketContext } from "./Shared";
+import { SocketContext } from "./shared";
 
 export function registerVoiceHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;

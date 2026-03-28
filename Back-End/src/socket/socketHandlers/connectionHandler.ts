@@ -1,6 +1,6 @@
 import { Phase } from "../../config/constants";
 import { voiceRooms } from "../../types/voice.types";
-import { SocketContext, transferHostIfNeeded } from "./Shared";
+import { SocketContext, transferHostIfNeeded } from "./shared";
 
 export function registerConnectionHandler(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;

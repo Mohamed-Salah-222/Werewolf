@@ -1,5 +1,5 @@
 import { ERROR_MESSAGES, Phase } from "../../config/constants";
-import { SocketContext, transferHostIfNeeded } from "./Shared";
+import { SocketContext, transferHostIfNeeded } from "./shared";
 
 export function registerPlayerHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;

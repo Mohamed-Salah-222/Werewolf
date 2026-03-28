@@ -2,11 +2,11 @@ import { Server, Socket } from "socket.io";
 import { Manager } from "../../entities/Manager";
 import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
 import { PlayerId } from "../../types/game.types";
-import { SocketContext } from "./Shared";
-import { registerGameHandlers } from "./Gamehandlers";
+import { SocketContext } from "./shared";
+import { registerGameHandlers } from "./gameHandlers";
 import { registerPlayerHandlers } from "./Playerhandlers";
-import { registerVoiceHandlers } from "./Voicehandlers";
-import { registerConnectionHandler } from "./Connectionhandler";
+import { registerVoiceHandlers } from "./voiceHandlers";
+import { registerConnectionHandler } from "./connectionHandler";
 
 export function initializeSocketHandlers(io: Server<ClientToServerEvents, ServerToClientEvents>, manager: Manager): void {
   io.on("connection", (socket: Socket<ClientToServerEvents, ServerToClientEvents>) => {

@@ -1,5 +1,5 @@
 import { ERROR_MESSAGES, VALIDATION, Phase } from "../../config/constants";
-import { SocketContext } from "./Shared";
+import { SocketContext } from "./shared";
 import { JoinGameData } from "../../types/socket.types";
 import { PlayerId } from "../../types/game.types";
 
