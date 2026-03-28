@@ -81,12 +81,6 @@ export class Clone implements Role {
               };
               break;
             }
-            case "joker": {
-              autoResult = {
-                message: `You cloned ${targetPlayer.name} and became a Joker. You win if you get voted out!`,
-              };
-              break;
-            }
             default: {
               autoResult = {
                 message: `You cloned ${targetPlayer.name} and became a ${clonedRole.name}.`,
@@ -100,16 +94,18 @@ export class Clone implements Role {
         }
       }
 
-      // Build ground cards info for active roles that need it (Seer, Drunk)
+      // FIX: Build ground cards for all active roles that need them
+      // (Seer, Drunk, AND Joker — Joker peeks at a ground card)
       let groundCards: any = null;
-      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "drunk")) {
+      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "drunk" || clonedRoleName === "joker")) {
         groundCards = game.groundRoles.map((r, index) => ({
           id: r.id,
           label: `Ground Card ${index + 1}`,
         }));
       }
 
-      // Build player list for active roles that need it (Seer, Robber, Troublemaker)
+      // FIX: Build player list for all active roles that need it
+      // (Seer, Robber, Troublemaker — Joker doesn't need players)
       let otherPlayers: any = null;
       if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "robber" || clonedRoleName === "troublemaker")) {
         otherPlayers = game.players.filter((p) => p.id !== player.id).map((p) => ({ id: p.id, name: p.name }));

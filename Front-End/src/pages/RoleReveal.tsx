@@ -69,8 +69,27 @@ function RoleReveal() {
     roleNameRef.current = role?.roleName ?? null;
   }, [role]);
 
-  // Fetch players + listen for confirmations
+  // FIX #2: Register socket listener BEFORE the async fetch so we
+  // don't miss any playerRoleConfirmed events that arrive during
+  // the fetch. Buffer events that arrive before fetch completes,
+  // then reconcile.
   useEffect(() => {
+    // Buffer for events that arrive before fetch completes
+    const pendingConfirms = new Set<string>();
+    let fetchComplete = false;
+
+    socket.on("playerRoleConfirmed", (data: { playerId: string }) => {
+      console.log("playerRoleConfirmed received:", data);
+      if (!fetchComplete) {
+        // Fetch hasn't finished yet — buffer this event
+        pendingConfirms.add(data.playerId);
+      }
+      // Always update state (if fetch is done, this is the live path;
+      // if fetch isn't done, this ensures we don't lose it even if
+      // setPlayerStatuses hasn't been called yet)
+      setPlayerStatuses((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, confirmed: true } : p)));
+    });
+
     const fetchPlayers = async () => {
       try {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
@@ -81,21 +100,19 @@ function RoleReveal() {
             data.data.players.map((p: { id: string; name: string }) => ({
               id: p.id,
               name: p.name,
-              confirmed: confirmedList.includes(p.id),
+              // Merge: confirmed if the server says so OR if we got
+              // a socket event for this player during the fetch
+              confirmed: confirmedList.includes(p.id) || pendingConfirms.has(p.id),
             })),
           );
         }
       } catch (err) {
         console.error("Failed to fetch players", err);
       }
+      fetchComplete = true;
     };
 
     fetchPlayers();
-
-    socket.on("playerRoleConfirmed", (data: { playerId: string }) => {
-      console.log("playerRoleConfirmed received:", data);
-      setPlayerStatuses((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, confirmed: true } : p)));
-    });
 
     return () => {
       socket.off("playerRoleConfirmed");
@@ -127,11 +144,22 @@ function RoleReveal() {
       useGameStore.getState().setGroundCards(data.cards);
     });
 
+    // FIX #1: Write night data to the store immediately when each
+    // event arrives (already done above for roleActionQueue and
+    // groundCards). Then in nightStarted, read from the store
+    // instead of from refs — the store is the source of truth and
+    // is guaranteed to have the latest values even if events arrived
+    // during the 300ms navigation delay.
     socket.on("nightStarted", (roleQueue: { roleName: string; seconds: number }[]) => {
+      // Read the latest values from the store, not from refs.
+      // roleActionQueue and groundCards handlers already wrote to
+      // the store via setInitialActiveRole and setGroundCards, so
+      // these are guaranteed to be up-to-date.
+      const store = useGameStore.getState();
       setNightData({
         roleQueue,
-        initialActiveRole: pendingActiveRoleRef.current,
-        groundCards: pendingGroundCardsRef.current || [],
+        initialActiveRole: store.initialActiveRole ?? pendingActiveRoleRef.current,
+        groundCards: store.groundCards ?? pendingGroundCardsRef.current ?? [],
       });
       setPhase("night");
       setTimeout(() => {

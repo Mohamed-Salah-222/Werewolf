@@ -86,6 +86,15 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
   // Auto-modal ref
   const hasAutoModalFired = useRef(false);
 
+  // FIX: Track mounted state to prevent setState on unmounted component
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
@@ -95,10 +104,12 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     hasProcessedCloneResult.current = true;
 
     const morphTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
       setPhase("morph");
     }, 50);
 
     const modalTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
       if (hasAutoModalFired.current) return;
       hasAutoModalFired.current = true;
       setModalImage(getFullCardImage(cloneResult.clonedRole));
@@ -108,6 +119,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     }, 1200);
 
     const phaseTimer = setTimeout(() => {
+      if (!mountedRef.current) return;
       setPhase("phase2");
     }, 2000);
 

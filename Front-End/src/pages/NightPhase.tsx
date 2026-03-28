@@ -52,6 +52,16 @@ const ROLE_COMPONENTS: Record<string, ComponentType<any>> = {
 // Roles that show their action component in the "done" state
 const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mason", "robber", "troublemaker", "drunk", "joker", "clone", "insomniac"]);
 
+// ===== HELPERS =====
+
+// FIX #1: Safe interval management — always clear before setting
+function clearIntervalRef(ref: React.MutableRefObject<ReturnType<typeof setInterval> | null>) {
+  if (ref.current) {
+    clearInterval(ref.current);
+    ref.current = null;
+  }
+}
+
 // ===== COMPONENT =====
 
 function NightPhase() {
@@ -109,6 +119,14 @@ function NightPhase() {
   const timerMaxRef = useRef<number>(0);
   const actionDoneRef = useRef(actionDone);
 
+  // FIX #3: Guard against double navigation
+  const hasNavigatedRef = useRef(false);
+
+  // FIX #4: Buffer timer data received during splash
+  const showSplashRef = useRef(showSplash);
+  const pendingTimerRef = useRef<{ roleName: string; seconds: number; receivedAt: number } | null>(null);
+  const pendingTurnRef = useRef<boolean>(false);
+
   // Keep refs in sync
   useEffect(() => {
     actionResultRef.current = actionResult;
@@ -118,6 +136,10 @@ function NightPhase() {
     actionDoneRef.current = actionDone;
   }, [actionDone]);
 
+  useEffect(() => {
+    showSplashRef.current = showSplash;
+  }, [showSplash]);
+
   // Splash screen timer
   useEffect(() => {
     if (!showSplash) return;
@@ -126,6 +148,41 @@ function NightPhase() {
     }, 2500);
     return () => clearTimeout(timer);
   }, [showSplash]);
+
+  // FIX #4: When splash ends, apply any buffered timer/turn data
+  useEffect(() => {
+    if (showSplash) return; // Still showing splash
+
+    // Apply buffered turn state
+    if (pendingTurnRef.current) {
+      setIsMyTurn(true);
+      pendingTurnRef.current = false;
+    }
+
+    // Apply buffered timer — adjust for time elapsed during splash
+    if (pendingTimerRef.current) {
+      const { seconds, receivedAt, roleName } = pendingTimerRef.current;
+      pendingTimerRef.current = null;
+
+      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDoneRef.current) {
+        const elapsedDuringSplash = Math.floor((Date.now() - receivedAt) / 1000);
+        const adjusted = Math.max(seconds - elapsedDuringSplash, 0);
+        timerMaxRef.current = seconds; // Keep original max for the fraction bar
+        setRoleTimer(adjusted);
+
+        if (adjusted > 0) {
+          clearIntervalRef(timerIntervalRef);
+          const startedAt = Date.now();
+          timerIntervalRef.current = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+            const remaining = Math.max(adjusted - elapsed, 0);
+            setRoleTimer(remaining);
+            if (remaining <= 0) clearIntervalRef(timerIntervalRef);
+          }, 1000);
+        }
+      }
+    }
+  }, [showSplash, myRole]);
 
   // Fetch players
   useEffect(() => {
@@ -154,6 +211,22 @@ function NightPhase() {
     }
   }, [hasAlreadyActed, storeLastActionResult]);
 
+  // FIX #3: Safe navigation helper — prevents double navigation
+  const navigateToDiscussion = useCallback(
+    (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => {
+      if (hasNavigatedRef.current) return;
+      hasNavigatedRef.current = true;
+
+      clearIntervalRef(timerIntervalRef);
+      clearIntervalRef(queueTimerRef);
+
+      setDiscussionData(data);
+      setPhase("discussion");
+      navigate(`/discussion/${gameCode}`);
+    },
+    [gameCode, navigate, setDiscussionData, setPhase],
+  );
+
   // Queue progress listener
   useEffect(() => {
     if (!socket.connected) socket.connect();
@@ -162,15 +235,14 @@ function NightPhase() {
       setActiveRole(data.roleName);
       setQueueTimer(data.seconds);
 
-      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+      // FIX #1: Use safe clear helper
+      clearIntervalRef(queueTimerRef);
       const slotStartedAt = Date.now();
       queueTimerRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
         const remaining = Math.max(data.seconds - elapsed, 0);
         setQueueTimer(remaining);
-        if (remaining <= 0 && queueTimerRef.current) {
-          clearInterval(queueTimerRef.current);
-        }
+        if (remaining <= 0) clearIntervalRef(queueTimerRef);
       }, 1000);
     };
 
@@ -178,7 +250,7 @@ function NightPhase() {
 
     return () => {
       socket.off("nightRoleProgress", handleNightProgress);
-      if (queueTimerRef.current) clearInterval(queueTimerRef.current);
+      clearIntervalRef(queueTimerRef);
     };
   }, [gameCode]);
 
@@ -211,7 +283,12 @@ function NightPhase() {
 
     socket.on("roleActionQueue", (roleName: string) => {
       if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDoneRef.current) {
-        setIsMyTurn(true);
+        // FIX #4: If splash is still showing, buffer the turn
+        if (showSplashRef.current) {
+          pendingTurnRef.current = true;
+        } else {
+          setIsMyTurn(true);
+        }
       } else {
         setIsMyTurn(false);
       }
@@ -219,17 +296,26 @@ function NightPhase() {
 
     socket.on("roleTimer", (data: { roleName: string; seconds: number }) => {
       if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDoneRef.current) {
+        // FIX #4: If splash is still showing, buffer the timer data
+        if (showSplashRef.current) {
+          pendingTimerRef.current = {
+            roleName: data.roleName,
+            seconds: data.seconds,
+            receivedAt: Date.now(),
+          };
+          return;
+        }
+
         timerMaxRef.current = data.seconds;
         setRoleTimer(data.seconds);
-        if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+        // FIX #1: Use safe clear helper
+        clearIntervalRef(timerIntervalRef);
         const slotStartedAt = Date.now();
         timerIntervalRef.current = setInterval(() => {
           const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
           const remaining = Math.max(data.seconds - elapsed, 0);
           setRoleTimer(remaining);
-          if (remaining <= 0 && timerIntervalRef.current) {
-            clearInterval(timerIntervalRef.current);
-          }
+          if (remaining <= 0) clearIntervalRef(timerIntervalRef);
         }, 1000);
       }
     });
@@ -251,7 +337,7 @@ function NightPhase() {
           setHasPerformedAction(true);
           setLastActionResult(result);
           setRoleTimer(0);
-          if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+          clearIntervalRef(timerIntervalRef);
         }
         return;
       }
@@ -265,21 +351,23 @@ function NightPhase() {
       setHasPerformedAction(true);
       setLastActionResult(result);
       setRoleTimer(0);
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      clearIntervalRef(timerIntervalRef);
 
+      // FIX #2: If discussion was pending, navigate immediately
+      // (reduced from 1000ms — the action result is already stored,
+      // the role component will show it briefly during the navigate)
       if (pendingNavigationRef.current) {
         const navData = pendingNavigationRef.current;
         pendingNavigationRef.current = null;
+        // Small delay just for the result to render once
         setTimeout(() => {
-          setDiscussionData({ timerSeconds: navData.timerSeconds, currentTimerSec: navData.currentTimerSec, startedAt: navData.startedAt });
-          setPhase("discussion");
-          navigate(`/discussion/${gameCode}`);
-        }, 1000);
+          navigateToDiscussion(navData);
+        }, 300);
       }
     });
 
     socket.on("discussionStarted", (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => {
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      clearIntervalRef(timerIntervalRef);
 
       if (!actionResultRef.current && !hasAlreadyActed) {
         pendingNavigationRef.current = {
@@ -290,9 +378,8 @@ function NightPhase() {
         return;
       }
 
-      setDiscussionData({ timerSeconds: data.timerSeconds, currentTimerSec: data.currentTimerSec, startedAt: data.startedAt });
-      setPhase("discussion");
-      navigate(`/discussion/${gameCode}`);
+      // FIX #3: Use safe navigation helper
+      navigateToDiscussion(data);
     });
 
     return () => {
@@ -301,22 +388,27 @@ function NightPhase() {
       socket.off("roleTimer");
       socket.off("actionResult");
       socket.off("discussionStarted");
-      if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+      clearIntervalRef(timerIntervalRef);
     };
-  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed]);
+  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed, navigateToDiscussion]);
 
   // Polling fallback for phase check when already acted
   useEffect(() => {
     if (!hasAlreadyActed) return;
 
     const checkPhase = async () => {
+      // FIX #3: Don't poll if we've already navigated
+      if (hasNavigatedRef.current) return;
       try {
         const res = await fetch(`${API_URL}/api/games/${gameCode}`);
         const data = await res.json();
         if (data.success && data.data.phase === "discussion") {
-          setDiscussionData({ timerSeconds: data.data.timerSeconds, currentTimerSec: data.data.currentTimerSec, startedAt: data.data.startedAt });
-          setPhase("discussion");
-          navigate(`/discussion/${gameCode}`);
+          // FIX #3: Use safe navigation helper
+          navigateToDiscussion({
+            timerSeconds: data.data.timerSeconds,
+            currentTimerSec: data.data.currentTimerSec,
+            startedAt: data.data.startedAt,
+          });
         }
       } catch {
         /* ignore */
@@ -325,7 +417,7 @@ function NightPhase() {
 
     const interval = setInterval(checkPhase, 3000);
     return () => clearInterval(interval);
-  }, [hasAlreadyActed, gameCode, navigate, playerName, playerId, isHost, myRole]);
+  }, [hasAlreadyActed, gameCode, navigateToDiscussion]);
 
   // ===== HANDLERS =====
 

@@ -41,30 +41,64 @@ function Discussion() {
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
   const totalSeconds = useGameStore((s) => s.timerSeconds) || 360;
-  const startedAt = useGameStore((s) => s.startedAt) || Date.now();
+  const storeStartedAt = useGameStore((s) => s.startedAt);
   const roleName = useGameStore((s) => s.roleName) || "";
   const actionResult = useGameStore((s) => s.lastActionResult) as { message?: string } | null;
   const setPhase = useGameStore((s) => s.setPhase);
 
-  const [secondsLeft, setSecondsLeft] = useState(totalSeconds);
+  // FIX #2: Validate startedAt — useState initializer runs once,
+  // so Date.now() is only called on mount, not on re-renders.
+  const [startedAt] = useState(() => {
+    const now = Date.now();
+    const raw = storeStartedAt || now;
+    if (raw > now) return now;
+    return raw;
+  });
+
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+    return Math.max(totalSeconds - elapsed, 0);
+  });
   const [showResult, setShowResult] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // FIX #1: Track whether the component is still mounted
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Timer synced to server timestamp
   useEffect(() => {
-    const updateTimer = () => {
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-      setSecondsLeft(Math.max(totalSeconds - elapsed, 0));
-    };
+    const initialElapsed = Math.floor((Date.now() - startedAt) / 1000);
+    const initialRemaining = Math.max(totalSeconds - initialElapsed, 0);
 
-    updateTimer();
-    intervalRef.current = setInterval(updateTimer, 1000);
+    // FIX #2: Don't start the interval if time is already up
+    if (initialRemaining <= 0) return;
+
+    intervalRef.current = setInterval(() => {
+      // FIX #1: Guard against setting state on unmounted component
+      if (!mountedRef.current) return;
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      const remaining = Math.max(totalSeconds - elapsed, 0);
+      setSecondsLeft(remaining);
+      if (remaining <= 0 && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }, 1000);
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
   }, [startedAt, totalSeconds]);
 
@@ -85,7 +119,10 @@ function Discussion() {
   const skipToVote = useCallback(() => {
     if (skipping) return;
     setSkipping(true);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
     setSecondsLeft(0);
     socket.emit("skipToVote", { gameCode, playerId });
   }, [skipping, gameCode, playerId]);
