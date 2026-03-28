@@ -61,6 +61,9 @@ function HomePage() {
   const [displayedChar, setDisplayedChar] = useState<CharacterData>(characters[0]);
   const switchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // FIX #2: Use a ref for the carousel grid instead of document.querySelector
+  const gridRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     reset();
   }, [reset]);
@@ -74,7 +77,9 @@ function HomePage() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Character switch with crossfade
+  // FIX #1: Guard timeout callback against rapid switches using a pending ref
+  const pendingCharRef = useRef<CharacterData | null>(null);
+
   const handleCharSwitch = useCallback(
     (char: CharacterData) => {
       if (char.id === selectedChar.id) return;
@@ -82,13 +87,20 @@ function HomePage() {
       // Clear any pending switch
       if (switchTimeoutRef.current) clearTimeout(switchTimeoutRef.current);
 
+      // Track which character this switch is for
+      pendingCharRef.current = char;
+
       // Start exit animation
       setCharSwitching(true);
 
       // After exit animation completes, swap character and enter
       switchTimeoutRef.current = setTimeout(() => {
+        // Only apply if this is still the latest requested switch
+        if (pendingCharRef.current?.id !== char.id) return;
+
         setSelectedChar(char);
         setDisplayedChar(char);
+        pendingCharRef.current = null;
         // Force reflow then remove switching class to trigger enter
         requestAnimationFrame(() => {
           setCharSwitching(false);
@@ -261,8 +273,8 @@ function HomePage() {
         <button
           className="carousel-arrow carousel-arrow--left"
           onClick={() => {
-            const grid = document.querySelector(".home-select-grid");
-            if (grid) grid.scrollBy({ left: -200, behavior: "smooth" });
+            // FIX #2: Use ref instead of document.querySelector
+            gridRef.current?.scrollBy({ left: -200, behavior: "smooth" });
           }}
           aria-label="Scroll left"
         >
@@ -272,7 +284,8 @@ function HomePage() {
         </button>
 
         <div className="carousel-mask">
-          <div className="home-select-grid">
+          {/* FIX #2: Attach ref to the grid element */}
+          <div className="home-select-grid" ref={gridRef}>
             {characters.map((char, index) => {
               const isActive = selectedChar.id === char.id;
               const color = teamColor(char.team);
@@ -312,8 +325,8 @@ function HomePage() {
         <button
           className="carousel-arrow carousel-arrow--right"
           onClick={() => {
-            const grid = document.querySelector(".home-select-grid");
-            if (grid) grid.scrollBy({ left: 200, behavior: "smooth" });
+            // FIX #2: Use ref instead of document.querySelector
+            gridRef.current?.scrollBy({ left: 200, behavior: "smooth" });
           }}
           aria-label="Scroll right"
         >

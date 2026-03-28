@@ -23,7 +23,6 @@
    MOUNT ANIMATIONS
    ============================================================ */
 
-/* --- Title: fade down --- */
 .wr-anim-title {
   opacity: 0;
   transform: translateY(-20px);
@@ -37,7 +36,6 @@
   transform: translateY(0);
 }
 
-/* --- Code section: fade + scale up --- */
 .wr-anim-code {
   opacity: 0;
   transform: scale(0.92);
@@ -51,7 +49,6 @@
   transform: scale(1);
 }
 
-/* --- Player section: fade up --- */
 .wr-anim-players {
   opacity: 0;
   transform: translateY(20px);
@@ -65,7 +62,6 @@
   transform: translateY(0);
 }
 
-/* --- Individual player rows: staggered slide in --- */
 .wr-anim-player-row {
   opacity: 0;
   transform: translateX(-16px);
@@ -80,7 +76,6 @@
   transform: translateX(0);
 }
 
-/* --- Actions: fade up --- */
 .wr-anim-actions {
   opacity: 0;
   transform: translateY(24px);
@@ -213,7 +208,7 @@
   font-family: var(--font-display);
 }
 
-/* ===== SETTINGS BUTTON (gear icon) ===== */
+/* ===== SETTINGS BUTTON ===== */
 .wr-settings-btn {
   width: 36px;
   height: 36px;
@@ -237,7 +232,7 @@
   transform: rotate(45deg);
 }
 
-/* ===== HINT BUTTON (!) ===== */
+/* ===== HINT BUTTON ===== */
 .wr-hint-btn {
   width: 36px;
   height: 36px;
@@ -281,30 +276,6 @@
 /* ===== SETTINGS TOGGLE ===== */
 .wr-settings-toggle-row {
   margin-top: 8px;
-}
-
-.wr-settings-toggle {
-  padding: 8px 20px;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 2px;
-  font-family: var(--font-display);
-  background-color: rgba(201, 168, 76, 0.03);
-  border: 1px solid var(--color-border-dark);
-  border-radius: 4px;
-  color: #5a4a30;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.wr-settings-toggle:hover {
-  border-color: #3d2e1a;
-}
-
-.wr-settings-toggle--active {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-  background-color: rgba(201, 168, 76, 0.1);
 }
 
 /* ===== CODE SECTION ===== */
@@ -384,6 +355,7 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* ===== PLAYER ROW ===== */
 .wr-player-row {
   display: flex;
   justify-content: space-between;
@@ -392,59 +364,211 @@
   background-color: rgba(201, 168, 76, 0.03);
   border: 1px solid var(--color-border-dark);
   border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.wr-player-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .wr-player-name {
   font-size: 14px;
   color: #c9b896;
   font-family: var(--font-body);
+  transition: color 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.wr-badges {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.wr-ready-badge {
-  font-size: 8px;
-  font-weight: 400;
-  letter-spacing: 1px;
+.wr-player-name--ready {
   color: #4a7c3f;
-  padding: 2px 6px;
-  border: 1px solid #2d5a26;
-  border-radius: 2px;
-  font-family: var(--font-display);
-  background-color: rgba(74, 124, 63, 0.1);
 }
 
+/* ===== HOST BADGE — crown icon beside name ===== */
 .wr-host-badge {
-  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-gold);
+  filter: drop-shadow(0 0 4px rgba(201, 168, 76, 0.3));
+}
+
+/* Right side of player row */
+.wr-player-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ===== SIGNAL BARS ===== */
+.wr-signal-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 16px;
+  padding: 2px 0;
+}
+
+.wr-signal-bar {
+  width: 3px;
+  border-radius: 1px;
+  transition: background-color 0.5s ease;
+}
+
+/* ===== PLAYER ROW SHAKE (long-press kick trigger) ===== */
+.wr-player-row--shake {
+  animation: playerShake 0.4s ease-in-out;
+}
+
+@keyframes playerShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-6px);
+  }
+  30% {
+    transform: translateX(5px);
+  }
+  45% {
+    transform: translateX(-4px);
+  }
+  60% {
+    transform: translateX(3px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+  90% {
+    transform: translateX(1px);
+  }
+}
+
+/* ============================================================
+   KICK CONFIRMATION MODAL — silver theme
+   ============================================================ */
+.wr-kick-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: kickOverlayIn 0.25s ease-out;
+}
+
+@keyframes kickOverlayIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.wr-kick-modal {
+  background-color: #0c0c0e;
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 6px;
+  padding: clamp(20px, 3vw, 32px);
+  width: min(320px, 85vw);
+  text-align: center;
+  animation: kickModalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes kickModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.wr-kick-modal-title {
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  color: rgba(210, 210, 220, 0.85);
+  font-family: var(--font-display);
+  margin: 0 0 16px 0;
+}
+
+.wr-kick-modal-text {
+  font-size: 14px;
+  color: rgba(180, 180, 195, 0.5);
+  font-family: var(--font-body);
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+}
+
+.wr-kick-modal-name {
+  color: rgba(220, 220, 230, 0.85);
+  font-weight: 600;
+}
+
+.wr-kick-modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.wr-kick-modal-no {
+  flex: 1;
+  padding: 12px;
+  font-size: 12px;
   font-weight: 400;
   letter-spacing: 2px;
-  color: var(--color-gold);
-  padding: 2px 8px;
-  border: 1px solid #3d2e1a;
-  border-radius: 2px;
-  font-family: var(--font-display);
-}
-
-.wr-kick-btn {
-  font-size: 8px;
-  font-weight: 400;
-  letter-spacing: 1px;
-  color: #8b3a3a;
-  padding: 2px 6px;
-  border: 1px solid #5a2020;
-  border-radius: 2px;
-  font-family: var(--font-display);
-  background-color: rgba(139, 58, 58, 0.1);
+  background-color: transparent;
+  color: rgba(180, 180, 195, 0.4);
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 4px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  font-family: var(--font-display);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
-.wr-kick-btn:hover {
-  background-color: rgba(139, 58, 58, 0.25);
+.wr-kick-modal-no:hover {
+  border-color: rgba(180, 180, 195, 0.3);
+  color: rgba(220, 220, 230, 0.7);
+}
+
+.wr-kick-modal-yes {
+  flex: 1;
+  padding: 12px;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  background-color: rgba(204, 68, 68, 0.15);
+  color: #c44;
+  border: 1px solid rgba(204, 68, 68, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.wr-kick-modal-yes:hover {
+  background-color: rgba(204, 68, 68, 0.25);
+  color: #e87070;
 }
 
 /* ===== ACTIONS ===== */
@@ -886,7 +1010,6 @@
     overflow: hidden;
   }
 
-  /* Title */
   .wr-title {
     color: #f0e6d0;
     text-shadow:
@@ -894,7 +1017,6 @@
       0 0 30px rgba(201, 168, 76, 0.3);
   }
 
-  /* ===== CODE SECTION — BRIGHTER ON MOBILE ===== */
   .wr-code-label {
     color: rgba(201, 168, 76, 0.85);
     text-shadow: 0 0 10px rgba(201, 168, 76, 0.2);
@@ -915,7 +1037,6 @@
     text-shadow: 0 0 8px rgba(201, 168, 76, 0.15);
   }
 
-  /* ===== PLAYER COUNT — BRIGHT GOLD ===== */
   .wr-player-count {
     color: #ffc800;
     font-size: 80%;
@@ -926,7 +1047,6 @@
     border: 1px solid rgba(201, 168, 76, 0.12);
   }
 
-  /* Player section */
   .wr-player-row {
     background-color: rgba(0, 0, 0, 0.5);
     border-color: rgba(201, 168, 76, 0.12);
@@ -936,31 +1056,14 @@
     color: #e8dcc8;
   }
 
-  /* Badges */
-  .wr-host-badge {
-    color: var(--color-gold);
-    border-color: rgba(201, 168, 76, 0.35);
-    background-color: rgba(201, 168, 76, 0.1);
-  }
-
-  .wr-ready-badge {
+  .wr-player-name--ready {
     color: #6dd66d;
-    border-color: rgba(109, 214, 109, 0.35);
-    background-color: rgba(109, 214, 109, 0.08);
   }
 
-  .wr-kick-btn {
-    color: #e87070;
-    border-color: rgba(232, 112, 112, 0.3);
-    background-color: rgba(232, 112, 112, 0.06);
+  .wr-host-badge {
+    filter: drop-shadow(0 0 6px rgba(201, 168, 76, 0.4));
   }
 
-  .wr-kick-btn:hover {
-    background-color: rgba(232, 112, 112, 0.15);
-    color: #f08080;
-  }
-
-  /* Start button */
   .wr-start-btn {
     border-color: rgba(100, 85, 60, 0.5);
   }
@@ -970,7 +1073,6 @@
     color: rgba(201, 168, 76, 0.4);
   }
 
-  /* Ready button */
   .wr-ready-btn {
     background-color: rgba(0, 0, 0, 0.5);
     border-color: rgba(109, 214, 109, 0.3);
@@ -995,7 +1097,6 @@
     border-color: rgba(109, 214, 109, 0.55);
   }
 
-  /* Leave button */
   .wr-leave-btn {
     background-color: rgba(0, 0, 0, 0.35);
     border-color: rgba(232, 112, 112, 0.35);
@@ -1008,14 +1109,12 @@
     background-color: rgba(232, 112, 112, 0.1);
   }
 
-  /* Error message */
   .wr-error-message {
     background-color: rgba(180, 70, 70, 0.25);
     border-color: rgba(232, 112, 112, 0.45);
     color: #f09090;
   }
 
-  /* Settings & hint buttons on mobile */
   .wr-settings-btn {
     width: 32px;
     height: 32px;
@@ -1061,6 +1160,10 @@
   }
 
   .wr-hint-btn--pulse {
+    animation: none !important;
+  }
+
+  .wr-player-row--shake {
     animation: none !important;
   }
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { Crown } from "lucide-react";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
@@ -11,6 +12,17 @@ import "./WaitingRoom.css";
 // ===== CONSTANTS =====
 
 const MIN_PLAYERS = 6;
+
+// Ping interval in ms — how often each client measures latency
+const PING_INTERVAL = 4000;
+
+// Signal strength thresholds (ms)
+const SIGNAL_GREAT = 100;
+const SIGNAL_GOOD = 200;
+const SIGNAL_OKAY = 400;
+
+// Long press duration to trigger kick (ms)
+const LONG_PRESS_DURATION = 600;
 
 // ===== TYPES =====
 
@@ -41,6 +53,8 @@ interface PlayerStatus {
   isReady: boolean;
 }
 
+type SignalLevel = 0 | 1 | 2 | 3 | 4;
+
 // ===== HELPERS =====
 
 function getCardCount(width: number): number {
@@ -62,6 +76,44 @@ function shuffleGridCards(): GridCard[] {
     [indices[i], indices[j]] = [indices[j], indices[i]];
   }
   return indices.map((cardIndex, id) => ({ id, cardIndex }));
+}
+
+function pingToSignal(ping: number | null): SignalLevel {
+  if (ping === null) return 0;
+  if (ping < SIGNAL_GREAT) return 4;
+  if (ping < SIGNAL_GOOD) return 3;
+  if (ping < SIGNAL_OKAY) return 2;
+  return 1;
+}
+
+function signalColor(level: SignalLevel): string {
+  if (level >= 4) return "#4a7c3f";
+  if (level === 3) return "#7a9c3f";
+  if (level === 2) return "#c9a84c";
+  if (level === 1) return "#8b3a3a";
+  return "#3d2e1a";
+}
+
+// ===== SIGNAL BARS COMPONENT =====
+
+function SignalBars({ level }: { level: SignalLevel }) {
+  const color = signalColor(level);
+  const dimColor = "rgba(61, 46, 26, 0.4)";
+
+  return (
+    <div className="wr-signal-bars" title={level === 0 ? "Measuring..." : `Signal: ${["", "Poor", "Fair", "Good", "Great"][level]}`}>
+      {[1, 2, 3, 4].map((bar) => (
+        <div
+          key={bar}
+          className="wr-signal-bar"
+          style={{
+            height: `${bar * 3 + 2}px`,
+            backgroundColor: bar <= level ? color : dimColor,
+          }}
+        />
+      ))}
+    </div>
+  );
 }
 
 // ===== COMPONENT =====
@@ -90,6 +142,14 @@ function WaitingRoom() {
   const [cardCount, setCardCount] = useState(42);
   const [hostId, setHostId] = useState<string>("");
 
+  // Connection strength state
+  const [playerPings, setPlayerPings] = useState<Record<string, number | null>>({});
+
+  // Long-press kick state
+  const [shakingPlayerId, setShakingPlayerId] = useState<string | null>(null);
+  const [kickConfirm, setKickConfirm] = useState<{ id: string; name: string } | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // How to play modal state
   const [htpOpen, setHtpOpen] = useState(false);
   const [htpPulsing, setHtpPulsing] = useState(() => {
@@ -99,13 +159,12 @@ function WaitingRoom() {
   // Mount animation state
   const [mounted, setMounted] = useState(false);
 
-  // Always-fresh ref to avoid stale closure issues in socket callbacks
   const readySetRef = useRef<Set<string>>(new Set());
   const settingsRef = useRef<Settings>(settings);
 
-  // Timeout refs for cleanup on unmount
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [gridCards] = useState<GridCard[]>(shuffleGridCards);
 
@@ -122,6 +181,8 @@ function WaitingRoom() {
     return () => {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
+      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
     };
   }, []);
 
@@ -132,6 +193,32 @@ function WaitingRoom() {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // ===== PING MEASUREMENT =====
+  useEffect(() => {
+    if (!gameCode || !playerId) return;
+
+    const measurePing = () => {
+      const start = Date.now();
+      socket.emit("pingMeasure", { gameCode, playerId }, () => {
+        const latency = Date.now() - start;
+        socket.emit("reportPing", { gameCode, playerId, ping: latency });
+        setPlayerPings((prev) => ({ ...prev, [playerId]: latency }));
+      });
+    };
+
+    measurePing();
+    pingIntervalRef.current = setInterval(measurePing, PING_INTERVAL);
+
+    socket.on("playerPings", (data: Record<string, number>) => {
+      setPlayerPings((prev) => ({ ...prev, ...data }));
+    });
+
+    return () => {
+      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
+      socket.off("playerPings");
+    };
+  }, [gameCode, playerId]);
 
   // Fetch players, seed ready state, then rejoin
   useEffect(() => {
@@ -145,42 +232,41 @@ function WaitingRoom() {
 
         if (data.success && data.data.players) {
           if (data.data.host) setHostId(data.data.host);
-          const seededSet = new Set<string>();
-          const rawReady = data.data.readyPlayers;
 
+          const rawReady = data.data.readyPlayers;
           if (Array.isArray(rawReady)) {
             for (const entry of rawReady) {
               if (entry?.ready && entry?.id) {
-                seededSet.add(entry.id);
+                readySetRef.current.add(entry.id);
               }
             }
           }
-
-          readySetRef.current = seededSet;
 
           setPlayers(
             data.data.players.map((p: { id: string; name: string }) => ({
               id: p.id,
               name: p.name,
-              isReady: seededSet.has(p.id),
+              isReady: readySetRef.current.has(p.id),
             })),
           );
 
-          if (seededSet.has(playerId)) setPlayerReady(true);
+          if (readySetRef.current.has(playerId)) setPlayerReady(true);
         }
 
         if (gameCode && playerName) {
-          socket.emit("joinGame", { gameCode, playerName }, (response: { success: boolean; playerId?: string; error?: string }) => {
-            if (response.success && response.playerId) {
-              // Update store in case playerId changed (re-added as new player)
-              useGameStore.getState().setSession({
-                gameCode: gameCode,
-                playerId: response.playerId,
-                playerName: playerName,
-                isHost: false,
-              });
-            }
-          });
+          const alreadyInGame = data.success && data.data.players?.some((p: { id: string }) => p.id === playerId);
+          if (!alreadyInGame) {
+            socket.emit("joinGame", { gameCode, playerName }, (response: { success: boolean; playerId?: string; error?: string }) => {
+              if (response.success && response.playerId) {
+                useGameStore.getState().setSession({
+                  gameCode: gameCode,
+                  playerId: response.playerId,
+                  playerName: playerName,
+                  isHost: false,
+                });
+              }
+            });
+          }
         }
       } catch (err) {
         console.error("Failed to fetch players", err);
@@ -199,6 +285,11 @@ function WaitingRoom() {
       } else {
         readySetRef.current.delete(data.kickedPlayerId);
         setPlayers((prev) => prev.filter((p) => p.id !== data.kickedPlayerId));
+        setPlayerPings((prev) => {
+          const next = { ...prev };
+          delete next[data.kickedPlayerId];
+          return next;
+        });
       }
     });
 
@@ -219,11 +310,14 @@ function WaitingRoom() {
     socket.on("playerLeft", (data: { playerId: string }) => {
       readySetRef.current.delete(data.playerId);
       setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
+      setPlayerPings((prev) => {
+        const next = { ...prev };
+        delete next[data.playerId];
+        return next;
+      });
     });
 
     socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
-      console.log("playerListUpdate:", JSON.stringify(data.players));
-
       setPlayers(
         data.players.map((p) => ({
           id: p.id,
@@ -310,12 +404,11 @@ function WaitingRoom() {
     navigate("/");
   }, [gameCode, playerId, navigate, reset]);
 
-  const handleKick = useCallback(
-    (kickedPlayerId: string) => {
-      socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId });
-    },
-    [gameCode, playerId],
-  );
+  const handleKickConfirm = useCallback(() => {
+    if (!kickConfirm) return;
+    socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId: kickConfirm.id });
+    setKickConfirm(null);
+  }, [gameCode, playerId, kickConfirm]);
 
   const handleReady = useCallback(() => {
     const newReady = !playerReady;
@@ -342,6 +435,31 @@ function WaitingRoom() {
       sessionStorage.setItem("wr_htp_seen", "true");
     }
   }, [htpPulsing]);
+
+  // Long press handlers for kick (host only, on other players)
+  const handlePressStart = useCallback(
+    (p: PlayerStatus) => {
+      if (!isHost || p.id === playerId) return;
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+
+      longPressTimerRef.current = setTimeout(() => {
+        // Trigger shake animation
+        setShakingPlayerId(p.id);
+        // Open kick confirmation modal
+        setKickConfirm({ id: p.id, name: p.name });
+        // Clear shake after animation
+        setTimeout(() => setShakingPlayerId(null), 400);
+      }, LONG_PRESS_DURATION);
+    },
+    [isHost, playerId],
+  );
+
+  const handlePressEnd = useCallback(() => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
 
   // ===== DERIVED =====
 
@@ -405,20 +523,42 @@ function WaitingRoom() {
         <div className="wr-player-section wr-anim-players">
           <span className="wr-player-count">PLAYERS {players.length}/10</span>
           <div className="wr-player-list">
-            {players.map((p, index) => (
-              <div key={p.id} className="wr-player-row wr-anim-player-row" style={{ "--player-index": index } as React.CSSProperties}>
-                <span className="wr-player-name">{p.name}</span>
-                <div className="wr-badges">
-                  {p.isReady && <span className="wr-ready-badge">✓ READY</span>}
-                  {p.id === hostId && <span className="wr-host-badge">HOST</span>}
-                  {isHost && p.id !== playerId && (
-                    <button className="wr-kick-btn" onClick={() => handleKick(p.id)}>
-                      KICK
-                    </button>
-                  )}
+            {players.map((p, index) => {
+              const signal = pingToSignal(playerPings[p.id] ?? null);
+              const isShaking = shakingPlayerId === p.id;
+              const canLongPress = isHost && p.id !== playerId;
+              return (
+                <div
+                  key={p.id}
+                  className={`wr-player-row wr-anim-player-row${isShaking ? " wr-player-row--shake" : ""}`}
+                  style={{ "--player-index": index, cursor: canLongPress ? "grab" : "default" } as React.CSSProperties}
+                  onMouseDown={() => handlePressStart(p)}
+                  onMouseUp={handlePressEnd}
+                  onMouseLeave={handlePressEnd}
+                  onTouchStart={() => handlePressStart(p)}
+                  onTouchEnd={handlePressEnd}
+                  onTouchCancel={handlePressEnd}
+                  onContextMenu={(e) => {
+                    if (canLongPress) e.preventDefault();
+                  }}
+                >
+                  {/* Left: name (green if ready) + host crown */}
+                  <div className="wr-player-info">
+                    <span className={`wr-player-name ${p.isReady ? "wr-player-name--ready" : ""}`}>{p.name}</span>
+                    {p.id === hostId && (
+                      <span className="wr-host-badge" title="Host">
+                        <Crown size={13} strokeWidth={1.8} />
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Right: signal bars */}
+                  <div className="wr-player-right">
+                    <SignalBars level={signal} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -439,6 +579,26 @@ function WaitingRoom() {
           </button>
         </div>
       </div>
+
+      {/* ===== KICK CONFIRMATION MODAL ===== */}
+      {kickConfirm && (
+        <div className="wr-kick-overlay" onClick={() => setKickConfirm(null)}>
+          <div className="wr-kick-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="wr-kick-modal-title">KICK PLAYER</h3>
+            <p className="wr-kick-modal-text">
+              Are you sure you want to kick <span className="wr-kick-modal-name">{kickConfirm.name}</span>?
+            </p>
+            <div className="wr-kick-modal-buttons">
+              <button className="wr-kick-modal-no" onClick={() => setKickConfirm(null)}>
+                NO
+              </button>
+              <button className="wr-kick-modal-yes" onClick={handleKickConfirm}>
+                YES, KICK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== SETTINGS MODAL ===== */}
       {settingsModalOpen && (
@@ -474,22 +634,7 @@ function WaitingRoom() {
                 </div>
               </div>
               <div className="wr-settings-option" style={{ marginTop: "20px" }}>
-                {/* <span className="wr-settings-option-label">HELP HINTS</span> */}
-                {/* <span className="wr-settings-option-hint">Pulse the help button for new players</span> */}
-                <div className="wr-settings-toggle-row">
-                  {/* <button
-                    className={`wr-settings-toggle ${settings.showHint ? "wr-settings-toggle--active" : ""}`}
-                    onClick={() => {
-                      setSettings((prev) => {
-                        const updated = { ...prev, showHint: !prev.showHint };
-                        settingsRef.current = updated;
-                        return updated;
-                      });
-                    }}
-                  >
-                    {settings.showHint ? "ON" : "OFF"}
-                  </button> */}
-                </div>
+                <div className="wr-settings-toggle-row"></div>
               </div>
             </div>
             <div className="wr-settings-footer">

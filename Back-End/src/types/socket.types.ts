@@ -20,6 +20,8 @@ export interface ClientToServerEvents {
   voiceLeave: (data: { playerId: PlayerId }) => void;
   settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
   rejoinGame: (data: RejoinGameData, callback: (response: RejoinGameResponse) => void) => void;
+  pingMeasure: (data: { gameCode: string; playerId: string }, callback: () => void) => void;
+  reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;
 }
 
 // Server -> Client events (what backend sends)
@@ -56,6 +58,7 @@ export interface ServerToClientEvents {
   roleTimer: (data: { roleName: string; seconds: number }) => void;
   cloneInsomniacResult: (data: any) => void;
   hostChanged: (data: { newHostId: string }) => void;
+  playerPings: (data: Record<string, number>) => void;
 }
 
 // Data structures
