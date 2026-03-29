@@ -13,7 +13,8 @@ import { Clone } from "./Clone";
 import { Troublemaker } from "./Troublemaker";
 import { Werewolf } from "./Werewolf";
 import { Joker } from "./Joker";
-
+import { Warlock } from "./Warlock";
+import { Oracle } from "./Oracle";
 
 export { Role } from "./Role";
 export { Clone, createCloneAction } from "./Clone";
@@ -26,7 +27,8 @@ export { Robber, createRobberAction } from "./Robber";
 export { Seer, SeerActionType, createSeerAction } from "./Seer";
 export { Troublemaker, createTroublemakerAction } from "./Troublemaker";
 export { Werewolf, createWerewolfAction } from "./Werewolf";
-
+export { Warlock, createWarlockAction } from "./Warlock";
+export { Oracle, createOracleAction } from "./Oracle";
 
 export const RoleClasses = {
   werewolf: Werewolf,
@@ -39,4 +41,6 @@ export const RoleClasses = {
   clone: Clone,
   insomniac: Insomniac,
   joker: Joker,
+  warlock: Warlock,
+  oracle: Oracle,
 };

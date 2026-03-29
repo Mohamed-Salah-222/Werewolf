@@ -16,7 +16,7 @@ export class RoleAssigner {
 
   createRoles(): Role[] {
     let roles: Role[] = [];
-    const roleNames = ["Werewolf", "Mason", "Seer", "Drunk", "Troublemaker", "Robber", "Minion"];
+    const roleNames = ["Werewolf", "Mason", "Seer", "Drunk", "Troublemaker", "Robber", "Minion", "Warlock", "Oracle"];
     for (let i = 0; i < roleNames.length; i++) {
       let role: Role;
       if (roleNames[i] === "Mason") {
@@ -72,8 +72,7 @@ export class RoleAssigner {
   }
 
   createRoleQueue(): string[] {
-    const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER];
-
+    const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.WARLOCK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER, ROLE_NAMES.ORACLE];
     this.logger.info(`role order template: ${roleOrder.join(", ")}`);
     console.log(`role order template: ${roleOrder.join(", ")}`);
 
@@ -81,8 +80,7 @@ export class RoleAssigner {
   }
 
   buildActiveRoleQueue(players: Player[], groundRoles: Role[], roleTimers: Map<string, number>): string[] {
-    const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER];
-
+    const roleOrder = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.WARLOCK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER, ROLE_NAMES.ORACLE];
     const rolesInGame = new Set<string>();
     players.forEach((p) => rolesInGame.add(p.getOriginalRole().name));
     groundRoles.forEach((r) => rolesInGame.add(r.name));

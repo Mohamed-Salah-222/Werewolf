@@ -15,7 +15,7 @@ export interface NightPhaseHost {
   nightTimeRemaining: number;
   roleQueue: string[];
 
-  newEmit(event: string, data?: any): void;
+  newEmit(event: string, data?: unknown): void;
   startDay(): void;
   nextAction(): string | undefined;
   getPlayerById(id: string): Player;
@@ -31,8 +31,10 @@ export class NightPhaseManager {
     ["Robber", 20],
     ["Troublemaker", 20],
     ["Drunk", 10],
+    ["Warlock", 20],
     ["Insomniac", 10],
     ["Joker", 10],
+    ["Oracle", 10],
   ]);
 
   private nightMainTimer: ReturnType<typeof setTimeout> | null = null;
@@ -90,7 +92,7 @@ export class NightPhaseManager {
 
     this.host.players.forEach((player) => {
       if (!this.host.confirmedPlayerPerformActions.includes(player.id)) {
-        console.log(`⏱️ Auto-performing action for ${player.name} (${player.getOriginalRole().name})`);
+        console.log(`Auto-performing action for ${player.name} (${player.getOriginalRole().name})`);
         this.autoPerformAction(player);
         this.host.confirmedPlayerPerformActions.push(player.id);
       }
@@ -105,7 +107,7 @@ export class NightPhaseManager {
       this.roleSlotTimer = null;
     }
 
-    let nextRole = this.host.nextAction();
+    const nextRole = this.host.nextAction();
 
     if (!nextRole) {
       console.log("✅ All role slots completed");
@@ -132,7 +134,7 @@ export class NightPhaseManager {
 
     this.host.currentActiveRole = nextRole;
 
-    // Handle Clone→Insomniac: when Insomniac slot fires, auto-perform for clones who copied Insomniac
+    // Handle Clone→Insomniac: when Insomniac slot fires, check clones who copied Insomniac
     if (nextRole.toLowerCase() === "insomniac") {
       this.handleCloneInsomniac();
     }
@@ -157,7 +159,7 @@ export class NightPhaseManager {
       this.advanceToNextRole();
     }, timerSeconds * 1000);
 
-    // THEN emit to clients — bar animation starts after server countdown has begun
+    // THEN emit to clients
     this.host.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
 
     if (playersWithRole.length > 0) {
@@ -170,31 +172,45 @@ export class NightPhaseManager {
     this.host.newEmit("roleTimer", { roleName: nextRole, seconds: timerSeconds });
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   autoPerformAction(player: Player): any {
     const roleName = player.getOriginalRole().name.toLowerCase();
     const otherPlayers = this.host.players.filter((p) => p.id !== player.id);
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let action: any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let result: any;
 
       switch (roleName) {
+        // ── Passive roles (no target needed) ──
         case "werewolf":
           action = { type: "werewolf" };
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
+
         case "minion":
           action = { type: "minion" };
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
+
         case "mason":
           action = { type: "mason" };
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
+
         case "insomniac":
           action = { type: "insomniac" };
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
+
+        case "oracle":
+          action = { type: "oracle" };
+          result = player.performOriginalAction(this.host as never, action);
+          break;
+
+        // ── Seer (two modes) ──
         case "seer": {
           if (Math.random() > 0.5 && otherPlayers.length > 0) {
             const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
@@ -208,98 +224,83 @@ export class NightPhaseManager {
           } else {
             action = { type: "seer_player_role", targetPlayer: { id: otherPlayers[0].id } };
           }
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
         }
+
+        // ── Single target roles ──
         case "robber": {
-          const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-          action = { type: "robber", targetPlayer: { id: target.id } };
-          result = player.performOriginalAction(this.host as any, action);
+          const robTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+          action = { type: "robber", targetPlayer: { id: robTarget.id } };
+          result = player.performOriginalAction(this.host as never, action);
           break;
         }
+
+        case "warlock": {
+          const warlockTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+          action = { type: "warlock", targetPlayer: { id: warlockTarget.id } };
+          result = player.performOriginalAction(this.host as never, action);
+          break;
+        }
+
+        // ── Two target role ──
         case "troublemaker": {
           const shuffled = otherPlayers.sort(() => Math.random() - 0.5);
           action = { type: "troublemaker", player1: { id: shuffled[0].id }, player2: { id: shuffled[1].id } };
-          result = player.performOriginalAction(this.host as any, action);
+          result = player.performOriginalAction(this.host as never, action);
           break;
         }
+
+        // ── Ground card roles ──
+        case "drunk": {
+          const drunkIdx = Math.floor(Math.random() * this.host.groundRoles.length);
+          action = { type: "drunk", targetRoleId: this.host.groundRoles[drunkIdx].id };
+          result = player.performOriginalAction(this.host as never, action);
+          break;
+        }
+
+        case "joker": {
+          const jokerIdx = Math.floor(Math.random() * this.host.groundRoles.length);
+          action = { type: "joker", targetRoleId: this.host.groundRoles[jokerIdx].id };
+          result = player.performOriginalAction(this.host as never, action);
+          break;
+        }
+
+        // ── Clone (two-phase) ──
         case "clone": {
-          const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-          action = { type: "clone", targetPlayer: { id: target.id } };
-          result = player.performOriginalAction(this.host as any, action);
+          const cloneTarget = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
+          action = { type: "clone", targetPlayer: { id: cloneTarget.id } };
+          result = player.performOriginalAction(this.host as never, action);
 
-          // If clone copied an active role, auto-perform the second action too
           if (result.needsSecondAction) {
-            const clonedRoleName = result.clonedRole.toLowerCase();
-            let secondAction: any = null;
-            const cloneOtherPlayers = this.host.players.filter((p) => p.id !== player.id);
-
-            switch (clonedRoleName) {
-              case "seer": {
-                if (Math.random() > 0.5 && cloneOtherPlayers.length > 0) {
-                  const seerTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
-                  secondAction = { type: "seer_player_role", targetPlayer: { id: seerTarget.id } };
-                } else if (this.host.groundRoles.length >= 2) {
-                  secondAction = {
-                    type: "seer_ground_roles",
-                    groundRole1: { id: this.host.groundRoles[0].id },
-                    groundRole2: { id: this.host.groundRoles[1].id },
-                  };
-                } else {
-                  secondAction = { type: "seer_player_role", targetPlayer: { id: cloneOtherPlayers[0].id } };
-                }
-                break;
-              }
-              case "robber": {
-                const robTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
-                secondAction = { type: "robber", targetPlayer: { id: robTarget.id } };
-                break;
-              }
-              case "troublemaker": {
-                const shuffled = cloneOtherPlayers.sort(() => Math.random() - 0.5);
-                secondAction = { type: "troublemaker", player1: { id: shuffled[0].id }, player2: { id: shuffled[1].id } };
-                break;
-              }
-              case "drunk": {
-                const groundIdx = Math.floor(Math.random() * this.host.groundRoles.length);
-                secondAction = { type: "drunk", targetRoleId: this.host.groundRoles[groundIdx].id };
-                break;
-              }
-            }
+            const secondAction = this.buildCloneSecondAction(result.clonedRole.toLowerCase(), player);
 
             if (secondAction) {
               try {
                 const clonedRole = player.getRole();
-                const secondResult = clonedRole.performAction()(this.host as any, player, secondAction);
+                const secondResult = clonedRole.performAction()(this.host as never, player, secondAction);
                 result = { ...result, secondActionResult: secondResult, message: secondResult.message || result.message };
-              } catch (error: any) {
-                console.error(`Error auto-performing clone second action:`, error.message);
+              } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : "Unknown error";
+                console.error(`Error auto-performing clone second action:`, msg);
               }
             }
           }
           break;
         }
-        case "drunk": {
-          const groundIndex = Math.floor(Math.random() * this.host.groundRoles.length);
-          action = { type: "drunk", targetRoleId: this.host.groundRoles[groundIndex].id };
-          result = player.performOriginalAction(this.host as any, action);
-          break;
-        }
-        case "joker": {
-          const groundIndex = Math.floor(Math.random() * this.host.groundRoles.length);
-          action = { type: "joker", targetRoleId: this.host.groundRoles[groundIndex].id };
-          result = player.performOriginalAction(this.host as any, action);
-          break;
-        }
+
         default:
           result = { message: "No action performed" };
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (player as any).lastActionResult = result;
       console.log(`⏱️ Auto-action result for ${player.name}:`, result);
       return result;
-    } catch (error: any) {
-      console.error(`Error auto-performing action for ${player.name}:`, error.message);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      console.error(`Error auto-performing action for ${player.name}:`, msg);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (player as any).lastActionResult = { message: "Action was auto-performed" };
       return { message: "Action was auto-performed" };
     }
@@ -316,8 +317,57 @@ export class NightPhaseManager {
     }
   }
 
+  /**
+   * Builds the auto-action for a Clone's second phase based on what role they copied.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private buildCloneSecondAction(clonedRoleName: string, player: Player): any {
+    const cloneOtherPlayers = this.host.players.filter((p) => p.id !== player.id);
+
+    switch (clonedRoleName) {
+      case "seer": {
+        if (Math.random() > 0.5 && cloneOtherPlayers.length > 0) {
+          const seerTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
+          return { type: "seer_player_role", targetPlayer: { id: seerTarget.id } };
+        } else if (this.host.groundRoles.length >= 2) {
+          return {
+            type: "seer_ground_roles",
+            groundRole1: { id: this.host.groundRoles[0].id },
+            groundRole2: { id: this.host.groundRoles[1].id },
+          };
+        } else {
+          return { type: "seer_player_role", targetPlayer: { id: cloneOtherPlayers[0].id } };
+        }
+      }
+
+      case "robber": {
+        const robTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
+        return { type: "robber", targetPlayer: { id: robTarget.id } };
+      }
+
+      case "troublemaker": {
+        const shuffled = cloneOtherPlayers.sort(() => Math.random() - 0.5);
+        return { type: "troublemaker", player1: { id: shuffled[0].id }, player2: { id: shuffled[1].id } };
+      }
+
+      case "drunk": {
+        const groundIdx = Math.floor(Math.random() * this.host.groundRoles.length);
+        return { type: "drunk", targetRoleId: this.host.groundRoles[groundIdx].id };
+      }
+
+      case "warlock": {
+        const warlockTarget = cloneOtherPlayers[Math.floor(Math.random() * cloneOtherPlayers.length)];
+        return { type: "warlock", targetPlayer: { id: warlockTarget.id } };
+      }
+
+      default:
+        return null;
+    }
+  }
+
   private handleCloneInsomniac(): void {
     const cloneInsomniacs = this.host.players.filter((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (p as any)._wasClone === true && p.getOriginalRole().name.toLowerCase() === "insomniac" && this.host.confirmedPlayerPerformActions.includes(p.id);
     });
 
@@ -333,15 +383,18 @@ export class NightPhaseManager {
           message: hasChanged ? `Your role changed from Insomniac to ${currentRole.name}!` : "Your role is still Insomniac — no one swapped you.",
         };
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (player as any).lastActionResult = {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           ...(player as any).lastActionResult,
           insomniacResult: result,
           message: result.message,
         };
 
         this.host.newEmit("cloneInsomniacResult", { playerId: player.id, result });
-      } catch (error: any) {
-        console.error(`Error performing Clone-Insomniac check for ${player.name}:`, error.message);
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error performing Clone-Insomniac check for ${player.name}:`, msg);
       }
     });
   }

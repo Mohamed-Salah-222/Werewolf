@@ -1,5 +1,5 @@
 // GAME LIMITS
-export const MAX_PLAYERS = 10;
+export const MAX_PLAYERS = 12;
 export const MIN_PLAYERS = 6;
 export const NUMBER_OF_GROUND_ROLES = 3;
 
@@ -30,7 +30,7 @@ export enum Team {
   Joker = "joker",
 }
 
-export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "drunk"];
+export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "drunk", "warlock"];
 // ROLE NAMES
 export const ROLE_NAMES = {
   WEREWOLF: "Werewolf",
@@ -43,30 +43,21 @@ export const ROLE_NAMES = {
   DRUNK: "Drunk",
   INSOMNIAC: "Insomniac",
   JOKER: "Joker",
+  WARLOCK: "Warlock",
+  ORACLE: "Oracle",
 } as const;
 
 // ROLE ACTION ORDER
 // Roles perform actions in this exact order during Night phase
-export const ROLE_ACTION_ORDER = [
-  ROLE_NAMES.WEREWOLF,
-  ROLE_NAMES.MINION,
-  ROLE_NAMES.CLONE,
-  ROLE_NAMES.SEER,
-  ROLE_NAMES.MASON,
-  ROLE_NAMES.ROBBER,
-  ROLE_NAMES.TROUBLEMAKER,
-  ROLE_NAMES.DRUNK,
-  ROLE_NAMES.INSOMNIAC,
-  ROLE_NAMES.JOKER,
-];
+export const ROLE_ACTION_ORDER = [ROLE_NAMES.WEREWOLF, ROLE_NAMES.MINION, ROLE_NAMES.CLONE, ROLE_NAMES.SEER, ROLE_NAMES.MASON, ROLE_NAMES.ROBBER, ROLE_NAMES.TROUBLEMAKER, ROLE_NAMES.DRUNK, ROLE_NAMES.WARLOCK, ROLE_NAMES.INSOMNIAC, ROLE_NAMES.JOKER, ROLE_NAMES.ORACLE];
 
 // ROLE DISTRIBUTION
 // Werewolf count increases to 3 if player count is high
 export const getRoleDistribution = (playerCount?: number) => {
-  let werewolfCount = 2
+  let werewolfCount = 2;
 
   if (playerCount && playerCount >= 9) {
-    werewolfCount = 3
+    werewolfCount = 3;
   }
 
   return {
@@ -80,6 +71,8 @@ export const getRoleDistribution = (playerCount?: number) => {
     [ROLE_NAMES.DRUNK]: 1,
     [ROLE_NAMES.INSOMNIAC]: 1,
     [ROLE_NAMES.JOKER]: 1,
+    [ROLE_NAMES.WARLOCK]: 1,
+    [ROLE_NAMES.ORACLE]: 1,
   };
 };
 
@@ -90,7 +83,7 @@ export const VALIDATION = {
   GAME_CODE_LENGTH: 6,
 };
 
-// SOCKET EVENTS 
+// SOCKET EVENTS
 export const SOCKET_EVENTS = {
   // Client -> Server
   CLIENT: {
@@ -138,4 +131,4 @@ export const ERROR_MESSAGES = {
   UNKNOWN_ERROR: "An unexpected error occurred. Please try again or contact support if the issue persists.",
 };
 // Game configuration constants
-// Number of players , Timers , etc 
+// Number of players , Timers , etc

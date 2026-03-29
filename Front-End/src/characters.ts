@@ -19,6 +19,10 @@ import cloneSquare from "./assets/clone_square.webp";
 import clone2d from "./assets/clone_2d.webp";
 import jokerSquare from "./assets/joker_square.webp";
 import joker2d from "./assets/joker_2d.webp";
+import warlockSquare from "./assets/warlock_square.webp";
+import warlock2d from "./assets/warlock_2d.webp";
+import oracleSquare from "./assets/oracle_square.webp";
+import oracle2d from "./assets/oracle_2d.webp";
 
 export interface CharacterData {
   id: string;
@@ -132,6 +136,26 @@ export const characters: CharacterData[] = [
     square: jokerSquare,
     fullBody: joker2d,
   },
+  {
+    id: "warlock",
+    name: "Warlock",
+    team: "village",
+    title: "The Hex Caster",
+    description: "A master of dark enchantments who twists fate from the shadows. With a flick of his wrist, he curses another's identity into the unknown.",
+    ability: "Choose a playerbtheir role is swapped with a random ground card. You don't see what they become.",
+    square: warlockSquare,
+    fullBody: warlock2d,
+  },
+  {
+    id: "oracle",
+    name: "Oracle",
+    team: "village",
+    title: "The Whispering Seer",
+    description: "Visions come unbidden to the Oracle. Fragments of the night's secrets echo through his mind a stolen role, a hidden wolf, a broken bond.",
+    ability: "At the end of night, receive a random vision from another player's action. It could change everything.",
+    square: oracleSquare,
+    fullBody: oracle2d,
+  },
 ];
 
 // ===== CARD STYLE DATA FOR GAMECARD COMPONENT =====
@@ -153,6 +177,8 @@ export const cardStyleMap: Record<string, CardStyleData> = {
   insomniac: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
   clone: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
   joker: { frameColor: "#0e2a1a", panelColor: "#0a2015", borderColor: "#1a3a2a" },
+  warlock: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  oracle: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
 };
 
 /** Get full GameCard props for a role by name */
@@ -183,6 +209,8 @@ import drunkCard from "./assets/drunk_card.webp";
 import insomniacCard from "./assets/insomaniac_card.webp";
 import cloneCard from "./assets/clone_card.webp";
 import jokerCard from "./assets/joker_card.webp";
+import warlockCard from "./assets/warlock_card.webp";
+import oracleCard from "./assets/oracle_card.webp";
 
 import werewolfCardSmall from "./assets/werewolf_card_small.webp";
 import minionCardSmall from "./assets/minion_card_small.webp";
@@ -194,6 +222,8 @@ import drunkCardSmall from "./assets/drunk_card_small.webp";
 import insomniacCardSmall from "./assets/insomaniac_card_small.webp";
 import cloneCardSmall from "./assets/clone_card_small.webp";
 import jokerCardSmall from "./assets/joker_card_small.webp";
+import warlockCardSmall from "./assets/warlock_card_small.webp";
+import oracleCardSmall from "./assets/oracle_card_small.webp";
 
 export interface CardData {
   id: string;
@@ -215,6 +245,8 @@ export const allCards: CardData[] = [
   { id: "insomniac", name: "Insomniac", image: insomniacCard, small: insomniacCardSmall },
   { id: "clone", name: "Clone", image: cloneCard, small: cloneCardSmall },
   { id: "joker", name: "Joker", image: jokerCard, small: jokerCardSmall },
+  { id: "warlock", name: "Warlock", image: warlockCard, small: warlockCardSmall },
+  { id: "oracle", name: "Oracle", image: oracleCard, small: oracleCardSmall },
 ];
 
 // ===== PRELOADING =====
