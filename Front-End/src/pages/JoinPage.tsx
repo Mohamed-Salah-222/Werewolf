@@ -237,7 +237,7 @@ function JoinPage() {
       <div className="join-page">
         <div className="join-vignette" />
         <div className="join-card">
-          <div className="join-icon">🐺</div>
+          <div className="join-spinner" />
           <h2 className="join-title">INVALID LINK</h2>
           <p className="join-subtitle">This game link isn't valid.</p>
           <button className="join-home-btn" onClick={() => navigate("/")}>
@@ -253,7 +253,8 @@ function JoinPage() {
       <div className="join-page">
         <div className="join-vignette" />
         <div className="join-card">
-          <div className="join-icon spin">🐺</div>
+          <div className="join-spinner" />
+
           <h2 className="join-title">JOINING GAME...</h2>
           <p className="join-subtitle">Setting up your disguise</p>
         </div>
@@ -266,7 +267,7 @@ function JoinPage() {
       <div className="join-page">
         <div className="join-vignette" />
         <div className="join-card">
-          <div className="join-icon">🌙</div>
+          <div className="join-spinner" />
           <h2 className="join-title">GAME IN PROGRESS</h2>
           <p className="join-subtitle">This game has already started. You can't join mid-game.</p>
           <button className="join-home-btn" onClick={() => navigate("/")}>
@@ -281,7 +282,6 @@ function JoinPage() {
     <div className="join-page">
       <div className="join-vignette" />
       <div className="join-card">
-        <div className="join-icon">🐺</div>
         <h2 className="join-title">COULDN'T JOIN</h2>
         <p className="join-subtitle">{errorMsg}</p>
         <button className="join-home-btn" onClick={() => navigate("/")}>

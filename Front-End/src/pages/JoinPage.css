@@ -5,7 +5,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(ellipse at 50% 50%, #1a0a0a 0%, #0a0a0a 50%, #000 100%);
+  background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
   padding: 1rem;
   font-family: var(--font-body);
 }
@@ -21,9 +21,9 @@
 .join-card {
   position: relative;
   z-index: 1;
-  background: rgba(20, 18, 30, 0.9);
-  border: 1px solid rgba(255, 215, 0, 0.15);
-  border-radius: 16px;
+  background-color: #0c0c0e;
+  border: 1px solid rgba(180, 180, 195, 0.15);
+  border-radius: 6px;
   padding: 2.5rem 2rem;
   width: 100%;
   max-width: 360px;
@@ -31,10 +31,7 @@
   flex-direction: column;
   align-items: center;
   gap: 1rem;
-  box-shadow:
-    0 8px 40px rgba(0, 0, 0, 0.6),
-    0 0 60px rgba(255, 215, 0, 0.03);
-  animation: joinCardIn 0.4s ease-out;
+  animation: joinCardIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes joinCardIn {
@@ -48,19 +45,16 @@
   }
 }
 
-.join-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.3rem;
-}
-
-.join-icon.spin {
-  animation: joinSpin 1.2s linear infinite;
+.join-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(180, 180, 195, 0.15);
+  border-top-color: rgba(210, 210, 220, 0.7);
+  border-radius: 50%;
+  animation: joinSpin 0.8s linear infinite;
 }
 
 @keyframes joinSpin {
-  from {
-    transform: rotate(0deg);
-  }
   to {
     transform: rotate(360deg);
   }
@@ -69,10 +63,9 @@
 .join-title {
   font-family: var(--font-display, "Creepster", cursive);
   font-size: 1.5rem;
-  color: var(--color-gold, #ffd700);
+  color: rgba(210, 210, 220, 0.85);
   margin: 0;
   letter-spacing: 0.05em;
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
 }
 
 .join-subtitle {
@@ -85,8 +78,8 @@
 
 .join-home-btn {
   padding: 0.7rem 2rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background-color: transparent;
+  border: 1px solid rgba(180, 180, 195, 0.15);
   border-radius: 8px;
   color: rgba(255, 255, 255, 0.7);
   font-family: var(--font-body);
