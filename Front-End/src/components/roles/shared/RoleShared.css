@@ -15,8 +15,8 @@
 /* ===== CIRCLE AREA ===== */
 .role-circle-area {
   position: relative;
-  width: clamp(320px, 50vw, 540px);
-  height: clamp(320px, 50vw, 540px);
+  width: clamp(340px, 55vw, 600px);
+  height: clamp(340px, 55vw, 600px);
   flex-shrink: 0;
 }
 
@@ -600,8 +600,8 @@
 
 @media (max-width: 768px) {
   .role-circle-area {
-    width: min(90vw, 370px);
-    height: min(90vw, 370px);
+    width: min(92vw, 400px);
+    height: min(92vw, 400px);
   }
 
   .role-flip {
@@ -639,8 +639,8 @@
 
 @media (max-width: 480px) {
   .role-circle-area {
-    width: min(94vw, 330px);
-    height: min(94vw, 330px);
+    width: min(96vw, 360px);
+    height: min(96vw, 360px);
   }
 
   .role-flip {

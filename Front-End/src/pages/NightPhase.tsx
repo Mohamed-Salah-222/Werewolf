@@ -15,6 +15,8 @@ import TroublemakerAction from "../components/roles/TroublemakerAction";
 import DrunkAction from "../components/roles/DrunkAction";
 import InsomniacAction from "../components/roles/InsomniacAction";
 import JokerAction from "../components/roles/JokerAction";
+import WarlockAction from "../components/roles/WarlockAction";
+import OracleAction from "../components/roles/OracleAction";
 import NightRoleProgress from "../components/roles/NightRoleProgress";
 // import VoiceChat from "../components/VoiceChat";
 import "./NightPhase.css";
@@ -47,11 +49,12 @@ const ROLE_COMPONENTS: Record<string, ComponentType<any>> = {
   drunk: DrunkAction,
   insomniac: InsomniacAction,
   joker: JokerAction,
+  warlock: WarlockAction,
+  oracle: OracleAction,
 };
 
 // Roles that show their action component in the "done" state
-const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mason", "robber", "troublemaker", "drunk", "joker", "clone", "insomniac"]);
-
+const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mason", "robber", "troublemaker", "drunk", "joker", "clone", "insomniac", "warlock", "oracle"]);
 // ===== HELPERS =====
 
 // FIX #1: Safe interval management — always clear before setting
@@ -466,6 +469,10 @@ function NightPhase() {
       case "joker":
         return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
       case "insomniac":
+        return <Component {...baseProps} actionResult={actionResult} />;
+      case "warlock":
+        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+      case "oracle":
         return <Component {...baseProps} actionResult={actionResult} />;
       default:
         return <Component {...baseProps} />;

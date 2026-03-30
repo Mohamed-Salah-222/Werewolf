@@ -1,0 +1,84 @@
+/* ===== WARLOCK-SPECIFIC OVERRIDES ===== */
+
+/* Enable position transitions on player slots for the swap animation */
+.wk-circle-area .role-slot {
+  transition:
+    left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Self name */
+.wk-name--self {
+  color: var(--color-gold);
+}
+
+/* Target name highlight */
+.wk-name--target {
+  color: var(--color-gold);
+  text-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
+}
+
+/* Self card border */
+.wk-circle-area .role-slot--self .role-flip-face {
+  border-color: rgba(201, 168, 76, 0.35);
+}
+
+/* Clickable hover */
+.wk-slot--clickable:hover .role-flip-inner {
+  box-shadow: 0 0 16px rgba(201, 168, 76, 0.3);
+}
+
+.wk-slot--clickable:hover .role-name {
+  color: var(--color-gold);
+}
+
+/* Targeted slot — brief pulse before swap starts */
+.wk-slot--targeted {
+  z-index: 10;
+}
+
+/* Swapping player slot — elevated z during animation */
+.wk-slot--swapping {
+  z-index: 15 !important;
+}
+
+/* ===== FLYING GROUND CARD ===== */
+/* This card starts from center and flies to the target player's position */
+.wk-flying-ground {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  animation: wkFlyIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes wkFlyIn {
+  from {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Ground card swap pulse */
+.wk-ground--swapping {
+  z-index: 20;
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .wk-name--self {
+    color: var(--color-gold);
+  }
+
+  .wk-name--target {
+    color: var(--color-gold);
+    text-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
+  }
+}

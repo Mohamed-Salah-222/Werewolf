@@ -11,6 +11,7 @@ import TroublemakerAction from "./TroublemakerAction";
 import DrunkAction from "./DrunkAction";
 import JokerAction from "./JokerAction";
 import InsomniacAction from "./InsomniacAction";
+import WarlockAction from "./WarlockAction";
 
 // ===== TYPES =====
 
@@ -57,15 +58,15 @@ function getCirclePositions(count: number, selfIndex: number): Array<{ x: number
     const angleRad = (angleDeg * Math.PI) / 180;
 
     positions.push({
-      x: 50 + 44 * Math.cos(angleRad),
-      y: 50 + 42 * Math.sin(angleRad),
+      x: 50 + 46 * Math.cos(angleRad),
+      y: 50 + 44 * Math.sin(angleRad),
     });
   }
 
   return positions;
 }
 
-const ACTIVE_CLONE_ROLES = new Set(["seer", "robber", "troublemaker", "drunk", "joker"]);
+const ACTIVE_CLONE_ROLES = new Set(["seer", "robber", "troublemaker", "drunk", "joker", "warlock"]);
 
 type ClonePhase = "pick" | "cloning" | "morph" | "phase2";
 
@@ -181,6 +182,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
           {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
           {roleLower === "drunk" && <DrunkAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
           {roleLower === "joker" && <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={(actionResult && "groundRole" in actionResult ? actionResult : null) as never} />}
+          {roleLower === "warlock" && <WarlockAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
         </div>
       );
     }
@@ -214,6 +216,22 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
             <span className="cl-banner-text">CLONED → INSOMNIAC</span>
           </div>
           <InsomniacAction onAction={onAction} locked={locked} actionResult={actionResult as never} autoSubmitted />
+        </div>
+      );
+    }
+    if (roleLower === "oracle") {
+      return (
+        <div className="cl-phase2">
+          <div className="cl-banner">
+            <span className="cl-banner-text">CLONED → ORACLE</span>
+          </div>
+          <div className="cl-passive-result">
+            <div className="cl-passive-card cl-passive-card--tappable" onClick={() => openModal(getFullCardImage("oracle"), "Oracle")}>
+              <img src={getSquareImage("oracle")} alt="Oracle" draggable={false} />
+            </div>
+            <p className="cl-passive-text">{cloneResult.autoResult ? (cloneResult.autoResult as { message?: string }).message || cloneResult.message : cloneResult.message}</p>
+          </div>
+          <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
         </div>
       );
     }

@@ -303,35 +303,35 @@ function RoleReveal() {
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title"> 👁️👁️ REVEAL YOUR ROLE</span>
+                  <span className="rr-phase-item-title">REVEAL YOUR ROLE</span>
                   <p className="rr-phase-item-desc">Tap the face-down card to flip it and see which role you've been assigned. This is your identity for the round.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title"> 🫣 HIDE YOUR CARD</span>
+                  <span className="rr-phase-item-title">HIDE YOUR CARD</span>
                   <p className="rr-phase-item-desc">Tap the card again to flip it back face-down. Useful if someone nearby is peeking at your screen.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title"> ✅ CONFIRM READY</span>
+                  <span className="rr-phase-item-title">CONFIRM READY</span>
                   <p className="rr-phase-item-desc">Once you've memorized your role, hit the "I'M READY" button. The night phase begins when everyone confirms.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title"> 🔢 PLAYER COUNTER</span>
+                  <span className="rr-phase-item-title">PLAYER COUNTER</span>
                   <p className="rr-phase-item-desc">The status bar shows how many players have confirmed. The red button reveals who's still not ready.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title"> 🤫 KEEP IT SECRET</span>
+                  <span className="rr-phase-item-title">KEEP IT SECRET</span>
                   <p className="rr-phase-item-desc">Don't tell anyone your role. Not yet. The lying, bluffing, and accusing comes later during discussion.</p>
                 </div>
               </div>

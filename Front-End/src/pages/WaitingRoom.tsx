@@ -520,7 +520,7 @@ function WaitingRoom() {
         </div>
 
         <div className="wr-player-section wr-anim-players">
-          <span className="wr-player-count">PLAYERS {players.length}/10</span>
+          <span className="wr-player-count">PLAYERS {players.length}/12</span>
           <div className="wr-player-list">
             {players.map((p, index) => {
               const signal = pingToSignal(playerPings[p.id] ?? null);

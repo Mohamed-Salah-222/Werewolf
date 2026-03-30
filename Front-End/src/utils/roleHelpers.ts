@@ -17,8 +17,8 @@ export function getCirclePositions(count: number, selfIndex: number): Array<{ x:
   const positions: Array<{ x: number; y: number }> = [];
   const angleStep = 360 / count;
 
-  const radiusX = 44;
-  const radiusY = 42;
+  const radiusX = 46;
+  const radiusY = 44;
   const cx = 50;
   const cy = 50;
 
