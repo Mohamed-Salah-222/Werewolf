@@ -139,6 +139,11 @@ export class NightPhaseManager {
       this.handleCloneInsomniac();
     }
 
+    // Handle Clone→Oracle: when Oracle slot fires, run Oracle action for clones who copied Oracle
+    if (nextRole.toLowerCase() === "oracle") {
+      this.handleCloneOracle();
+    }
+
     // Start server timer FIRST — before emitting to clients
     this.roleSlotTimer = setTimeout(() => {
       if (playersWithRole.length > 0) {
@@ -395,6 +400,45 @@ export class NightPhaseManager {
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error performing Clone-Insomniac check for ${player.name}:`, msg);
+      }
+    });
+  }
+
+  private handleCloneOracle(): void {
+    console.log(
+      `🔮 handleCloneOracle called. Players:`,
+      this.host.players.map((p) => ({
+        name: p.name,
+        wasClone: (p as any)._wasClone,
+        role: p.getRole().name,
+        originalRole: p.getOriginalRole().name,
+        confirmed: this.host.confirmedPlayerPerformActions.includes(p.id),
+      })),
+    );
+
+    const cloneOracles = this.host.players.filter((p) => {
+      return (p as any)._wasClone === true && p.getRole().name.toLowerCase() === "oracle" && this.host.confirmedPlayerPerformActions.includes(p.id);
+    });
+
+    cloneOracles.forEach((player) => {
+      console.log(`🧬🔮 Clone-Oracle ${player.name} receiving vision during Oracle slot`);
+      try {
+        // Run the Oracle action to get a vision
+        const oracleRole = player.getRole();
+        const action = { type: "oracle" };
+        const result = oracleRole.performAction()(this.host as never, player, action);
+
+        // Update the player's lastActionResult with the oracle vision
+        (player as any).lastActionResult = {
+          ...(player as any).lastActionResult,
+          oracleResult: result,
+          message: result.message,
+        };
+
+        this.host.newEmit("cloneOracleResult", { playerId: player.id, result });
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error performing Clone-Oracle vision for ${player.name}:`, msg);
       }
     });
   }

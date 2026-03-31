@@ -15,19 +15,45 @@ interface Props {
   onAction: (action: { type: string }) => void;
   locked?: boolean;
   actionResult?: OracleResult | null;
+  autoSubmitted?: boolean;
+}
+
+// ===== VALIDATION =====
+
+function isValidOracleResult(r: unknown): r is OracleResult {
+  if (!r || typeof r !== "object") return false;
+  const obj = r as Record<string, unknown>;
+  return "hasVision" in obj;
 }
 
 // ===== COMPONENT =====
 
-function OracleAction({ onAction, locked = false, actionResult }: Props) {
-  const isRejoin = !!actionResult;
+function OracleAction({ onAction, locked = false, actionResult, autoSubmitted }: Props) {
+  const validResult = isValidOracleResult(actionResult) ? actionResult : null;
+  const isRejoin = !!validResult;
 
-  const [submitted, setSubmitted] = useState(isRejoin);
+  const [submitted, setSubmitted] = useState(isRejoin || !!autoSubmitted);
   const [showVision, setShowVision] = useState(isRejoin);
   const hasProcessedResult = useRef(isRejoin);
+  const hasAutoSubmitted = useRef(isRejoin || !!autoSubmitted);
 
+  // Auto-submit the moment it's our turn (not locked, not already submitted)
+  // Skip if autoSubmitted — Clone-Oracle handles submission via backend
+  useEffect(() => {
+    if (autoSubmitted || locked || hasAutoSubmitted.current) return;
+    hasAutoSubmitted.current = true;
+    const t = setTimeout(() => {
+      setSubmitted(true);
+      onAction({ type: "oracle" });
+    }, 0);
+    return () => clearTimeout(t);
+  }, [locked, onAction, autoSubmitted]);
+
+  // Show vision when a VALID oracle result arrives
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
+    if (!isValidOracleResult(actionResult)) return;
+
     hasProcessedResult.current = true;
     const timer = setTimeout(() => {
       setShowVision(true);
@@ -35,21 +61,15 @@ function OracleAction({ onAction, locked = false, actionResult }: Props) {
     return () => clearTimeout(timer);
   }, [actionResult]);
 
-  const handleReceiveVision = () => {
-    if (locked || submitted) return;
-    setSubmitted(true);
-    onAction({ type: "oracle" });
-  };
-
-  const visionText = actionResult?.vision || actionResult?.message || "";
-  const sourceRole = actionResult?.sourceRole || "";
-  const hasVision = actionResult?.hasVision !== false;
+  const visionText = validResult?.vision || validResult?.message || "";
+  const sourceRole = validResult?.sourceRole || "";
+  const hasVision = validResult?.hasVision !== false;
 
   return (
     <div className="role-action">
       <div className="oracle-area">
         {/* Vision display */}
-        {showVision && actionResult && (
+        {showVision && validResult && (
           <div className="oracle-vision-container">
             {hasVision && sourceRole && <span className="oracle-source">{sourceRole.toUpperCase()}</span>}
             <div className="oracle-vision-box">
@@ -60,22 +80,14 @@ function OracleAction({ onAction, locked = false, actionResult }: Props) {
           </div>
         )}
 
-        {/* Waiting state after submit but before result */}
+        {/* Waiting state — submitted but result hasn't arrived yet */}
         {submitted && !showVision && (
           <div className="oracle-waiting">
-            <span className="oracle-waiting-text">RECEIVING VISION...</span>
+            <span className="oracle-waiting-text">{autoSubmitted ? "AWAITING VISION..." : "RECEIVING VISION..."}</span>
           </div>
         )}
 
-        {/* Idle — the eye icon */}
-        {!submitted && !locked && (
-          <div className="oracle-idle">
-            <span className="oracle-eye">◉</span>
-            <span className="oracle-idle-text">THE SPIRITS AWAIT</span>
-          </div>
-        )}
-
-        {/* Locked state */}
+        {/* Locked state — not our turn yet */}
         {locked && !submitted && (
           <div className="oracle-idle">
             <span className="oracle-eye oracle-eye--dim">◉</span>
@@ -84,19 +96,7 @@ function OracleAction({ onAction, locked = false, actionResult }: Props) {
         )}
       </div>
 
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : !submitted ? (
-          <button className="role-btn" onClick={handleReceiveVision}>
-            RECEIVE VISION
-          </button>
-        ) : !showVision ? (
-          <span className="role-bottom-status">THE SPIRITS WHISPER...</span>
-        ) : (
-          <span className="role-bottom-status role-bottom-status--done">{hasVision ? "A vision has been revealed" : "The spirits were silent"}</span>
-        )}
-      </div>
+      <div className="role-bottom">{locked && !submitted ? <span className="role-bottom-status">WAITING FOR YOUR TURN...</span> : !showVision ? <span className="role-bottom-status">THE SPIRITS WHISPER...</span> : <span className="role-bottom-status role-bottom-status--done">{hasVision ? "A vision has been revealed" : "The spirits were silent"}</span>}</div>
     </div>
   );
 }

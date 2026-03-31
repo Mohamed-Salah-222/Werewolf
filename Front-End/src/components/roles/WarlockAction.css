@@ -1,10 +1,70 @@
 /* ===== WARLOCK-SPECIFIC OVERRIDES ===== */
 
-/* Enable position transitions on player slots for the swap animation */
-.wk-circle-area .role-slot {
+/* Warlock uses its own slot system (like Drunk) for smooth position swaps */
+
+.wk-slot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  z-index: 2;
   transition:
     left 0.8s cubic-bezier(0.4, 0, 0.2, 1),
     top 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.wk-slot--self {
+  z-index: 5;
+}
+
+.wk-slot--ground {
+  z-index: 3;
+}
+
+.wk-slot--ground-hidden {
+  visibility: hidden;
+}
+
+.wk-slot--targeted {
+  z-index: 10;
+}
+
+.wk-slot--swapping {
+  z-index: 15;
+}
+
+.wk-slot--flying {
+  z-index: 20;
+  animation: wkFlyIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.wk-slot--clickable {
+  cursor: pointer;
+}
+
+.wk-slot--clickable:hover .wk-card {
+  border-color: rgba(201, 168, 76, 0.4);
+  box-shadow: 0 0 14px rgba(201, 168, 76, 0.2);
+}
+
+.wk-slot--clickable:hover + .wk-name-anchor .role-name,
+.wk-slot--clickable:hover .role-name {
+  color: var(--color-gold);
+}
+
+/* ===== NAME ANCHOR — stays at original position ===== */
+.wk-name-anchor {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  /* Offset up so name sits above the card center */
+  margin-top: clamp(-44px, -5.5vw, -62px);
 }
 
 /* Self name */
@@ -18,41 +78,41 @@
   text-shadow: 0 0 10px rgba(201, 168, 76, 0.5);
 }
 
-/* Self card border */
-.wk-circle-area .role-slot--self .role-flip-face {
+/* Card — simple image, no flip frame */
+.wk-card {
+  position: relative;
+  width: clamp(50px, 6vw, 74px);
+  height: clamp(70px, 8.4vw, 104px);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.wk-card--face {
   border-color: rgba(201, 168, 76, 0.35);
 }
 
-/* Clickable hover */
-.wk-slot--clickable:hover .role-flip-inner {
-  box-shadow: 0 0 16px rgba(201, 168, 76, 0.3);
+.wk-card--ground {
+  width: clamp(50px, 6vw, 74px);
+  height: clamp(70px, 8.4vw, 104px);
 }
 
-.wk-slot--clickable:hover .role-name {
-  color: var(--color-gold);
+.wk-card--tappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Targeted slot — brief pulse before swap starts */
-.wk-slot--targeted {
-  z-index: 10;
+.wk-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 5px;
 }
 
-/* Swapping player slot — elevated z during animation */
-.wk-slot--swapping {
-  z-index: 15 !important;
-}
-
-/* ===== FLYING GROUND CARD ===== */
-/* This card starts from center and flies to the target player's position */
-.wk-flying-ground {
-  position: absolute;
-  transform: translate(-50%, -50%);
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
-  animation: wkFlyIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+/* Status text — sits above ground cards */
+.wk-status {
+  top: 22%;
 }
 
 @keyframes wkFlyIn {
@@ -66,13 +126,23 @@
   }
 }
 
-/* Ground card swap pulse */
-.wk-ground--swapping {
-  z-index: 20;
-}
-
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {
+  .wk-card {
+    width: clamp(42px, 12vw, 56px);
+    height: clamp(59px, 16.8vw, 78px);
+  }
+
+  .wk-card--face {
+    width: clamp(42px, 12vw, 56px);
+    height: clamp(59px, 16.8vw, 78px);
+  }
+
+  .wk-card--ground {
+    width: clamp(42px, 12vw, 56px);
+    height: clamp(59px, 16.8vw, 78px);
+  }
+
   .wk-name--self {
     color: var(--color-gold);
   }
@@ -80,5 +150,22 @@
   .wk-name--target {
     color: var(--color-gold);
     text-shadow: 0 0 8px rgba(201, 168, 76, 0.4);
+  }
+}
+
+@media (max-width: 480px) {
+  .wk-card {
+    width: clamp(36px, 11vw, 48px);
+    height: clamp(50px, 15.4vw, 67px);
+  }
+
+  .wk-card--face {
+    width: clamp(36px, 11vw, 48px);
+    height: clamp(50px, 15.4vw, 67px);
+  }
+
+  .wk-card--ground {
+    width: clamp(36px, 11vw, 48px);
+    height: clamp(50px, 15.4vw, 67px);
   }
 }

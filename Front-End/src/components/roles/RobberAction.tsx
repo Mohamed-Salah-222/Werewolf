@@ -198,9 +198,9 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
                   </div>
                 </div>
               </div>
-
+{/* 
               {showTargetFace && <div className="role-glow role-glow--gold" />}
-              {isSelf && <div className="role-glow role-glow--subtle-gold" />}
+              {isSelf && <div className="role-glow role-glow--subtle-gold" />} */}
             </div>
           );
         })}

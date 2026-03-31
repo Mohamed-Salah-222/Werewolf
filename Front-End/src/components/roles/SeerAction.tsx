@@ -223,8 +223,8 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
                 </div>
               </div>
 
-              {isRevealed && <div className="role-glow role-glow--green" />}
-              {isSelf && <div className="role-glow role-glow--subtle-green" />}
+              {/* {isRevealed && <div className="role-glow role-glow--green" />}
+              {isSelf && <div className="role-glow role-glow--subtle-green" />} */}
             </div>
           );
         })}
@@ -258,7 +258,7 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
                     </div>
                   </div>
                 </div>
-                {isRevealed && <div className="role-glow role-glow--green" />}
+                {/* {isRevealed && <div className="role-glow role-glow--green" />} */}
               </div>
             );
           })}

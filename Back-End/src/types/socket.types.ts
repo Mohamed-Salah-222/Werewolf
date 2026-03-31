@@ -61,6 +61,7 @@ export interface ServerToClientEvents {
   cloneInsomniacResult: (data: any) => void;
   hostChanged: (data: { newHostId: string }) => void;
   playerPings: (data: Record<string, number>) => void;
+  cloneOracleResult: (data: any) => void;
 }
 
 // Data structures

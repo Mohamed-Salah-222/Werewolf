@@ -126,11 +126,20 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
                 </div>
               </div>
 
-              {isRevealed && <div className="role-glow role-glow--green" />}
-              {isSelf && <div className="role-glow role-glow--subtle-green" />}
+              {/* {isRevealed && <div className="role-glow role-glow--green" />}
+              {isSelf && <div className="role-glow role-glow--subtle-green" />} */}
             </div>
           );
         })}
+
+        {/* Center action button */}
+        {!submitted && !locked && (
+          <div className="role-ground">
+            <button className="role-btn ms-center-btn" onClick={handleAction}>
+              SEE MASONS
+            </button>
+          </div>
+        )}
 
         {showAlone && (
           <div className="role-center-message">
@@ -143,20 +152,6 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
           <div className="role-center-message">
             <span className="role-status-text role-status-text--green">BROTHERHOOD</span>
           </div>
-        )}
-      </div>
-
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : !submitted ? (
-          <button className="role-btn" onClick={handleAction}>
-            SEE MASONS
-          </button>
-        ) : !actionResult ? (
-          <span className="role-bottom-status">LOOKING...</span>
-        ) : (
-          <span className="role-bottom-status role-bottom-status--done">{actionResult.masons.length > 0 ? "You found your brothers" : "You stand alone"}</span>
         )}
       </div>
 

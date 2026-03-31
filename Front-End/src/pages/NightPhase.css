@@ -20,11 +20,11 @@
   z-index: 1;
 }
 
-/* ===== HEADER ===== */
+/* ===== HEADER (moon removed, divider kept) ===== */
 .np-header {
   position: relative;
   z-index: 10;
-  padding: clamp(8px, 1.2vw, 16px) clamp(16px, 3vw, 40px) clamp(6px, 1vw, 12px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(16px, 3vw, 40px) clamp(6px, 1vw, 10px);
   border-bottom: 1px solid var(--color-border-dark);
   text-align: center;
   flex-shrink: 0;
@@ -35,28 +35,6 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-}
-
-.np-moon {
-  font-size: clamp(16px, 2vw, 26px);
-  color: var(--color-gold);
-  line-height: 1;
-  filter: drop-shadow(0 0 20px rgba(201, 168, 76, 0.4));
-  animation: moonPulse 4s ease-in-out infinite;
-}
-
-@keyframes moonPulse {
-  0%,
-  100% {
-    text-shadow:
-      0 0 20px rgba(201, 168, 76, 0.3),
-      0 0 60px rgba(201, 168, 76, 0.1);
-  }
-  50% {
-    text-shadow:
-      0 0 30px rgba(201, 168, 76, 0.5),
-      0 0 80px rgba(201, 168, 76, 0.2);
-  }
 }
 
 .np-phase-title {
@@ -76,7 +54,7 @@
   width: 60px;
   height: 1px;
   background-color: #3d2e1a;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .np-role-label {
@@ -123,7 +101,7 @@
   display: flex;
   align-items: center;
   gap: clamp(10px, 1.2vw, 16px);
-  padding: clamp(8px, 1.2vw, 16px) clamp(12px, 3vw, 40px) clamp(4px, 0.8vw, 12px);
+  padding: clamp(8px, 1.2vw, 14px) clamp(12px, 3vw, 40px) clamp(4px, 0.8vw, 10px);
   flex-shrink: 0;
 }
 
@@ -208,6 +186,7 @@
 
 /* Action component — takes available space minus progress, centered vertically */
 .np-action-enter {
+  padding-top: 20px;
   flex: 1;
   display: flex;
   align-items: center;
@@ -234,8 +213,8 @@
   justify-content: center;
   width: 100%;
   flex-shrink: 0;
-  padding-top: 8px;
-  padding-bottom: clamp(24px, 5vh, 40px);
+  padding-top: 4px;
+  padding-bottom: clamp(12px, 3vh, 28px);
 }
 
 /* ===== WAITING LAYOUT (no action, just result + tracker) ===== */
@@ -247,7 +226,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: clamp(12px, 2vw, 24px);
-  padding-bottom: clamp(24px, 5vh, 40px);
+  padding-bottom: clamp(12px, 3vh, 28px);
 }
 
 .np-result-section {
@@ -483,11 +462,11 @@
 
 @media (max-height: 500px) {
   .np-header {
-    padding: 8px 20px 6px;
+    padding: 6px 20px 4px;
   }
 
   .np-header-divider {
-    margin: 4px 0;
+    margin: 2px 0;
   }
 }
 

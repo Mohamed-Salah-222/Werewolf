@@ -32,6 +32,10 @@
   letter-spacing: 1px;
 }
 
+.ms-center-btn {
+  white-space: nowrap;
+}
+
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {
   .ms-name--self {

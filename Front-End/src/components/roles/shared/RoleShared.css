@@ -18,6 +18,8 @@
   width: clamp(340px, 55vw, 600px);
   height: clamp(340px, 55vw, 600px);
   flex-shrink: 0;
+  /* Padding so cards near edges can overflow without clipping the viewport */
+  box-sizing: content-box;
 }
 
 /* ===== CARD SLOT ===== */
@@ -27,7 +29,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
   z-index: 2;
 }
 
@@ -289,10 +291,13 @@
   animation: roleCenterIn 0.5s ease-out;
 }
 
+/* Status text — positioned relative to ground cards, not hardcoded top % */
 .role-status-above {
   position: absolute;
   left: 50%;
-  top: 30%;
+  /* Sit just above the ground cards (which are at 50%).
+     With tighter radii the top row is around 14-16%, so 24% is safe. */
+  top: 24%;
   transform: translateX(-50%);
   z-index: 8;
   text-align: center;
@@ -352,11 +357,12 @@
 
 /* ===== BOTTOM ACTION AREA ===== */
 .role-bottom {
-  margin-top: clamp(20px, 4vh, 36px);
+  margin-top: clamp(12px, 2vh, 24px);
   display: flex;
   justify-content: center;
   flex-shrink: 0;
   text-align: center;
+  display: none;
 }
 
 .role-btn {
@@ -406,6 +412,7 @@
   letter-spacing: 3px;
   color: var(--color-gold);
   animation: rolePulse 2s ease-in-out infinite;
+  display: none;
 }
 
 .role-bottom-status--done {
@@ -413,6 +420,7 @@
   font-family: var(--font-body);
   letter-spacing: 1px;
   animation: none;
+  display: none;
 }
 
 .role-bottom-hint {
@@ -420,6 +428,7 @@
   font-family: var(--font-body);
   color: #5a4a30;
   letter-spacing: 1px;
+  display: none;
 }
 
 @keyframes rolePulse {
@@ -622,14 +631,17 @@
 
   .role-bottom-status {
     color: rgba(240, 230, 208, 0.45);
+    display: none;
   }
 
   .role-bottom-status--done {
     color: rgba(240, 230, 208, 0.5);
+    display: none;
   }
 
   .role-bottom-hint {
     color: rgba(240, 230, 208, 0.45);
+    display: none;
   }
 
   .role-btn {

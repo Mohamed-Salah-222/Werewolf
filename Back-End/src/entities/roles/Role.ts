@@ -1,9 +1,9 @@
 import { Team } from "../../config/constants";
 
 export interface Role {
-  id: string; // Keep string - used for matching ground cards in Drunk/Joker actions
+  id: string; //* Used for matching with ground cards for roles ( Drunk , Joker , Warlock)
   name: string;
   team: Team;
   description: string;
-  performAction(): Function; // Returns a function that takes (game, player, action)
+  performAction(): Function; //* Returns a function that takes ( game , player , action )
 }

@@ -103,10 +103,15 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
     }
   }, [actionResult, groundCards.length]);
 
-  const handleOpenEyes = () => {
-    setManuallySubmitted(true);
-    onAction({ type: "werewolf" });
-  };
+  useEffect(() => {
+    if (!locked && !submitted) {
+      const t = setTimeout(() => {
+        setManuallySubmitted(true);
+        onAction({ type: "werewolf" });
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [locked, submitted, onAction]);
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
@@ -149,8 +154,8 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
                 </div>
               </div>
 
-              {isRevealed && <div className="role-glow role-glow--red" />}
-              {isSelf && <div className="role-glow role-glow--subtle-gold" />}
+              {/* {isRevealed && <div className="role-glow role-glow--red" />}
+              {isSelf && <div className="role-glow role-glow--subtle-gold" />} */}
             </div>
           );
         })}
@@ -171,7 +176,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
                     </div>
                   </div>
                 </div>
-                {isFlipped && <div className="role-glow role-glow--gold" />}
+                {/* {isFlipped && <div className="role-glow role-glow--gold" />} */}
               </div>
             );
           })}
@@ -189,19 +194,11 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
         )}
       </div>
 
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : !submitted ? (
-          <button className="role-btn" onClick={handleOpenEyes}>
-            OPEN EYES
-          </button>
-        ) : !actionResult ? (
-          <span className="role-bottom-status">LOOKING...</span>
-        ) : (
+      {actionResult && (
+        <div className="role-bottom">
           <span className="role-bottom-status role-bottom-status--done">{actionResult.isAlone ? "You peeked at a ground card" : "You found your pack"}</span>
-        )}
-      </div>
+        </div>
+      )}
 
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
 

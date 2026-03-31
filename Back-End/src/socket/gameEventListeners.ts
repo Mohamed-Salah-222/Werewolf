@@ -93,6 +93,18 @@ export function attachGameEventListeners(game: Game, io: Server<ClientToServerEv
     }
   });
 
+  game.on("cloneOracleResult", (data: { playerId: string; result: any }) => {
+    console.log(`🔮 gameEventListener: cloneOracleResult for player ${data.playerId}`, data.result);
+    const sockets = io.sockets.sockets;
+    for (const [, s] of sockets) {
+      if (s.rooms.has(gameCode) && (s as any).playerId === data.playerId) {
+        console.log(`🔮 Emitting cloneOracleResult to socket`);
+        s.emit("cloneOracleResult", data.result);
+        break;
+      }
+    }
+  });
+
   console.log(`Game event listeners attached for game ${gameCode}`);
 
   console.log(`Game event listeners attached for game ${gameCode}`);

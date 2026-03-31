@@ -12,13 +12,25 @@ export function getFullCardImage(roleName: string): string {
   return card?.image || backCardImage;
 }
 
-/** Calculate circle positions for N players, with self at the top */
+/**
+ * Calculate circle positions for N players, with self at the top.
+ *
+ * The radius shrinks for higher player counts so that cards at the
+ * extreme left/right (positions 3 & 9 on a 12-player clock) stay
+ * within the container bounds even after the CSS translate(-50%, -50%)
+ * and the card's own width are accounted for.
+ *
+ * Safe zone: cards should land between ~10% and ~90% on both axes.
+ * With cx/cy at 50, that means max radius = 40.
+ * We use 40 for 10+ players and 42 for smaller lobbies.
+ */
 export function getCirclePositions(count: number, selfIndex: number): Array<{ x: number; y: number }> {
   const positions: Array<{ x: number; y: number }> = [];
   const angleStep = 360 / count;
 
-  const radiusX = 46;
-  const radiusY = 44;
+  // Adaptive radius — tighter for 10+ players to prevent edge clipping
+  const radiusX = count >= 10 ? 46 : 42;
+  const radiusY = count >= 10 ? 50 : 40;
   const cx = 50;
   const cy = 50;
 

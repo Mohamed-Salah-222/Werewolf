@@ -13,9 +13,6 @@ export class Player {
     this.name = name;
     this.id = Math.random().toString(36).substring(2, 8);
   }
-  // public setName(name: string): void {
-  //     this.name = name;
-  // }
   getOriginalRole(): Role {
     return this.originalRole;
   }

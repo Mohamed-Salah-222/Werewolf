@@ -85,8 +85,8 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
           </div>
         </div>
 
-        {showFace && !hasChanged && <div className="in-glow in-glow--green" />}
-        {showFace && hasChanged && <div className="in-glow in-glow--red" />}
+        {/* {showFace && !hasChanged && <div className="in-glow in-glow--green" />}
+        {showFace && hasChanged && <div className="in-glow in-glow--red" />} */}
       </div>
 
       {/* Status */}

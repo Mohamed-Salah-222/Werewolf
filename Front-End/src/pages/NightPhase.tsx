@@ -276,6 +276,19 @@ function NightPhase() {
     };
   }, [gameCode]);
 
+  useEffect(() => {
+    const handler = (data: { hasVision: boolean; sourceRole?: string; vision?: string; message?: string }) => {
+      console.log("🔮 Frontend received cloneOracleResult:", data);
+      setActionResult(data);
+      actionResultRef.current = data;
+    };
+
+    socket.on("cloneOracleResult", handler);
+    return () => {
+      socket.off("cloneOracleResult", handler);
+    };
+  }, [gameCode]);
+
   // Main game logic listeners
   useEffect(() => {
     if (!socket.connected) socket.connect();
@@ -357,12 +370,9 @@ function NightPhase() {
       clearIntervalRef(timerIntervalRef);
 
       // FIX #2: If discussion was pending, navigate immediately
-      // (reduced from 1000ms — the action result is already stored,
-      // the role component will show it briefly during the navigate)
       if (pendingNavigationRef.current) {
         const navData = pendingNavigationRef.current;
         pendingNavigationRef.current = null;
-        // Small delay just for the result to render once
         setTimeout(() => {
           navigateToDiscussion(navData);
         }, 300);
@@ -487,13 +497,7 @@ function NightPhase() {
   const roleLower = myRole.toLowerCase();
   const hasPersistentAction = ROLES_WITH_PERSISTENT_ACTION.has(roleLower);
 
-  // Should we show the action component? Yes if:
-  // - It's our turn (active play), OR
-  // - Action is done AND this role has a persistent visual
   const showActionComponent = !showSplash && (isMyTurn || actionDone || hasPersistentAction);
-
-  // Should we show the generic ActionComplete waiting text?
-  // Only if action is done but the role does NOT have a persistent action visual
   const showGenericResult = actionDone && actionResult && !hasPersistentAction;
 
   // ===== RENDER =====
@@ -514,10 +518,9 @@ function NightPhase() {
       {/* ===== MAIN CONTENT (hidden during splash) ===== */}
       {!showSplash && (
         <>
-          {/* Header */}
+          {/* Header — moon removed, divider kept */}
           <div className="np-header">
             <div className="np-header-inner">
-              <div className="np-moon">☽</div>
               <h1 className="np-phase-title">NIGHT PHASE</h1>
               <div className="np-header-divider" />
               <p className="np-role-label">{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>

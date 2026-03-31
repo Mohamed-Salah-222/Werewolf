@@ -42,6 +42,15 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
+  const visibleGround = groundCards.slice(0, 3);
+
+  // Ground card positions — absolute percentages, same approach as Drunk
+  const groundPositions: Array<{ x: number; y: number }> = visibleGround.map((_, idx) => {
+    const spacing = 16;
+    const startX = 50 - ((visibleGround.length - 1) * spacing) / 2;
+    return { x: startX + idx * spacing, y: 50 };
+  });
+
   // Auto-action: when result arrives without manual submit (AFK timer)
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
@@ -49,7 +58,7 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
 
     const t0 = setTimeout(() => {
       const target = players.find((p) => p.name === actionResult.targetName);
-      const randomGroundIdx = Math.floor(Math.random() * Math.max(groundCards.length, 1));
+      const randomGroundIdx = Math.floor(Math.random() * Math.max(visibleGround.length, 1));
 
       if (target) {
         setTargetId(target.id);
@@ -66,14 +75,14 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
     }, 0);
 
     return () => clearTimeout(t0);
-  }, [actionResult, players, groundCards.length]);
+  }, [actionResult, players, visibleGround.length]);
 
   // Manual click handler
   const handlePlayerClick = useCallback(
     (clickedId: string) => {
       if (phase !== "idle" || locked || clickedId === playerId) return;
 
-      const randomGroundIdx = Math.floor(Math.random() * groundCards.length);
+      const randomGroundIdx = Math.floor(Math.random() * visibleGround.length);
 
       setTargetId(clickedId);
       setSwapGroundIdx(randomGroundIdx);
@@ -88,7 +97,7 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
         }, 1000);
       }, 400);
     },
-    [phase, locked, playerId, groundCards.length, onAction],
+    [phase, locked, playerId, visibleGround.length, onAction],
   );
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
@@ -105,135 +114,113 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
   const isClickable = !locked && phase === "idle";
   const isSwapPhase = phase === "swap" || phase === "done";
 
-  // Get target player's position for the flying ground card
+  // Target player's original circle position (where flying ground card goes)
   const targetIndex = targetId ? players.findIndex((p) => p.id === targetId) : -1;
   const targetPos = targetIndex >= 0 ? positions[targetIndex] : null;
+
+  // Selected ground card position (where target player card goes)
+  const groundTargetPos = swapGroundIdx !== null && swapGroundIdx < groundPositions.length ? groundPositions[swapGroundIdx] : null;
 
   return (
     <div className="role-action">
       <div className="role-circle-area wk-circle-area">
-        {/* Player slots */}
+        {/* Player slots — name stays at original position, card moves */}
         {players.map((player, i) => {
           const pos = positions[i];
           const isSelf = player.id === playerId;
           const isTargetPlayer = player.id === targetId;
-          const isSwapping = isSwapPhase && isTargetPlayer;
 
-          // Target player card moves to center (ground area) during swap
-          const slotStyle: React.CSSProperties = isSwapping
-            ? {
-                left: "50%",
-                top: "50%",
-              }
-            : {
-                left: `${pos.x}%`,
-                top: `${pos.y}%`,
-              };
+          const slotStyle: React.CSSProperties =
+            isSwapPhase && isTargetPlayer && groundTargetPos
+              ? {
+                  left: `${groundTargetPos.x}%`,
+                  top: `${groundTargetPos.y}%`,
+                }
+              : {
+                  left: `${pos.x}%`,
+                  top: `${pos.y}%`,
+                };
 
           return (
-            <div key={player.id} className={`role-slot ${isSelf ? "role-slot--self" : ""} ${isClickable && !isSelf ? "role-slot--clickable wk-slot--clickable" : ""} ${isSwapping ? "wk-slot--swapping" : ""} ${isTargetPlayer && phase === "submitted" ? "wk-slot--targeted" : ""}`} style={slotStyle} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>
-              <span className={`role-name ${isSelf ? "role-name--self wk-name--self" : ""} ${isTargetPlayer && phase !== "idle" ? "wk-name--target" : ""}`}>{isSelf ? "YOU" : player.name}</span>
-
-              <div
-                className={`role-flip ${isSelf ? "role-flip--up" : ""} ${isSelf ? "role-flip--tappable" : ""}`}
-                onClick={
-                  isSelf
-                    ? (e) => {
-                        e.stopPropagation();
-                        openModal(getFullCardImage("warlock"), "Warlock", "You");
-                      }
-                    : undefined
-                }
-              >
-                <div className="role-flip-inner">
-                  <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
-                  </div>
-                  <div className="role-flip-face role-flip-face--front">
-                    <img src={isSelf ? getSquareImage("warlock") : backCardImage} alt={isSelf ? "Warlock" : "Card"} draggable={false} />
-                  </div>
-                </div>
+            <div key={player.id}>
+              {/* Name anchored at original position — never moves */}
+              <div className="wk-name-anchor" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+                <span className={`role-name ${isSelf ? "role-name--self wk-name--self" : ""} ${isTargetPlayer && phase !== "idle" ? "wk-name--target" : ""}`}>{isSelf ? "YOU" : player.name}</span>
               </div>
 
-              {isSelf && <div className="role-glow role-glow--subtle-gold" />}
-              {isTargetPlayer && phase !== "idle" && <div className="role-glow role-glow--gold" />}
+              {/* Card — moves during swap */}
+              <div className={`wk-slot ${isSelf ? "wk-slot--self" : ""} ${isClickable && !isSelf ? "wk-slot--clickable" : ""} ${isSwapPhase && isTargetPlayer ? "wk-slot--swapping" : ""} ${isTargetPlayer && phase === "submitted" ? "wk-slot--targeted" : ""}`} style={slotStyle} onClick={() => isClickable && !isSelf && handlePlayerClick(player.id)}>
+                <div
+                  className={`wk-card ${isSelf ? "wk-card--face wk-card--tappable" : ""}`}
+                  onClick={
+                    isSelf
+                      ? (e) => {
+                          e.stopPropagation();
+                          openModal(getFullCardImage("warlock"), "Warlock", "You");
+                        }
+                      : undefined
+                  }
+                >
+                  <img src={isSelf ? getSquareImage("warlock") : backCardImage} alt={isSelf ? "Warlock" : "Card"} className="wk-card-img" draggable={false} />
+                </div>
+
+                {/* {isSelf && <div className="role-glow role-glow--subtle-gold" />}
+                {isTargetPlayer && phase !== "idle" && <div className="role-glow role-glow--gold" />} */}
+              </div>
             </div>
           );
         })}
 
-        {/* Ground cards — hide the one being swapped */}
-        <div className="role-ground">
-          {groundCards.slice(0, 3).map((gc, idx) => {
-            const isSwappingGround = isSwapPhase && swapGroundIdx === idx;
+        {/* Ground card slots — absolutely positioned */}
+        {visibleGround.map((gc, idx) => {
+          const isSwappingGround = isSwapPhase && swapGroundIdx === idx;
+          const pos = groundPositions[idx];
 
-            return (
-              <div key={gc.id} className="role-ground-card" style={isSwappingGround ? { visibility: "hidden" } : {}}>
-                <div className="role-flip role-flip--ground">
-                  <div className="role-flip-inner">
-                    <div className="role-flip-face role-flip-face--back">
-                      <img src={backCardImage} alt="Ground card" draggable={false} />
-                    </div>
-                    <div className="role-flip-face role-flip-face--front">
-                      <img src={backCardImage} alt="Ground card" draggable={false} />
-                    </div>
-                  </div>
-                </div>
+          return (
+            <div key={gc.id} className={`wk-slot wk-slot--ground ${isSwappingGround ? "wk-slot--ground-hidden" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }}>
+              <div className="wk-card wk-card--ground">
+                <img src={backCardImage} alt="Ground card" className="wk-card-img" draggable={false} />
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+        })}
 
-        {/* Flying ground card — moves from center to the target player's spot */}
+        {/* Flying ground card — moves from ground position to target player's spot */}
         {isSwapPhase && swapGroundIdx !== null && targetPos && (
           <div
-            className="wk-flying-ground"
+            className="wk-slot wk-slot--flying"
             style={{
               left: `${targetPos.x}%`,
               top: `${targetPos.y}%`,
             }}
           >
-            <div className="role-flip role-flip--ground">
-              <div className="role-flip-inner">
-                <div className="role-flip-face role-flip-face--back">
-                  <img src={backCardImage} alt="Ground card" draggable={false} />
-                </div>
-                <div className="role-flip-face role-flip-face--front">
-                  <img src={backCardImage} alt="Ground card" draggable={false} />
-                </div>
-              </div>
+            <div className="wk-card wk-card--ground">
+              <img src={backCardImage} alt="Ground card" className="wk-card-img" draggable={false} />
             </div>
-            <div className="role-glow role-glow--gold" />
+            {/* <div className="role-glow role-glow--gold" /> */}
           </div>
         )}
 
-        {/* Center status text */}
+        {/* Center status text — above ground cards */}
+        {phase === "idle" && !locked && (
+          <div className="role-center-hint">
+            <span className="role-hint-text">PICK A PLAYER TO HEX</span>
+          </div>
+        )}
         {phase === "submitted" && (
-          <div className="role-center-message">
+          <div className="role-status-above wk-status">
             <span className="role-status-text role-status-text--gold">HEXING...</span>
           </div>
         )}
         {phase === "swap" && (
-          <div className="role-center-message">
+          <div className="role-status-above wk-status">
             <span className="role-status-text role-status-text--gold">SWAPPING</span>
           </div>
         )}
         {phase === "done" && (
-          <div className="role-center-message">
+          <div className="role-status-above wk-status">
             <span className="role-status-text role-status-text--gold">CURSED</span>
           </div>
-        )}
-      </div>
-
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : (
-          <>
-            {phase === "idle" && <span className="role-bottom-hint">Tap a player to swap their role with a ground card</span>}
-            {phase === "submitted" && <span className="role-bottom-status">CASTING HEX...</span>}
-            {phase === "swap" && <span className="role-bottom-status">SWAPPING ROLES...</span>}
-            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">{actionResult?.targetName ? `${actionResult.targetName}'s role was swapped` : "Role swapped with ground card"}</span>}
-          </>
         )}
       </div>
 

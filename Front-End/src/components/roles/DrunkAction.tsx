@@ -51,7 +51,7 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
 
   const selectedGroundIndex = selectedGroundId ? visibleGround.findIndex((gc) => gc.id === selectedGroundId) : -1;
 
-  // Process result — handles both manual and auto-action
+  // Process result — handles auto-action (AFK timeout)
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
@@ -83,6 +83,14 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
     setPhase("submitted");
     onAction({ type: "drunk", targetRoleId: groundId });
   };
+
+  // Manual action: animate swap when result arrives
+  useEffect(() => {
+    if (phase !== "submitted" || !actionResult) return;
+    setPhase("swap");
+    const t = setTimeout(() => setPhase("done"), 900);
+    return () => clearTimeout(t);
+  }, [phase, actionResult]);
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
@@ -127,8 +135,8 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
               <div className={`dk-card ${isSelf ? "dk-card--face dk-card--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("drunk"), "Drunk", "You") : undefined}>
                 <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "Drunk" : "Card back"} className="dk-card-img" draggable={false} />
               </div>
-
-              {isSelf && !shouldSwap && <div className="role-glow role-glow--subtle-green" />}
+{/* 
+              {isSelf && !shouldSwap && <div className="role-glow role-glow--subtle-green" />} */}
             </div>
           );
         })}
@@ -147,7 +155,7 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
                 <img src={backCardImage} alt="Ground card" className="dk-card-img" draggable={false} />
               </div>
 
-              {isSwapping && <div className="role-glow role-glow--gold" />}
+              {/* {isSwapping && <div className="role-glow role-glow--gold" />} */}
             </div>
           );
         })}
@@ -167,19 +175,6 @@ function DrunkAction({ onAction, locked = false, playerId, players, groundCards,
           <div className="role-center-message dk-center-message">
             <span className="role-status-text role-status-text--gold">SWAPPED</span>
           </div>
-        )}
-      </div>
-
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : (
-          <>
-            {phase === "idle" && <span className="role-bottom-hint">Tap a ground card to swap your role</span>}
-            {phase === "submitted" && <span className="role-bottom-status">SWAPPING...</span>}
-            {phase === "swap" && <span className="role-bottom-status">SWAPPING...</span>}
-            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">You swapped with a ground card</span>}
-          </>
         )}
       </div>
 

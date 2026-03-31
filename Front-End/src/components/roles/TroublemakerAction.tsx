@@ -199,12 +199,21 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
                 </div>
               </div>
 
-              {isSelf && <div className="role-glow role-glow--subtle-green" />}
-              {isSelected && !isSelf && <div className="tm-select-ring" />}
-              {isTarget && (phase === "swap" || phase === "done") && <div className="role-glow role-glow--gold" />}
+              {/* {isSelf && <div className="role-glow role-glow--subtle-green" />} */}
+              {/* {isSelected && !isSelf && <div className="tm-select-ring" />} */}
+              {/* {isTarget && (phase === "swap" || phase === "done") && <div className="role-glow role-glow--gold" />} */}
             </div>
           );
         })}
+
+        {/* Center button — replaces ground cards area */}
+        {!locked && phase === "picking" && selectedIds.length === 2 && (
+          <div className="role-ground">
+            <button className="role-btn tm-center-btn" onClick={handleConfirm}>
+              SWAP ROLES
+            </button>
+          </div>
+        )}
 
         {phase === "picking" && selectedIds.length === 0 && (
           <div className="role-center-message">
@@ -225,23 +234,6 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
           <div className="role-center-message">
             <span className="role-status-text role-status-text--gold">SWAPPED</span>
           </div>
-        )}
-      </div>
-
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : (
-          <>
-            {phase === "picking" && selectedIds.length < 2 && <span className="role-bottom-hint">{selectedIds.length === 0 ? "Tap two players to swap their roles" : `${selectedIds.length}/2 selected`}</span>}
-            {phase === "picking" && selectedIds.length === 2 && (
-              <button className="role-btn" onClick={handleConfirm}>
-                SWAP ROLES
-              </button>
-            )}
-            {(phase === "submitted" || phase === "swap") && <span className="role-bottom-status">SWAPPING...</span>}
-            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">Roles have been swapped</span>}
-          </>
         )}
       </div>
 

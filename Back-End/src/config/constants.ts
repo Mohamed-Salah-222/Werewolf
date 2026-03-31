@@ -130,5 +130,3 @@ export const ERROR_MESSAGES = {
   INVALID_PHASE: "Action not allowed in this phase",
   UNKNOWN_ERROR: "An unexpected error occurred. Please try again or contact support if the issue persists.",
 };
-// Game configuration constants
-// Number of players , Timers , etc

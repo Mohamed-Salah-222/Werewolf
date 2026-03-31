@@ -85,10 +85,15 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
     }
   }, [actionResult]);
 
-  const handleAction = () => {
-    setManuallySubmitted(true);
-    onAction({ type: "minion" });
-  };
+  useEffect(() => {
+    if (!locked && !submitted) {
+      const t = setTimeout(() => {
+        setManuallySubmitted(true);
+        onAction({ type: "minion" });
+      }, 0);
+      return () => clearTimeout(t);
+    }
+  }, [locked, submitted, onAction]);
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
@@ -125,8 +130,8 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
                 </div>
               </div>
 
-              {isRevealed && <div className="role-glow role-glow--red" />}
-              {isSelf && <div className="role-glow role-glow--subtle-red" />}
+              {/* {isRevealed && <div className="role-glow role-glow--red" />}
+              {isSelf && <div className="role-glow role-glow--subtle-red" />} */}
             </div>
           );
         })}
@@ -143,20 +148,6 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
           <div className="role-center-message">
             <span className="role-status-text role-status-text--red">YOUR MASTERS</span>
           </div>
-        )}
-      </div>
-
-      <div className="role-bottom">
-        {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
-        ) : !submitted ? (
-          <button className="role-btn" onClick={handleAction}>
-            SEE WEREWOLVES
-          </button>
-        ) : !actionResult ? (
-          <span className="role-bottom-status">LOOKING...</span>
-        ) : (
-          <span className="role-bottom-status role-bottom-status--done">{actionResult.werewolves.length > 0 ? "Serve them well" : "No wolves to serve"}</span>
         )}
       </div>
 

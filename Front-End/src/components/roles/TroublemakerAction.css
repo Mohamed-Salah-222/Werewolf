@@ -53,6 +53,10 @@
   animation: tmRingPulse 1.5s ease-in-out infinite;
 }
 
+.tm-center-btn {
+  white-space: nowrap;
+}
+
 @keyframes tmRingPulse {
   0%,
   100% {
