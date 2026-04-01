@@ -65,7 +65,7 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
 
     // Auto-action: pick a random ground card visually
     if (isAutoAction && visibleGround.length > 0) {
-      const t = setTimeout(() => {
+      setTimeout(() => {
         const randomGround = visibleGround[Math.floor(Math.random() * visibleGround.length)];
         if (randomGround) {
           setSelectedGroundId(randomGround.id);
