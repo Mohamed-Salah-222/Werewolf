@@ -666,6 +666,18 @@
   cursor: not-allowed;
 }
 
+/* ===== DESKTOP: center carousel, hide arrows ===== */
+@media (min-width: 769px) {
+  .carousel-arrow {
+    display: none;
+  }
+
+  .home-select-grid {
+    justify-content: center;
+    overflow-x: visible;
+  }
+}
+
 /* ============================================================
    RESPONSIVE OVERRIDES
    ============================================================ */

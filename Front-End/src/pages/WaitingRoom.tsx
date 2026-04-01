@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Crown } from "lucide-react";
+import { Crown, CircleHelp } from "lucide-react";
 import socket from "../socket";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
-import { allCards, backCardImage } from "../characters";
 import HowToPlay from "../components/HowToPlay";
 import ShareButton from "../components/ShareButton";
 import "./WaitingRoom.css";
@@ -35,11 +34,6 @@ interface Settings {
   showHint: boolean;
 }
 
-interface GridCard {
-  id: number;
-  cardIndex: number;
-}
-
 interface PlayerStatus {
   id: string;
   name: string;
@@ -49,27 +43,6 @@ interface PlayerStatus {
 type SignalLevel = 0 | 1 | 2 | 3 | 4;
 
 // ===== HELPERS =====
-
-function getCardCount(width: number): number {
-  if (width <= 768) return 0;
-  const cardWidth = 78;
-  const cardHeight = 110;
-  const gap = 4;
-  const panelWidth = width * 0.35 - 24;
-  const panelHeight = window.innerHeight - 24;
-  const cols = Math.floor((panelWidth + gap) / (cardWidth + gap));
-  const rows = Math.floor((panelHeight + gap) / (cardHeight + gap));
-  return Math.min(cols * rows, 42);
-}
-
-function shuffleGridCards(): GridCard[] {
-  const indices = Array.from({ length: 42 }, (_, i) => i % allCards.length);
-  for (let i = indices.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [indices[i], indices[j]] = [indices[j], indices[i]];
-  }
-  return indices.map((cardIndex, id) => ({ id, cardIndex }));
-}
 
 function pingToSignal(ping: number | null): SignalLevel {
   if (ping === null) return 0;
@@ -128,11 +101,8 @@ function WaitingRoom() {
 
   const [players, setPlayers] = useState<PlayerStatus[]>([]);
   const [copied, setCopied] = useState(false);
-  const [revealedCard, setRevealedCard] = useState<number | null>(null);
-  const [selectedPileCard, setSelectedPileCard] = useState<number | null>(null);
   const [playerReady, setPlayerReady] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [cardCount, setCardCount] = useState(42);
   const [hostId, setHostId] = useState<string>("");
 
   // Connection strength
@@ -162,9 +132,6 @@ function WaitingRoom() {
   const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const [gridCards] = useState<GridCard[]>(shuffleGridCards);
-  const gridRef = useRef<HTMLDivElement>(null);
-
   // Mount animation
   useEffect(() => {
     const raf = requestAnimationFrame(() => {
@@ -180,14 +147,6 @@ function WaitingRoom() {
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
-  }, []);
-
-  // Responsive card count
-  useEffect(() => {
-    const update = () => setCardCount(getCardCount(window.innerWidth));
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
   }, []);
 
   // Ping measurement
@@ -397,19 +356,6 @@ function WaitingRoom() {
     socket.emit("playerReady", { gameCode, playerId, ready: newReady });
   }, [playerReady, gameCode, playerId]);
 
-  const handleCardClick = useCallback(
-    (cardId: number, cardIndex: number) => {
-      if (selectedPileCard === cardId) {
-        setSelectedPileCard(null);
-        setRevealedCard(null);
-      } else {
-        setSelectedPileCard(cardId);
-        setRevealedCard(cardIndex);
-      }
-    },
-    [selectedPileCard],
-  );
-
   const handleHintClick = useCallback(() => {
     setHtpOpen(true);
     if (htpPulsing) {
@@ -473,24 +419,6 @@ function WaitingRoom() {
     <div className={`wr-page ${mounted ? "wr-page--mounted" : ""}`}>
       <div className="wr-vignette" />
 
-      {/* ===== LEFT: CARD GRID ===== */}
-      <div className="wr-cards">
-        <div className="wr-card-grid" ref={gridRef}>
-          {gridCards.slice(0, cardCount).map((card) => (
-            <div key={card.id} className={`flip-card${selectedPileCard === card.id ? " flipped selected" : ""}`} onClick={() => handleCardClick(card.id, card.cardIndex)}>
-              <div className="flip-card-inner">
-                <div className="flip-card-front">
-                  <img src={backCardImage} alt="Card back" />
-                </div>
-                <div className="flip-card-back">
-                  <img src={allCards[card.cardIndex].image} alt={allCards[card.cardIndex].name} />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* ===== MIDDLE: WAITING ROOM ===== */}
       <div className="wr-center">
         <div className="wr-title-row wr-anim-title">
@@ -506,7 +434,7 @@ function WaitingRoom() {
           )}
           <h1 className="wr-title">WAITING ROOM</h1>
           <button className={`wr-hint-btn wr-title-btn--right${htpPulsing && settings.showHint ? " wr-hint-btn--pulse" : ""}`} onClick={handleHintClick} aria-label="How to play">
-            !
+            <CircleHelp size={34} strokeWidth={1.5} />
           </button>
         </div>
 
@@ -664,20 +592,6 @@ function WaitingRoom() {
 
       {/* ===== HOW TO PLAY ===== */}
       {htpOpen && <HowToPlay onClose={() => setHtpOpen(false)} />}
-
-      {/* ===== RIGHT: REVEALED CARD ===== */}
-      <div className="wr-reveal">
-        {revealedCard !== null ? (
-          <div className="wr-revealed-wrapper">
-            <img src={allCards[revealedCard].image} alt={allCards[revealedCard].name} className="wr-revealed-img" />
-          </div>
-        ) : (
-          <div className="wr-reveal-placeholder">
-            <span className="wr-reveal-placeholder-text">SELECT A CARD</span>
-            <span className="wr-reveal-placeholder-sub">from the pile to reveal</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

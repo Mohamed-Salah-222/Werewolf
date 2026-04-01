@@ -219,34 +219,29 @@
 .htp-win-team--neutral {
   color: var(--color-neutral);
 }
-
 /* ===== ROLE ORDER (Night Order tab) ===== */
 .htp-order-list {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0;
+  gap: 6px;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .htp-order-item {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 10px;
 }
 
 .htp-order-num {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
+  width: 20px;
+  text-align: right;
+  font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
+  letter-spacing: 1px;
   color: #3d2e1a;
-  margin-bottom: 4px;
+  flex-shrink: 0;
 }
 
 .htp-order-name {
@@ -254,13 +249,6 @@
   font-family: var(--font-display);
   letter-spacing: 2px;
   color: var(--color-text);
-}
-
-.htp-order-arrow {
-  font-size: 14px;
-  color: #2a2019;
-  margin: 4px 0;
-  line-height: 1;
 }
 
 /* ===== ROLE SETUP (Role Setup tab) ===== */
@@ -319,6 +307,48 @@
   font-size: 14px;
 }
 
+/* ===== CHARACTERS LIST ===== */
+.htp-char-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.htp-char-row {
+  padding: 12px 14px;
+  background-color: rgba(201, 168, 76, 0.03);
+  border: 1px solid var(--color-border-dark);
+  border-radius: 4px;
+}
+
+.htp-char-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.htp-char-name {
+  font-size: clamp(12px, 1.1vw, 14px);
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+  color: var(--color-text);
+}
+
+.htp-char-team {
+  font-size: 9px;
+  font-family: var(--font-display);
+  letter-spacing: 2px;
+}
+
+.htp-char-ability {
+  font-size: clamp(12px, 1.1vw, 14px);
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0;
+  font-family: var(--font-body);
+}
+
 /* ===== NOTE ===== */
 .htp-note {
   font-size: clamp(11px, 1vw, 13px);
@@ -327,4 +357,126 @@
   line-height: 1.6;
   margin-top: 16px;
   font-family: var(--font-body);
+}
+
+/* ===== MOBILE: SILVER THEME ===== */
+@media (max-width: 768px) {
+  .htp-modal {
+    background-color: #0c0c0e;
+    border-color: rgba(180, 180, 195, 0.15);
+  }
+
+  .htp-title {
+    color: rgba(210, 210, 220, 0.85);
+  }
+
+  .htp-close {
+    color: rgba(180, 180, 195, 0.4);
+  }
+
+  .htp-close:hover {
+    color: rgba(220, 220, 230, 0.8);
+  }
+
+  .htp-tabs {
+    border-bottom-color: rgba(180, 180, 195, 0.1);
+  }
+
+  .htp-tab {
+    color: rgba(180, 180, 195, 0.35);
+  }
+
+  .htp-tab:hover {
+    color: rgba(180, 180, 195, 0.55);
+  }
+
+  .htp-tab--active {
+    color: rgba(210, 210, 220, 0.85);
+    border-bottom-color: rgba(210, 210, 220, 0.85);
+  }
+
+  .htp-flavor {
+    color: rgba(180, 180, 195, 0.5);
+  }
+
+  .htp-step-num {
+    border-color: rgba(180, 180, 195, 0.25);
+    color: rgba(210, 210, 220, 0.7);
+  }
+
+  .htp-step-title {
+    color: rgba(220, 220, 230, 0.85);
+  }
+
+  .htp-step-desc {
+    color: rgba(180, 180, 195, 0.5);
+  }
+
+  .htp-win-box {
+    background-color: rgba(180, 180, 195, 0.04);
+    border-color: rgba(180, 180, 195, 0.12);
+  }
+
+  .htp-win-label {
+    color: rgba(210, 210, 220, 0.7);
+  }
+
+  .htp-win-item {
+    color: rgba(180, 180, 195, 0.5);
+  }
+
+  .htp-order-num {
+    border-color: rgba(180, 180, 195, 0.15);
+    color: rgba(180, 180, 195, 0.4);
+  }
+
+  .htp-order-name {
+    color: rgba(220, 220, 230, 0.85);
+  }
+
+  .htp-roles-heading {
+    color: rgba(210, 210, 220, 0.7);
+  }
+
+  .htp-role-row {
+    background-color: rgba(180, 180, 195, 0.04);
+    border-color: rgba(180, 180, 195, 0.1);
+  }
+
+  .htp-role-name {
+    color: rgba(220, 220, 230, 0.85);
+  }
+
+  .htp-role-count {
+    color: rgba(210, 210, 220, 0.7);
+  }
+
+  .htp-role-player {
+    color: rgba(180, 180, 195, 0.5);
+  }
+
+  .htp-role-arrow {
+    color: rgba(180, 180, 195, 0.25);
+  }
+
+  .htp-note {
+    color: rgba(180, 180, 195, 0.4);
+  }
+
+  .htp-char-row {
+    background-color: rgba(180, 180, 195, 0.04);
+    border-color: rgba(180, 180, 195, 0.1);
+  }
+
+  .htp-char-name {
+    color: rgba(220, 220, 230, 0.85);
+  }
+
+  .htp-char-team {
+    opacity: 0.8;
+  }
+
+  .htp-char-ability {
+    color: rgba(180, 180, 195, 0.5);
+  }
 }
