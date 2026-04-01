@@ -54,10 +54,10 @@ function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
     const containerWidth = container.offsetWidth;
     const elLeft = activeEl.offsetLeft;
     const elWidth = activeEl.offsetWidth;
-    const scrollTarget = elLeft - containerWidth / 2 + elWidth / 2;
+    const scrollTarget = Math.max(0, elLeft - containerWidth / 2 + elWidth / 2);
 
     container.scrollTo({ left: scrollTarget, behavior: "smooth" });
-  }, [activeIndex]);
+  }, [activeIndex, activeRole]);
 
   const openModal = useCallback((roleName: string) => {
     setModalImage(getFullCardImage(roleName));

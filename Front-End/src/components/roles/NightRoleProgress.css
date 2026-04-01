@@ -10,10 +10,12 @@
   align-items: flex-start;
   gap: clamp(12px, 2vw, 18px);
   overflow-x: auto;
+  overflow-y: hidden;
   scroll-behavior: smooth;
   padding: 8px 0 8px;
   -ms-overflow-style: none;
   scrollbar-width: none;
+  position: relative;
 }
 
 .nrp-track::-webkit-scrollbar {
@@ -23,7 +25,8 @@
 /* ===== SPACER ===== */
 .nrp-spacer {
   flex-shrink: 0;
-  width: 50%;
+  width: calc(50% - 40px);
+  min-width: 60px;
 }
 
 /* ===== ITEM ===== */
