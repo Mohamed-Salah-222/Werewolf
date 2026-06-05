@@ -1,16 +1,15 @@
 import { Phase, Team, TimerOption, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from "../../config/constants";
-
+import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
 import { Role } from "../roles";
 import { Player } from "../Player";
-import { EventEmitter } from "events";
 import { Logger } from "../../utils/Logger";
-import { PlayerId, Settings, Vote } from "../../types/game.types";
-
-import { NightPhaseManager, NightPhaseHost } from "./NightPhaseManager";
+import { PlayerId, Settings, Vote, UpdateGamePayload, PlayerPrivateData } from "../../types/game.types";
+import { NightPhaseManager } from "./NightPhaseManager";
 import { VoteResolver } from "./VoteResolver";
 import { RoleAssigner } from "./RoleAssigner";
+import { Server } from "socket.io";
 
-export class Game extends EventEmitter implements NightPhaseHost {
+export class Game {
   players: Player[] = [];
   readyPlayers: Map<PlayerId, boolean> = new Map();
   startedAt: number | null = null;
@@ -20,6 +19,7 @@ export class Game extends EventEmitter implements NightPhaseHost {
   code: string;
   votes: Vote[] = [];
   winners: Team;
+
   timer: TimerOption = DEFAULT_TIMER;
   timerInterval: NodeJS.Timeout;
   phase: Phase = Phase.Waiting;
@@ -41,16 +41,18 @@ export class Game extends EventEmitter implements NightPhaseHost {
   actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
   gamePings: Record<string, number> = {};
   gamePingTimestamps: Record<string, number> = {};
+  io: Server<ClientToServerEvents, ServerToClientEvents>;
   public nightTimeRemaining: number = 0;
 
+  private socketToPlayer: Map<string, PlayerId> = new Map();
   private availableRoles: Role[] = [];
   private nightManager: NightPhaseManager;
   private voteResolver: VoteResolver;
   private roleAssigner: RoleAssigner;
 
-  constructor(private logger: Logger) {
-    super();
+  constructor(private logger: Logger, io: Server<ClientToServerEvents, ServerToClientEvents>) {
     this.code = this.generateCode();
+    this.io = io;
 
     this.roleAssigner = new RoleAssigner(logger);
     this.voteResolver = new VoteResolver(logger);
@@ -68,11 +70,10 @@ export class Game extends EventEmitter implements NightPhaseHost {
 
   // ── Player Management ─────────────────────────────────────────────
 
-  playerJoin(name: string): void {
+  playerJoin(name: string, socket: any): void {
     if (this.phase !== Phase.Waiting) {
       throw new Error("Cannot join a game that has already started");
     }
-    this.logger.info(`playerJoin ${name}`);
     if (this.players.find((p) => p.name === name)) {
       throw new Error(`A player with this name (${name}) already joined please chose another name`);
     }
@@ -84,12 +85,18 @@ export class Game extends EventEmitter implements NightPhaseHost {
     this.readyPlayers.set(player.id, false);
 
     if (this.players.length === 1) {
-      this.host = this.players[0].id;
+      this.logger.info(`host is ${player.name}`);
+      this.host = player.id;
     }
-    this.newEmit("playerJoin", name);
+
+    socket.join(this.code);
+    this.logger.info(`playerJoin ${name}`);
+    this.emit();
   }
 
-  playerReady(playerId: PlayerId): boolean {
+
+
+  playerReady(playerId: PlayerId) {
     let ready = false;
     const toggle = this.readyPlayers.get(playerId);
     if (toggle === undefined) {
@@ -102,7 +109,7 @@ export class Game extends EventEmitter implements NightPhaseHost {
     if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
-    return ready;
+    this.emit();
   }
 
   updateSettings(settings: Settings): void {
@@ -127,6 +134,11 @@ export class Game extends EventEmitter implements NightPhaseHost {
     }
 
     if (!this.allPlayersReady) {
+      for (const player of this.players) {
+        if (!this.readyPlayers.get(player.id)) {
+          console.log(`not ready ${player.name}`);
+        }
+      }
       throw new Error("Not all players are ready");
     }
 
@@ -142,27 +154,27 @@ export class Game extends EventEmitter implements NightPhaseHost {
     this.roleQueue = this.roleAssigner.buildActiveRoleQueue(this.players, this.groundRoles, this.nightManager.getRoleTimers());
 
     this.phase = Phase.Role;
-    this.newEmit("gameStarted");
+    this.emit()
   }
 
   confirmPlayerRoleReveal(playerId: PlayerId): void {
     if (this.confirmedPlayerRoleReveal.includes(playerId)) {
       throw new Error(`Player ${playerId} has already confirmed their role`);
     }
-    if (this.players.find((p) => p.id === playerId) === undefined) {
-      throw new Error(`Player with id ${playerId} not found`);
-    }
+    this.getPlayerById(playerId);
+
     this.confirmedPlayerRoleReveal.push(playerId);
 
-    this.newEmit("playerRoleRevealConfirmed", playerId);
+    this.emit()
   }
 
   // ── Night Phase (delegated to NightPhaseManager) ──────────────────
 
   startNight(): void {
     this.phase = Phase.Night;
-    this.newEmit("nightStarted");
+
     this.nightManager.startNight();
+    this.emit()
   }
 
   playerPerformAction(playerId: PlayerId): void {
@@ -192,7 +204,7 @@ export class Game extends EventEmitter implements NightPhaseHost {
 
   startPerformActions(): void {
     this.phase = Phase.Night;
-    this.newEmit("perfomActionsStarted");
+    this.emit()
   }
 
   get roleQueueWithTimer(): { roleName: string; seconds: number }[] {
@@ -207,11 +219,12 @@ export class Game extends EventEmitter implements NightPhaseHost {
     const totalSeconds = this.timer * 60;
     this.currentTimerSec = totalSeconds;
 
-    this.newEmit("dayStarted", {
-      timer: this.timer,
-      currentTimerSec: this.currentTimerSec,
-      startedAt: this.startedAt,
-    });
+    this.emit()
+    // this.emit("dayStarted", {
+    //   timer: this.timer,
+    //   currentTimerSec: this.currentTimerSec,
+    //   startedAt: this.startedAt,
+    // });
 
     this.timerInterval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.startedAt!) / 1000);
@@ -220,7 +233,7 @@ export class Game extends EventEmitter implements NightPhaseHost {
       if (this.currentTimerSec <= 0) {
         this.currentTimerSec = 0;
         clearInterval(this.timerInterval);
-        this.newEmit("timerFinished");
+        this.emit()
         this.startVoting();
       }
     }, 1000);
@@ -245,7 +258,8 @@ export class Game extends EventEmitter implements NightPhaseHost {
       clearInterval(this.timerInterval);
     }
     this.logger.log("Game state is now voting");
-    this.newEmit("votingStarted");
+    // this.emit("votingStarted");
+    this.emit()
   }
 
   playerVote(player: PlayerId, vote: PlayerId): void {
@@ -283,7 +297,7 @@ export class Game extends EventEmitter implements NightPhaseHost {
 
       this.votes.push({ voter: player.id, vote: randomVote });
       this.logger.log(`Force vote: ${player.name} randomly voted for ${randomVote === "noWerewolf" ? "No Werewolf" : this.getPlayerById(randomVote).name}`);
-      this.newEmit("voteConfirmed", { playerId: player.id });
+      this.emit()
     }
 
     this.finish();
@@ -310,7 +324,8 @@ export class Game extends EventEmitter implements NightPhaseHost {
     this.endedAt = Date.now();
     const result = this.voteResolver.calculateResults(votes, this.players);
     this.winners = result.winningTeam;
-    this.newEmit("gameEnded", { winners: result.winners, isDraw: result.isDraw, eliminatedPlayerId: result.eliminatedPlayerId });
+    this.emit()
+    // this.emit("gameEnded", { winners: result.winners, isDraw: result.isDraw, eliminatedPlayerId: result.eliminatedPlayerId });
     this.logger.info(`number of events: ${this.numberOfEvents}`);
   }
 
@@ -360,7 +375,6 @@ export class Game extends EventEmitter implements NightPhaseHost {
   destroy(): void {
     clearInterval(this.timerInterval);
     this.nightManager.clearTimers();
-    this.removeAllListeners?.();
     this.players = [];
   }
 
@@ -386,9 +400,124 @@ export class Game extends EventEmitter implements NightPhaseHost {
     return true;
   }
 
-  newEmit(event: string, data?: any) {
-    this.numberOfEvents++;
-    this.lastActivityAt = Date.now();
-    this.emit(event, data);
+  emit() {
+    const sockets = this.io.sockets.sockets;
+    for (const [, socket] of sockets) {
+      if (socket.rooms.has(this.code)) {
+        const playerId = (socket as any).playerId;
+        socket.emit("updateGameSnapShot", BuildGameSnapshot(this, playerId));
+      }
+    }
   }
+}
+
+// function UpdateGameFromSnapshot(game: Game, snapShot: UpdateGamePayload): void {
+//   game.code = snapShot.code;
+//   game.phase = snapShot.phase;
+//   game.host = snapShot.hostId;
+//   game.players = snapShot.players.map(p => new Player(p.name));
+//   game.groundRoles = snapShot.groundCards.map(r => new Role(r.label));
+//   game.roleQueue = snapShot.roleQueue;
+//   game.currentActiveRole = snapShot.currentActiveRole;
+//   game.nightTimeRemaining = snapShot.nightTimeRemaining;
+//   game.timer = snapShot.timer.timerSeconds;
+//   game.timerInterval = setInterval(() => {
+//     const elapsed = Math.floor((Date.now() - game.startedAt!) / 1000);
+//     game.currentTimerSec = snapShot.timer.currentTimerSec - elapsed;
+//     if (game.currentTimerSec <= 0) {
+//       game.currentTimerSec = 0;
+//       clearInterval(game.timerInterval);
+//     }
+//
+//   }, 1000);
+// }
+
+
+
+export function BuildGameSnapshot(game: Game, requestingPlayerId?: PlayerId): UpdateGamePayload {
+  const isEndGame = game.phase === Phase.EndGame;
+
+  return {
+    code: game.code,
+    phase: game.phase,
+    hostId: game.host,
+    players: game.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      isReady: game.readyPlayers.get(p.id) ?? false,
+      hasConfirmedRole: game.confirmedPlayerRoleReveal.includes(p.id),
+      hasVoted: game.votes.some(v => v.voter === p.id),
+      isHost: p.id === game.host,
+      ping: game.gamePings?.[p.id] ?? 0,
+    })),
+    groundCards: game.groundRoles.map((r, i) => ({ id: r.id, label: `Ground Card ${i + 1}` })),
+    roleQueue: game.roleQueueWithTimer,
+    currentActiveRole: game.currentActiveRole || null,
+    nightTimeRemaining: game.nightTimeRemaining,
+    timer: {
+      timerSeconds: game.timer ?? null,
+      currentTimerSec: game.currentTimerSec ?? null,
+      startedAt: game.startedAt ?? null,
+    },
+    winners: game.winners ?? null,
+    isDraw: isEndGame ? game.winners === null : false,
+    eliminatedPlayerId: isEndGame ? resolveEliminatedPlayer(game) : null,
+    resultsVotes: isEndGame
+      ? game.prettyVotes.map(v => ({
+        voter: game.players.find(p => p.id === v.voter)?.name ?? v.voter,
+        vote:
+          v.vote === 'noWerewolf'
+            ? 'No Werewolf'
+            : (game.players.find(p => p.id === v.vote)?.name ?? v.vote),
+      }))
+      : null,
+    resultsPlayerRoles: isEndGame
+      ? game.players.map(p => ({
+        playerId: p.id,
+        name: p.name,
+        role: p.getRole().name,
+      }))
+      : null,
+    actionHistory: isEndGame ? game.actionHistory : null,
+    playerPrivateData: requestingPlayerId
+      ? buildPlayerPrivateData(game, requestingPlayerId)
+      : null,
+    yourPlayerId: requestingPlayerId ?? null,
+  };
+}
+
+function buildPlayerPrivateData(game: Game, playerId: PlayerId): PlayerPrivateData | null {
+  let player: ReturnType<typeof game.getPlayerById>;
+  try {
+    player = game.getPlayerById(playerId);
+  } catch {
+    return null;
+  }
+
+  const role = player.getRole();
+  const originalRole = player.getOriginalRole();
+  const voteEntry = game.votes.find(v => v.voter === playerId);
+
+  return {
+    currentRole: role?.name ?? null,
+    originalRole: originalRole?.name ?? null,
+    roleTeam: role?.team ?? null,
+    roleDescription: role?.description ?? null,
+    hasConfirmedRole: game.confirmedPlayerRoleReveal.includes(playerId),
+    hasPerformedAction: game.confirmedPlayerPerformActions.includes(playerId),
+    hasVoted: !!voteEntry,
+    votedForId: voteEntry?.vote ?? null,
+    lastActionResult: null // TODO : implement
+  };
+}
+
+function resolveEliminatedPlayer(game: Game): PlayerId | null {
+  const tally = new Map<string, number>();
+  for (const { vote } of game.prettyVotes) {
+    if (vote !== 'noWerewolf') {
+      tally.set(vote, (tally.get(vote) ?? 0) + 1);
+    }
+  }
+  if (tally.size === 0) return null;
+  return [...tally.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 }

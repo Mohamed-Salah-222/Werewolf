@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { Manager } from "../../entities/Manager";
 import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
+import { Manager } from "../../entities/Manager";
 import { PlayerId } from "../../types/game.types";
 import { SocketContext } from "./shared";
 import { registerGameHandlers } from "./gameHandlers";

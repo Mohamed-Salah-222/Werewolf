@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export interface GameStore {
+  hydrate: (snapshot) => void;
   // Session
   gameCode: string | null;
   playerId: string | null;
@@ -20,8 +21,7 @@ export interface GameStore {
 
   // Night phase
   roleQueue: Array<{ roleName: string; seconds: number }>;
-  groundCards: Array<{ id: string; label: string }>;
-  hasPerformedAction: boolean;
+  groundCards: Array<{ id: string; label: string }>; hasPerformedAction: boolean;
   lastActionResult: Record<string, unknown> | null;
   initialActiveRole: string | null;
 
@@ -153,6 +153,46 @@ export const useGameStore = create<GameStore>()(
       setPlayers: (players) => set({ players }),
 
       reset: () => set(initialState),
+      hydrate: (snapshot) =>
+        set((state) => {
+          const priv = snapshot.playerPrivateData;
+          const me = snapshot.players?.find((p: any) => p.id === snapshot.yourPlayerId);
+          return {
+            players: snapshot.players ?? [],
+            gameCode: snapshot.code,
+            isHost: me?.isHost ?? state.isHost,
+
+            phase: snapshot.phase === "endGame" ? "results" : snapshot.phase,
+
+            roleName: priv?.currentRole ?? priv?.originalRole ?? null,
+            roleTeam: priv?.roleTeam ?? null,
+            roleDescription: priv?.roleDescription ?? null,
+
+            hasConfirmedRole: priv?.hasConfirmedRole ?? false,
+
+            roleQueue: snapshot.roleQueue ?? [],
+            groundCards: snapshot.groundCards ?? [],
+
+            hasPerformedAction: priv?.hasPerformedAction ?? false,
+            lastActionResult: priv?.lastActionResult ?? null,
+            initialActiveRole: snapshot.currentActiveRole,
+
+            timerSeconds: snapshot.timer?.timerSeconds ?? null,
+            currentTimerSec: snapshot.timer?.currentTimerSec ?? null,
+            startedAt: snapshot.timer?.startedAt ?? null,
+
+            hasVoted: priv?.hasVoted ?? false,
+            votedForId: priv?.votedForId ?? null,
+
+            winners: snapshot.winners ?? null,
+            isDraw: snapshot.isDraw ?? false,
+            eliminatedPlayerId: snapshot.eliminatedPlayerId ?? null,
+
+            votes: snapshot.resultsVotes ?? [],
+            playerRoles: snapshot.resultsPlayerRoles ?? [],
+            actionHistory: snapshot.actionHistory ?? [],
+          };
+        }),
     }),
     {
       name: "werewolf_game",

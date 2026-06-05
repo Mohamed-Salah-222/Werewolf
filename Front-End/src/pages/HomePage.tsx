@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import socket from "../socket";
 import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
@@ -7,15 +6,9 @@ import { useGameStore } from "../store/gameStore";
 import { characters, type CharacterData } from "../characters";
 import "./HomePage.css";
 import HowToPlay from "../components/HowToPlay";
+import { gameActions } from "../store/sockets";
 
 // ===== HELPERS =====
-
-type JoinResponse = {
-  success: boolean;
-  playerName?: string;
-  playerId?: string;
-  error?: string;
-};
 
 function teamColor(team: string): string {
   if (team === "villain") return "var(--color-villain)";
@@ -29,28 +22,20 @@ function teamLabel(team: string): string {
   return "VILLAGE TEAM";
 }
 
-function emitJoinGame(gameCode: string, playerName: string): Promise<JoinResponse> {
-  if (!socket.connected) socket.connect();
-  return new Promise((resolve) => {
-    socket.emit("joinGame", { gameCode, playerName }, (response: JoinResponse) => resolve(response));
-  });
-}
-
 // ===== COMPONENT =====
 
 function HomePage() {
   const reset = useGameStore((s) => s.reset);
+  const phase = useGameStore((s) => s.phase);
 
   const navigate = useNavigate();
-  const setSession = useGameStore((s) => s.setSession);
-  const setPhase = useGameStore((s) => s.setPhase);
 
   const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
-  const [playerName, setPlayerName] = useState(() => localStorage.getItem("werewolf_playerName") || "");
+  const [playerName, setPlayerName] = useState(() => sessionStorage.getItem("werewolf_playerName") || "");
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -122,7 +107,7 @@ function HomePage() {
     setShowJoinModal(false);
     setShowHowToPlay(false);
     setError("");
-    setPlayerName(localStorage.getItem("werewolf_playerName") || "");
+    setPlayerName(sessionStorage.getItem("werewolf_playerName") || "");
     setGameCode("");
   }, []);
 
@@ -131,7 +116,7 @@ function HomePage() {
       setError("Name must be at least 2 characters");
       return;
     }
-    localStorage.setItem("werewolf_playerName", playerName.trim());
+    sessionStorage.setItem("werewolf_playerName", playerName.trim());
 
     setLoading(true);
     setError("");
@@ -147,26 +132,14 @@ function HomePage() {
         return;
       }
       const code = data.data.code;
-      const response = await emitJoinGame(code, playerName.trim());
-      setLoading(false);
-      if (response.success) {
-        setSession({
-          gameCode: code,
-          playerId: response.playerId || "",
-          playerName: response.playerName || "",
-          isHost: true,
-        });
-        setPhase("waiting");
-        setShowCreateModal(false);
-        navigate(`/waiting/${code}`);
-      } else {
-        setError(response.error || "Failed to join game");
-      }
+      gameActions.joinGame({ gameCode: code, playerName: playerName.trim() });
+      setShowCreateModal(false);
     } catch {
       setError("Could not connect to server");
+    } finally {
       setLoading(false);
     }
-  }, [playerName, navigate, setSession, setPhase]);
+  }, [playerName]);
 
   const handleJoinGame = useCallback(async () => {
     if (playerName.trim().length < 2) {
@@ -177,32 +150,41 @@ function HomePage() {
       setError("Game code must be 6 characters");
       return;
     }
-    localStorage.setItem("werewolf_playerName", playerName.trim());
+    sessionStorage.setItem("werewolf_playerName", playerName.trim());
     setLoading(true);
     setError("");
     try {
       const code = gameCode.trim().toLowerCase();
+      console.log("joining game", code);
       const name = playerName.trim();
-      const response = await emitJoinGame(code, name);
-      setLoading(false);
-      if (response.success) {
-        setSession({
-          gameCode: code,
-          playerId: response.playerId || "",
-          playerName: response.playerName || "",
-          isHost: false,
-        });
-        setPhase("waiting");
-        setShowJoinModal(false);
-        navigate(`/waiting/${code}`);
-      } else {
-        setError(response.error || "Failed to join game");
-      }
+      gameActions.joinGame({ gameCode: code, playerName: name });
+      setShowJoinModal(false);
     } catch {
       setError("Could not connect to server");
+    } finally {
       setLoading(false);
     }
-  }, [playerName, gameCode, navigate, setSession, setPhase]);
+  }, [playerName, gameCode]);
+
+  const phaseRoutes: Record<string, string> = {
+    waiting: "waiting",
+    role: "role-reveal",
+    night: "night",
+    discussion: "discussion",
+    vote: "vote",
+    endGame: "results",
+    results: "results",
+  };
+
+  useEffect(() => {
+    if (phase !== "home") {
+      const route = phaseRoutes[phase];
+      const gc = useGameStore.getState().gameCode;
+      if (route && gc) {
+        navigate(`/${route}/${gc}`);
+      }
+    }
+  }, [phase, navigate]);
 
   return (
     <div className={`home-page ${mounted ? "home-page--mounted" : ""}`}>
@@ -298,9 +280,9 @@ function HomePage() {
                       "--slot-index": index,
                       ...(isActive
                         ? {
-                            borderColor: color,
-                            boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                          }
+                          borderColor: color,
+                          boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                        }
                         : undefined),
                     } as React.CSSProperties
                   }

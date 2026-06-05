@@ -7,6 +7,7 @@ import { useGameStore } from "../store/gameStore";
 import HowToPlay from "../components/HowToPlay";
 import ShareButton from "../components/ShareButton";
 import "./WaitingRoom.css";
+import { gameActions } from "../store/sockets";
 
 // ===== CONSTANTS =====
 
@@ -85,7 +86,7 @@ function SignalBars({ level }: { level: SignalLevel }) {
 // ===== COMPONENT =====
 
 function WaitingRoom() {
-  const { gameCode } = useParams();
+  const gameCode = useGameStore((s) => s.gameCode);
   const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
@@ -352,6 +353,7 @@ function WaitingRoom() {
   }, [gameCode, playerId, navigate, reset]);
 
   const handleReady = useCallback(() => {
+    gameActions.playerReady({ gameCode, playerId, ready: !playerReady });
     const newReady = !playerReady;
     socket.emit("playerReady", { gameCode, playerId, ready: newReady });
   }, [playerReady, gameCode, playerId]);
@@ -392,7 +394,7 @@ function WaitingRoom() {
     }
     socket.emit("changeName", { gameCode, playerId, newName: trimmed }, (res: { success: boolean; error?: string }) => {
       if (res.success) {
-        localStorage.setItem("werewolf_playerName", trimmed);
+        sessionStorage.setItem("werewolf_playerName", trimmed);
         useGameStore.getState().setSession({
           gameCode: gameCode || "",
           playerId,

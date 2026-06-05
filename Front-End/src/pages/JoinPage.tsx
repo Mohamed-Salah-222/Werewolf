@@ -152,7 +152,7 @@ function JoinPage() {
         if (cancelled) return;
 
         // 5. Pick a name: saved > random
-        const savedName = localStorage.getItem("werewolf_playerName");
+        const savedName = sessionStorage.getItem("werewolf_playerName");
         let nameToUse: string;
 
         if (savedName && savedName.trim().length >= 2) {
@@ -167,7 +167,7 @@ function JoinPage() {
         if (cancelled) return;
 
         if (joinRes.success) {
-          localStorage.setItem("werewolf_playerName", nameToUse);
+          sessionStorage.setItem("werewolf_playerName", nameToUse);
           setSession({
             gameCode: code,
             playerId: joinRes.playerId || "",
@@ -186,7 +186,7 @@ function JoinPage() {
           if (cancelled) return;
 
           if (retryRes.success) {
-            localStorage.setItem("werewolf_playerName", retryName);
+            sessionStorage.setItem("werewolf_playerName", retryName);
             setSession({
               gameCode: code,
               playerId: retryRes.playerId || "",

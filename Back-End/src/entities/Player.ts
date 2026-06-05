@@ -2,6 +2,7 @@ import { Role } from "./roles";
 
 import { Game } from "./game";
 import { Phase } from "../config/constants";
+import { randomUUID } from "crypto";
 
 export class Player {
   name: string;
@@ -11,7 +12,7 @@ export class Player {
 
   constructor(name: string) {
     this.name = name;
-    this.id = Math.random().toString(36).substring(2, 8);
+    this.id = randomUUID();
   }
   getOriginalRole(): Role {
     return this.originalRole;

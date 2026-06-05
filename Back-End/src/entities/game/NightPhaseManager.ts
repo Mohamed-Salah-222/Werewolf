@@ -1,25 +1,11 @@
 import { Player } from "../Player";
-import { Role } from "../roles";
-import { PlayerId } from "../../types/game.types";
+import { Game } from "../game/Game";
+
 
 /**
  * Callback interface so NightPhaseManager can talk back to Game
  * without importing Game directly (avoids circular dependency).
  */
-export interface NightPhaseHost {
-  players: Player[];
-  groundRoles: Role[];
-  confirmedPlayerPerformActions: PlayerId[];
-  currentGameRolesMap: Map<string, number>;
-  currentActiveRole: string;
-  nightTimeRemaining: number;
-  roleQueue: string[];
-
-  newEmit(event: string, data?: unknown): void;
-  startDay(): void;
-  nextAction(): string | undefined;
-  getPlayerById(id: string): Player;
-}
 
 export class NightPhaseManager {
   private roleTimers: Map<string, number> = new Map([
@@ -40,7 +26,7 @@ export class NightPhaseManager {
   private nightMainTimer: ReturnType<typeof setTimeout> | null = null;
   private roleSlotTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private host: NightPhaseHost) {}
+  constructor(private host: Game) { }
 
   getRoleTimers(): Map<string, number> {
     return this.roleTimers;
@@ -156,7 +142,7 @@ export class NightPhaseManager {
             const remaining = (this.host.currentGameRolesMap.get(player.getOriginalRole().name) || 1) - 1;
             this.host.currentGameRolesMap.set(player.getOriginalRole().name, remaining);
 
-            this.host.newEmit("autoActionResult", { playerId: player.id, result });
+            this.host.emit();
           }
         });
       }
@@ -165,16 +151,17 @@ export class NightPhaseManager {
     }, timerSeconds * 1000);
 
     // THEN emit to clients
-    this.host.newEmit("nightRoleProgress", { roleName: nextRole, seconds: timerSeconds });
+    this.host.emit();
 
     if (playersWithRole.length > 0) {
       console.log(`📢 Role slot: ${nextRole} (${playersWithRole.length} players) — ${timerSeconds}s`);
-      this.host.newEmit("roleActionQueue", nextRole);
+
+      this.host.emit();
     } else {
       console.log(`⏭️ Role slot: ${nextRole} — no players, waiting ${timerSeconds}s`);
     }
 
-    this.host.newEmit("roleTimer", { roleName: nextRole, seconds: timerSeconds });
+    this.host.emit();
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -396,7 +383,8 @@ export class NightPhaseManager {
           message: result.message,
         };
 
-        this.host.newEmit("cloneInsomniacResult", { playerId: player.id, result });
+
+        this.host.emit();
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error performing Clone-Insomniac check for ${player.name}:`, msg);
@@ -435,7 +423,8 @@ export class NightPhaseManager {
           message: result.message,
         };
 
-        this.host.newEmit("cloneOracleResult", { playerId: player.id, result });
+        this.host.emit()
+        // this.host.emit("cloneOracleResult", { playerId: player.id, result });
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : "Unknown error";
         console.error(`Error performing Clone-Oracle vision for ${player.name}:`, msg);
