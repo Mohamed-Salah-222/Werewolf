@@ -4,7 +4,6 @@ import app from "./app";
 import dotenv from "dotenv";
 
 import { Manager } from "./entities/Manager";
-import { setManager } from "./controllers/gameController";
 import { initializeSocketHandlers } from "./socket/socketHandlers";
 import { ClientToServerEvents, ServerToClientEvents } from "./types/socket.types";
 
@@ -27,8 +26,6 @@ const manager = new Manager();
 manager.startCleanupJob();
 manager.setSocketIO(io);
 
-// Set manager for controllers
-setManager(manager);
 
 // Initialize socket handlers
 initializeSocketHandlers(io, manager);
@@ -52,4 +49,4 @@ process.on("SIGTERM", () => {
   });
 });
 
-export { io, server };
+export { io, server, manager };

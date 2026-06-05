@@ -16,10 +16,9 @@ export interface SocketContext {
   setCurrentPlayerId: (id: string | null) => void;
 }
 
-export function transferHostIfNeeded(game: Game, removedPlayerId: string, gameCode: string, io: AppServer): void {
+export function transferHostIfNeeded(game: Game, removedPlayerId: string): void {
   if (game.host === removedPlayerId && game.players.length > 0) {
     game.host = game.players[0].id;
-    io.to(gameCode).emit("hostChanged", { newHostId: game.host });
     console.log(`👑 Host transferred to ${game.players[0].name} (${game.host})`);
   }
 }

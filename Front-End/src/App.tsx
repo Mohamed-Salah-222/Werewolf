@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { VoiceProvider } from "./contexts/VoiceConext";
-import { useSocketRejoin } from "./hooks/useSocketRejoin";
+// import { useSocketRejoin } from "./hooks/useSocketRejoin";
 import HomePage from "./pages/HomePage";
 import WaitingRoom from "./pages/WaitingRoom";
 import RoleReveal from "./pages/RoleReveal";
@@ -9,10 +9,11 @@ import Discussion from "./pages/Discussion";
 import Vote from "./pages/Vote";
 import Results from "./pages/Results";
 import JoinPage from "./pages/JoinPage";
+import { socketListners } from "./store/sockets";
 
 function AppRoutes() {
-  useSocketRejoin();
-
+  socketListners();
+  // useSocketRejoin();
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />

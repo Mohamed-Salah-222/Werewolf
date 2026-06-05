@@ -9,45 +9,29 @@ export function registerConnectionHandler(ctx: SocketContext): void {
     const currentGameCode = ctx.getCurrentGameCode();
     const currentPlayerId = ctx.getCurrentPlayerId();
 
-    console.log(`Client disconnected: ${socket.id}`);
+    const game = currentGameCode ? manager.getGameByCode(currentGameCode) : null;
+    const player = game?.getPlayerById(currentPlayerId);
 
-    if (currentGameCode && currentPlayerId) {
-      const game = manager.getGameByCode(currentGameCode);
-      if (game) {
-        const player = game.players.find((p) => p.id === currentPlayerId);
-        if (player) {
-          // Clean up ping data immediately on disconnect — runs regardless of phase
-          if (game.gamePings) {
-            delete game.gamePings[currentPlayerId];
-            if (game.gamePingTimestamps) {
-              delete game.gamePingTimestamps[currentPlayerId];
-            }
-            io.to(currentGameCode).emit("playerPings", game.gamePings);
+    console.log(`Client disconnected: ${socket.id}: ${currentPlayerId} : ${player?.name}`);
+
+    if (game && currentPlayerId) {
+      if (player) {
+        if (game.gamePings) {
+          delete game.gamePings[currentPlayerId];
+          if (game.gamePingTimestamps) {
+            delete game.gamePingTimestamps[currentPlayerId];
           }
+        }
 
-          // Only remove player if game hasn't started yet
-          if (game.phase === Phase.Waiting) {
-            game.players = game.players.filter((p) => p.id !== currentPlayerId);
-            game.readyPlayers.delete(currentPlayerId);
+        if (game.phase === Phase.Waiting) {
+          game.players = game.players.filter((p) => p.id !== currentPlayerId);
+          game.readyPlayers.delete(currentPlayerId);
 
-            transferHostIfNeeded(game, currentPlayerId, currentGameCode, io);
+          transferHostIfNeeded(game, currentPlayerId);
 
-            io.to(currentGameCode).emit("playerLeft", {
-              playerId: currentPlayerId,
-              playerName: player.name,
-              playerCount: game.players.length,
-            });
-
-            io.to(currentGameCode).emit("playerListUpdate", {
-              players: game.players.map((p) => ({
-                id: p.id,
-                name: p.name,
-              })),
-            });
-          } else {
-            // Game already started — keep player in game, just log disconnect
-            console.log(`⚠️ Player ${player.name} disconnected from active game ${currentGameCode} (phase: ${game.phase})`);
-          }
+          game.emit();
+        } else {
+          console.log(`⚠️ Player ${player.name} disconnected from active game ${currentGameCode} (phase: ${game.phase})`);
         }
       }
     }

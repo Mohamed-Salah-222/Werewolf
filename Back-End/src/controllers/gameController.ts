@@ -1,16 +1,12 @@
 import { Request, Response } from "express";
-import { Manager } from "../entities/Manager";
 import { VALIDATION, ERROR_MESSAGES, Phase } from "../config/constants";
+import { manager } from "../server";
 
-let manager: Manager;
-
-export const setManager = (managerInstance: Manager) => {
-  manager = managerInstance;
-};
 
 export const createGame = (req: Request, res: Response): void => {
   try {
     const game = manager.createGame();
+
 
     res.status(201).json({
       success: true,

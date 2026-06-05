@@ -1,15 +1,13 @@
-import { Game } from './entities/game';
 import { Logger } from './utils/Logger';
-import { Phase } from './config/constants';
 import { PlayerId } from './types/game.types';
+import { BuildGameSnapshot, Game } from './entities/game/Game';
 
-// basic logger
 const logger = new Logger();
 
-// create game
 const game = new Game(logger);
 
-// ---- EVENT LISTENERS (what socket handlers will later be) ----
+
+
 
 game.on('playerJoin', (name: string) => {
   console.log(`[EVENT] player joined: ${name}`);
@@ -24,7 +22,6 @@ game.on('gameStarted', () => {
     game.confirmPlayerRoleReveal(p.id);
   });
 
-  // start night after reveal
   game.startNight();
 });
 
@@ -145,4 +142,7 @@ const dummyPlayers = [
 dummyPlayers.forEach((name) => game.playerJoin(name));
 
 // start game
+
+const data = BuildGameSnapshot(game)
+console.log(data)
 game.start();

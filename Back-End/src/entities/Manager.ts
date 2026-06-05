@@ -1,16 +1,15 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { Game } from "./game";
-import { Phase } from "../config/constants";
+import { Phase, VALIDATION } from "../config/constants";
 import { Logger } from "../utils/Logger";
-import { attachGameEventListeners } from "../socket/gameEventListeners";
 import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.types";
-import { PlayerId } from "../types/game.types";
 
 export class Manager {
   public games: Game[];
   public logger: Logger;
   private io: Server<ClientToServerEvents, ServerToClientEvents> | null = null;
   private cleanupRunning = false;
+  private sockets: Socket<ClientToServerEvents, ServerToClientEvents>[] = [];
 
   public constructor() {
     this.games = [];
@@ -21,14 +20,10 @@ export class Manager {
     this.io = io;
   }
 
+
   public createGame(): Game {
-    let game = new Game(this.logger);
+    const game = new Game(this.logger, this.io);
     this.games.push(game);
-
-    if (this.io) {
-      attachGameEventListeners(game, this.io);
-    }
-
     return game;
   }
 
@@ -41,11 +36,16 @@ export class Manager {
     return game.phase === Phase.Waiting;
   }
 
-  public joinGame(code: string, name: string): Game | null {
+  public joinGame(code: string, name: string, socket: unknown): Game | null {
     if (!name || name.length === 0 || typeof name !== "string") {
       console.error("Invalid name: ", name);
       return null;
     }
+    // if (!code || typeof code !== "string" || code.length !== VALIDATION.GAME_CODE_LENGTH) {
+    //   console.error("Invalid game code: ", code);
+    //   return null;
+    // }
+
     const lowerCode = code.toLowerCase();
     let game = this.games.find((game) => game.code.toLowerCase() === lowerCode);
     if (game) {
@@ -53,14 +53,16 @@ export class Manager {
         console.error("this game has already started");
         return null;
       }
-      game.playerJoin(name);
+      console.log("tried to joing game here");
+      game.playerJoin(name, socket);
       return game;
     } else {
       return null;
     }
   }
 
-  public getGameByCode(code: string): Game | null {
+  public getGameByCode(code: string | null): Game | null {
+    if (!code) return null;
     const lowerCode = code.toLowerCase();
     let game = this.games.find((game) => game.code.toLowerCase() === lowerCode);
     if (game) {

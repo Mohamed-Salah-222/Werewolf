@@ -11,6 +11,7 @@ export class Logger {
     this.filePath = __dirname + '/logs/game.log';
     this.file = this.createFile();
   }
+
   public static getInstance(): Logger {
     if (!Logger.instance) {
       Logger.instance = new Logger();
