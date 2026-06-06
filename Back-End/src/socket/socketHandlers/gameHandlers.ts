@@ -1,7 +1,6 @@
 import { ERROR_MESSAGES, VALIDATION } from "../../config/constants";
-import { SocketContext } from "./shared";
+import { SocketContext, safeHandler, getGameOrThrow, assertHost } from "./shared";
 import { JoinGameData } from "../../types/socket.types";
-import { PlayerId } from "../../types/game.types";
 import { Game } from "../../entities/game/Game";
 
 // TODO : move to game.ts
@@ -18,201 +17,120 @@ function pickRandomName(game: Game): string {
 export function registerGameHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;
 
-  socket.on("joinGame", (data: JoinGameData) => {
+  socket.on("joinGame", safeHandler("joinGame", socket, (data: JoinGameData) => {
+    const { gameCode } = data;
+    let { playerName } = data;
+    console.log("Joining game", gameCode, playerName);
+
+    if (!gameCode || gameCode.length !== VALIDATION.GAME_CODE_LENGTH) {
+      throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
+    }
+
+    if (!manager.canJoinGame(gameCode)) {
+      throw new Error(ERROR_MESSAGES.GAME_ALREADY_STARTED);
+    }
+
+    const game = getGameOrThrow(manager, gameCode);
+
+    if (!playerName || playerName.trim().length < VALIDATION.PLAYER_NAME_MIN_LENGTH) {
+      playerName = pickRandomName(game);
+    }
+
+    const taken = game.players.some((p) => p.name.toLowerCase() === playerName.trim().toLowerCase());
+    if (taken) {
+      playerName = pickRandomName(game);
+    }
+
+    const resolvedName = playerName.trim();
+    const joined = manager.joinGame(gameCode, resolvedName, socket);
+    if (!joined) {
+      throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
+    }
+
+    const player = game.players.find((p) => p.name === resolvedName);
+    if (!player) {
+      throw new Error(ERROR_MESSAGES.PLAYER_NOT_FOUND);
+    }
+
+    ctx.setCurrentGameCode(gameCode);
+    ctx.setCurrentPlayerId(player.id);
+    (socket as any).playerId = player.id;
+
+    console.log(`✅ Player ${resolvedName} joined game ${gameCode}`);
+  }));
+
+  socket.on("startGame", safeHandler("startGame", socket, ({ gameCode, playerId }) => {
+    const game = getGameOrThrow(manager, gameCode);
+    assertHost(playerId, game);
+    game.start();
+    console.log(`Game ${gameCode} started`);
+  }));
+
+  socket.on("confirmRoleReveal", safeHandler("confirmRoleReveal", socket, ({ gameCode, playerId }) => {
+    const game = getGameOrThrow(manager, gameCode);
+    game.confirmPlayerRoleReveal(playerId);
+  }));
+
+  socket.on("performAction", safeHandler("performAction", socket, ({ gameCode, playerId, action }) => {
+    const game = getGameOrThrow(manager, gameCode);
+
+    const player = game.getPlayerById(playerId);
+    const isCloneFirstAction = action.type === "clone";
+    const isCloneFollowUp = (player as any)._cloneAwaitingSecondAction === true;
+
+    console.log(`Player ${player.name} (${player.getRole().name}) performing action [type: ${action.type}, cloneFollowUp: ${isCloneFollowUp}]`);
+
+    let actionResult: any;
     try {
-      const { gameCode } = data;
-      let { playerName } = data;
-      console.log("Joining game", gameCode, playerName);
+      if (isCloneFollowUp) {
+        const clonedRole = player.getRole();
+        actionResult = clonedRole.performAction()(game, player, action);
 
-      if (!gameCode || gameCode.length !== VALIDATION.GAME_CODE_LENGTH) {
-        throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
+        (player as any)._cloneAwaitingSecondAction = false;
+
+        const cloneFirstResult = (player as any)._cloneFirstResult;
+        (player as any).lastActionResult = {
+          ...cloneFirstResult,
+          secondActionResult: actionResult,
+          message: actionResult.message || cloneFirstResult.message,
+        };
+      } else {
+        actionResult = player.performOriginalAction(game, action);
+        (player as any).lastActionResult = actionResult;
       }
-
-      if (!manager.canJoinGame(gameCode)) {
-        throw new Error(ERROR_MESSAGES.GAME_ALREADY_STARTED);
-      }
-
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        throw new Error(ERROR_MESSAGES.GAME_NOT_FOUND);
-      }
-
-      if (!playerName || playerName.trim().length < VALIDATION.PLAYER_NAME_MIN_LENGTH) {
-        playerName = pickRandomName(game);
-      }
-
-      const taken = game.players.some((p) => p.name.toLowerCase() === playerName.trim().toLowerCase());
-      if (taken) {
-        playerName = pickRandomName(game);
-      }
-
-      const resolvedName = playerName.trim();
-      const joined = manager.joinGame(gameCode, resolvedName, socket);
-      if (!joined) {
-        throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
-      }
-
-      const player = game.players.find((p) => p.name === resolvedName);
-      if (!player) {
-        throw new Error(ERROR_MESSAGES.PLAYER_NOT_FOUND);
-      }
-
-      ctx.setCurrentGameCode(gameCode);
-      ctx.setCurrentPlayerId(player.id);
-      (socket as any).playerId = player.id;
-
-      console.log(`✅ Player ${resolvedName} joined game ${gameCode}`);
     } catch (error: any) {
-      console.error("Error in joinGame:", error);
-      socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
+      console.error("Error executing role action:", error);
+      actionResult = { error: error.message };
     }
-  });
 
-  socket.on("startGame", ({ gameCode, playerId }) => {
-    try {
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
-      if (playerId !== game.host) {
-        socket.emit("error", { message: ERROR_MESSAGES.HOST_ONLY });
-        return;
-      }
-
-      game.start();
-
-      console.log(`Game ${gameCode} started`);
-    } catch (error: any) {
-      console.error("Error in startGame:", error);
-      socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
+    if (isCloneFirstAction && actionResult.needsSecondAction) {
+      (player as any)._cloneAwaitingSecondAction = true;
+      (player as any)._cloneFirstResult = actionResult;
+      return;
     }
-  });
 
-  socket.on("confirmRoleReveal", ({ gameCode, playerId }) => {
-    try {
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
+    game.playerPerformAction(playerId);
+  }));
 
-      game.confirmPlayerRoleReveal(playerId);
-    } catch (error) {
-      console.error("Error in confirmRoleReveal:", error);
-      socket.emit("error", { message: ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
+  socket.on("vote", safeHandler("vote", socket, ({ gameCode, playerId, votedPlayerId }) => {
+    const game = getGameOrThrow(manager, gameCode);
+    game.playerVote(playerId, votedPlayerId);
+    console.log(`Player ${playerId} voted in game ${gameCode}`);
+  }));
 
-  socket.on("performAction", ({ gameCode, playerId, action }) => {
-    try {
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
+  socket.on("forceVotes", safeHandler("forceVotes", socket, (data: { gameCode: string; playerId: string }) => {
+    const game = getGameOrThrow(manager, data.gameCode);
+    game.forceVotes(data.playerId);
+  }));
 
-      const player = game.getPlayerById(playerId);
-      const isCloneFirstAction = action.type === "clone";
-      const isCloneFollowUp = (player as any)._cloneAwaitingSecondAction === true;
+  socket.on("restartGame", safeHandler("restartGame", socket, ({ gameCode }) => {
+    const game = getGameOrThrow(manager, gameCode);
+    game.restart();
+    console.log(`Game ${gameCode} restarted`);
+  }));
 
-      console.log(`Player ${player.name} (${player.getRole().name}) performing action [type: ${action.type}, cloneFollowUp: ${isCloneFollowUp}]`);
-
-      let actionResult: any;
-      try {
-        if (isCloneFollowUp) {
-          const clonedRole = player.getRole();
-          actionResult = clonedRole.performAction()(game, player, action);
-
-          (player as any)._cloneAwaitingSecondAction = false;
-
-          const cloneFirstResult = (player as any)._cloneFirstResult;
-          (player as any).lastActionResult = {
-            ...cloneFirstResult,
-            secondActionResult: actionResult,
-            message: actionResult.message || cloneFirstResult.message,
-          };
-        } else {
-          actionResult = player.performOriginalAction(game, action);
-          (player as any).lastActionResult = actionResult;
-        }
-      } catch (error: any) {
-        console.error("Error executing role action:", error);
-        actionResult = { error: error.message };
-      }
-
-      if (isCloneFirstAction && actionResult.needsSecondAction) {
-        (player as any)._cloneAwaitingSecondAction = true;
-        (player as any)._cloneFirstResult = actionResult;
-        return;
-      }
-
-      game.playerPerformAction(playerId);
-    } catch (error) {
-      console.error("Error in performAction:", error);
-      socket.emit("error", { message: ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
-
-  socket.on("vote", ({ gameCode, playerId, votedPlayerId }) => {
-    try {
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
-
-      game.playerVote(playerId, votedPlayerId);
-
-      console.log(`Player ${playerId} voted in game ${gameCode}`);
-    } catch (error) {
-      console.error("Error in vote:", error);
-      socket.emit("error", { message: ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
-
-  socket.on("forceVotes", (data: { gameCode: string; playerId: string }) => {
-    try {
-      const game = manager.getGameByCode(data.gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
-      game.forceVotes(data.playerId);
-    } catch (error: any) {
-      console.error("Error in forceVotes:", error);
-      socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
-
-  socket.on("restartGame", ({ gameCode }) => {
-    try {
-      const game = manager.getGameByCode(gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
-
-      game.restart();
-
-      console.log(`Game ${gameCode} restarted`);
-    } catch (error) {
-      console.error("Error in restartGame:", error);
-      socket.emit("error", { message: ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
-
-  socket.on("skipToVote", (data: { gameCode: string; playerId: PlayerId }) => {
-    try {
-      const game = manager.getGameByCode(data.gameCode);
-      if (!game) {
-        socket.emit("error", { message: ERROR_MESSAGES.GAME_NOT_FOUND });
-        return;
-      }
-      game.skipToVote(data.playerId);
-    } catch (error) {
-      console.error("Error in skipToVote:", error);
-      socket.emit("error", { message: ERROR_MESSAGES.UNKNOWN_ERROR });
-    }
-  });
+  socket.on("skipToVote", safeHandler("skipToVote", socket, (data: { gameCode: string; playerId: string }) => {
+    const game = getGameOrThrow(manager, data.gameCode);
+    game.skipToVote(data.playerId);
+  }));
 }
