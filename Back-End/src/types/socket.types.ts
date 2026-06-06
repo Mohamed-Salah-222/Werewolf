@@ -1,3 +1,4 @@
+import { Socket } from "socket.io";
 import { PlayerId } from "./game.types";
 import { Settings, UpdateGamePayload } from "./game.types";
 
@@ -31,6 +32,7 @@ export interface ClientToServerEvents {
 export interface ServerToClientEvents {
   updateGameSnapShot: (snapShot: UpdateGamePayload) => void;
   error: (data: { message: string }) => void;
+  hostTransferred: (data: { message: string }) => void;
   voiceNewPeer: (data: { playerId: PlayerId }) => void;
   voiceOffer: (data: { from: PlayerId; offer: any }) => void;
   voiceAnswer: (data: { from: PlayerId; answer: any }) => void;
@@ -58,3 +60,4 @@ export interface RejoinGameData {
   playerId: string;
   playerName: string;
 }
+export type PlayerSocket = Socket<ClientToServerEvents, ServerToClientEvents> & { playerId: PlayerId };

@@ -1,9 +1,20 @@
 // src/store/gameStore.ts
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+
+export interface PlayerInfo {
+  id: string;
+  name: string;
+  isReady: boolean;
+  isHost: boolean;
+  hasConfirmedRole: boolean;
+  hasVoted: boolean;
+  ping: number;
+  isConnected: boolean;
+}
 
 export interface GameStore {
-  hydrate: (snapshot) => void;
+  hydrate: (snapshot: any) => void;
   // Session
   gameCode: string | null;
   playerId: string | null;
@@ -43,7 +54,7 @@ export interface GameStore {
   actionHistory: Array<{ role: string; playerName: string; description: string }>;
 
   // Players list
-  players: Array<{ id: string; name: string }>;
+  players: PlayerInfo[];
 
   // Actions
   setSession: (data: { gameCode: string; playerId: string; playerName: string; isHost: boolean }) => void;
@@ -60,7 +71,7 @@ export interface GameStore {
   setHasVoted: (value: boolean) => void;
   setVotedForId: (id: string | null) => void;
   setResultsData: (data: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory: Array<{ role: string; playerName: string; description: string }> }) => void;
-  setPlayers: (players: Array<{ id: string; name: string }>) => void;
+  setPlayers: (players: PlayerInfo[]) => void;
   reset: () => void;
 }
 
@@ -160,6 +171,7 @@ export const useGameStore = create<GameStore>()(
           return {
             players: snapshot.players ?? [],
             gameCode: snapshot.code,
+            playerName: me?.name ?? state.playerName,
             isHost: me?.isHost ?? state.isHost,
 
             phase: snapshot.phase === "endGame" ? "results" : snapshot.phase,
@@ -196,6 +208,7 @@ export const useGameStore = create<GameStore>()(
     }),
     {
       name: "werewolf_game",
+      storage: createJSONStorage(() => sessionStorage),
     },
   ),
 );

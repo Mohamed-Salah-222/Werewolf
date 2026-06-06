@@ -35,6 +35,7 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
 
       socket.join(gameCode);
 
+      game.connectPlayer(player.id);
       socket.emit("updateGameSnapShot", BuildGameSnapshot(game, player.id));
 
       console.log(`🔄 Player ${player.name} (${player.id}) rejoined game ${gameCode} in phase ${game.phase}`);
@@ -120,17 +121,8 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
       if (game.phase !== Phase.Waiting) return;
       if (game.host !== hostId) return;
 
-      const player = game.getPlayerById(kickedPlayerId);
+      const player = game.kickPlayer(kickedPlayerId);
       if (!player) return;
-
-      game.players = game.players.filter((p) => p.id !== player.id);
-      game.readyPlayers.delete(kickedPlayerId);
-      transferHostIfNeeded(game, kickedPlayerId);
-
-      ctx.setCurrentGameCode(null);
-      ctx.setCurrentPlayerId(null);
-
-      game.emit();
 
       console.log(`Player ${player.name} kicked from game ${gameCode}`);
     } catch (error) {

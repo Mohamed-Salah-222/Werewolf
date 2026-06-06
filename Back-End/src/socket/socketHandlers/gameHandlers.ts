@@ -2,18 +2,27 @@ import { ERROR_MESSAGES, VALIDATION } from "../../config/constants";
 import { SocketContext } from "./shared";
 import { JoinGameData } from "../../types/socket.types";
 import { PlayerId } from "../../types/game.types";
+import { Game } from "../../entities/game/Game";
 
+// TODO : move to game.ts
+const RANDOM_NAMES = ["Nora Ganzer", "Mde7a 4waya", "Master Baiter", "BenDover69", "Cereal Killer", "Lionel Pepsi", "Kom Zbala", "8ba2 Astna3y", "Gaymer", "Chicken Bobs", "Hairy Potter", "Honor Hitler"];
+
+function pickRandomName(game: Game): string {
+  const taken = new Set(game.players.map((p) => p.name.toLowerCase()));
+  const available = RANDOM_NAMES.filter((n) => !taken.has(n.toLowerCase()));
+  if (available.length > 0) return available[Math.floor(Math.random() * available.length)];
+  return `Wolf${Math.floor(Math.random() * 9000) + 1000}`;
+}
+
+// NOTE : this looks ok just need a bit of cleaning
 export function registerGameHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;
 
   socket.on("joinGame", (data: JoinGameData) => {
     try {
-      const { gameCode, playerName } = data;
+      const { gameCode } = data;
+      let { playerName } = data;
       console.log("Joining game", gameCode, playerName);
-
-      if (!playerName || playerName.length < VALIDATION.PLAYER_NAME_MIN_LENGTH) {
-        throw new Error(ERROR_MESSAGES.INVALID_PLAYER_NAME);
-      }
 
       if (!gameCode || gameCode.length !== VALIDATION.GAME_CODE_LENGTH) {
         throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
@@ -23,24 +32,36 @@ export function registerGameHandlers(ctx: SocketContext): void {
         throw new Error(ERROR_MESSAGES.GAME_ALREADY_STARTED);
       }
 
-      console.log("called here before error ", gameCode, playerName);
-      const game = manager.joinGame(gameCode, playerName, socket);
-
+      const game = manager.getGameByCode(gameCode);
       if (!game) {
         throw new Error(ERROR_MESSAGES.GAME_NOT_FOUND);
       }
 
-      const player = game.players.find((p) => p.name === playerName);
+      if (!playerName || playerName.trim().length < VALIDATION.PLAYER_NAME_MIN_LENGTH) {
+        playerName = pickRandomName(game);
+      }
+
+      const taken = game.players.some((p) => p.name.toLowerCase() === playerName.trim().toLowerCase());
+      if (taken) {
+        playerName = pickRandomName(game);
+      }
+
+      const resolvedName = playerName.trim();
+      const joined = manager.joinGame(gameCode, resolvedName, socket);
+      if (!joined) {
+        throw new Error(ERROR_MESSAGES.UNKNOWN_ERROR);
+      }
+
+      const player = game.players.find((p) => p.name === resolvedName);
       if (!player) {
         throw new Error(ERROR_MESSAGES.PLAYER_NOT_FOUND);
       }
 
       ctx.setCurrentGameCode(gameCode);
-      console.log("set current game code", gameCode);
       ctx.setCurrentPlayerId(player.id);
       (socket as any).playerId = player.id;
 
-      console.log(`✅ Player ${playerName} joined game ${gameCode}`);
+      console.log(`✅ Player ${resolvedName} joined game ${gameCode}`);
     } catch (error: any) {
       console.error("Error in joinGame:", error);
       socket.emit("error", { message: error.message || ERROR_MESSAGES.UNKNOWN_ERROR });

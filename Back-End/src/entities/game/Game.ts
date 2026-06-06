@@ -1,14 +1,34 @@
-import { Phase, Team, TimerOption, DEFAULT_TIMER, ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS, MAX_PLAYERS } from "../../config/constants";
-import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
+import {
+  Phase,
+  Team,
+  TimerOption,
+  DEFAULT_TIMER,
+  NUMBER_OF_GROUND_ROLES,
+  MIN_PLAYERS,
+  MAX_PLAYERS,
+} from "../../config/constants";
+import {
+  ClientToServerEvents,
+  ServerToClientEvents,
+  PlayerSocket,
+} from "../../types/socket.types";
 import { Role } from "../roles";
 import { Player } from "../Player";
 import { Logger } from "../../utils/Logger";
-import { PlayerId, Settings, Vote, UpdateGamePayload, PlayerPrivateData } from "../../types/game.types";
+import {
+  PlayerId,
+  Settings,
+  Vote,
+  UpdateGamePayload,
+  PlayerPrivateData,
+} from "../../types/game.types";
 import { NightPhaseManager } from "./NightPhaseManager";
 import { VoteResolver } from "./VoteResolver";
 import { RoleAssigner } from "./RoleAssigner";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 
+
+// NOTE: always emit at the end of any method if you change game state
 export class Game {
   players: Player[] = [];
   readyPlayers: Map<PlayerId, boolean> = new Map();
@@ -38,19 +58,28 @@ export class Game {
   currentActiveRole: string = "";
   endedAt: number | null = null;
   lastActivityAt: number = Date.now();
-  actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
+  actionHistory: Array<{
+    role: string;
+    playerName: string;
+    description: string;
+  }> = [];
   gamePings: Record<string, number> = {};
   gamePingTimestamps: Record<string, number> = {};
   io: Server<ClientToServerEvents, ServerToClientEvents>;
   public nightTimeRemaining: number = 0;
+  connectedPlayers: Set<PlayerId> = new Set();
+  hostTransferTimeout: NodeJS.Timeout | null = null;
+  readonly disconnectGraceSeconds = 10;
 
-  private socketToPlayer: Map<string, PlayerId> = new Map();
   private availableRoles: Role[] = [];
   private nightManager: NightPhaseManager;
   private voteResolver: VoteResolver;
   private roleAssigner: RoleAssigner;
 
-  constructor(private logger: Logger, io: Server<ClientToServerEvents, ServerToClientEvents>) {
+  constructor(
+    private logger: Logger,
+    io: Server<ClientToServerEvents, ServerToClientEvents>,
+  ) {
     this.code = this.generateCode();
     this.io = io;
 
@@ -64,37 +93,44 @@ export class Game {
     this.numberOfWerewolf = 0; // Set by RoleAssigner internally
     this.numberOfMasons = 0;
 
-    this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
+    this.logger.info(
+      `available roles: ${this.availableRoles.map((r) => r.name)}`,
+    );
     this.logger.info("Game created");
   }
 
   // ── Player Management ─────────────────────────────────────────────
 
-  playerJoin(name: string, socket: any): void {
+  playerJoin(name: string, socket: Socket): void {
     if (this.phase !== Phase.Waiting) {
       throw new Error("Cannot join a game that has already started");
-    }
-    if (this.players.find((p) => p.name === name)) {
-      throw new Error(`A player with this name (${name}) already joined please chose another name`);
     }
     if (this.players.length >= this.maxPlayers) {
       throw new Error(`Game is full, max players is ${this.maxPlayers}`);
     }
-    const player = new Player(name);
-    this.players.push(player);
-    this.readyPlayers.set(player.id, false);
 
-    if (this.players.length === 1) {
-      this.logger.info(`host is ${player.name}`);
-      this.host = player.id;
+    let player = this.players.find((p) => p.name === name);
+    if (player) {
+      if (this.connectedPlayers.has(player.id)) {
+        throw new Error(
+          `A player with this name (${name}) already joined please chose another name`,
+        );
+      }
+    } else {
+      player = new Player(name);
+      this.players.push(player);
+      this.readyPlayers.set(player.id, false);
+      if (this.players.length === 1) {
+        this.logger.info(`host is ${player.name}`);
+        this.host = player.id;
+      }
     }
+    socket.join(this.code); // WARNING: this should be a promise if we ever want to use adapters like redis
+    (socket as PlayerSocket).playerId = player.id;
+    this.connectPlayer(player.id);
 
-    socket.join(this.code);
-    this.logger.info(`playerJoin ${name}`);
     this.emit();
   }
-
-
 
   playerReady(playerId: PlayerId) {
     let ready = false;
@@ -109,11 +145,93 @@ export class Game {
     if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
+
     this.emit();
   }
 
   updateSettings(settings: Settings): void {
     this.timer = settings.timer;
+
+    this.emit();
+  }
+
+  kickPlayer(kickedPlayerId: PlayerId): Player | undefined {
+    const player = this.players.find((p) => p.id === kickedPlayerId);
+    if (!player) return undefined;
+
+    this.players = this.players.filter((p) => p.id !== kickedPlayerId);
+    this.readyPlayers.delete(kickedPlayerId);
+
+    if (this.host === kickedPlayerId && this.players.length > 0) {
+      this.host = this.players[0].id;
+      console.log(`Host transferred to ${this.players[0].name} (${this.host})`);
+    }
+
+    this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
+      if ((socket as typeof socket & { playerId: PlayerId }).playerId === kickedPlayerId) {
+        socket.disconnect(true);
+      }
+    });
+
+    this.emit();
+    return player;
+  }
+
+  connectPlayer(playerId: PlayerId): void {
+    const player = this.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    this.connectedPlayers.add(playerId);
+
+    if (this.hostTransferTimeout && this.host === playerId) {
+      clearTimeout(this.hostTransferTimeout);
+      this.hostTransferTimeout = null;
+      this.logger.info(`Host ${player.name} reconnected, transfer cancelled`);
+    }
+
+    this.emit();
+  }
+
+  // WARN: this code looks fishy, but it works
+  disconnectPlayer(playerId: PlayerId): void {
+    const player = this.players.find((p) => p.id === playerId);
+    if (!player) return;
+
+    this.connectedPlayers.delete(playerId);
+    this.logger.info(`Player ${player.name} disconnected`);
+
+    if (this.host === playerId && this.connectedPlayers.size > 0) {
+
+      this.hostTransferTimeout = setTimeout(() => {
+        const firstConnected = this.players.find((p) =>
+          this.connectedPlayers.has(p.id),
+        );
+        if (firstConnected) {
+          const oldHost = this.players.find((p) => p.id === playerId);
+          this.host = firstConnected.id;
+          this.logger.info(
+            `Host transferred to ${firstConnected.name} (disconnect timeout)`,
+          );
+
+          this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
+            if (socket.playerId === firstConnected.id) {
+              const oldName = oldHost?.name ?? "The previous host";
+              socket.emit("hostTransferred", {
+                message: `${oldName} disconnected. You are now the host!`,
+              });
+            }
+          });
+        }
+        this.hostTransferTimeout = null;
+        this.emit();
+      }, this.disconnectGraceSeconds * 1000);
+
+      this.logger.info(
+        `Host ${player.name} disconnected, waiting ${this.disconnectGraceSeconds}s for reconnect`,
+      );
+    }
+
+    this.emit();
   }
 
   getPlayerById(id: string): Player {
@@ -143,18 +261,29 @@ export class Game {
     }
 
     this.currentGameRolesMap = new Map<string, number>();
-    this.roleAssigner.assignRandomRoles(this.players, this.availableRoles, this.currentGameRolesMap);
+    this.roleAssigner.assignRandomRoles(
+      this.players,
+      this.availableRoles,
+      this.currentGameRolesMap,
+    );
 
     for (let i = this.availableRoles.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [this.availableRoles[i], this.availableRoles[j]] = [this.availableRoles[j], this.availableRoles[i]];
+      [this.availableRoles[i], this.availableRoles[j]] = [
+        this.availableRoles[j],
+        this.availableRoles[i],
+      ];
     }
     this.groundRoles = this.availableRoles.slice(0, this.numberOfGroundRoles);
 
-    this.roleQueue = this.roleAssigner.buildActiveRoleQueue(this.players, this.groundRoles, this.nightManager.getRoleTimers());
+    this.roleQueue = this.roleAssigner.buildActiveRoleQueue(
+      this.players,
+      this.groundRoles,
+      this.nightManager.getRoleTimers(),
+    );
 
     this.phase = Phase.Role;
-    this.emit()
+    this.emit();
   }
 
   confirmPlayerRoleReveal(playerId: PlayerId): void {
@@ -165,7 +294,7 @@ export class Game {
 
     this.confirmedPlayerRoleReveal.push(playerId);
 
-    this.emit()
+    this.emit();
   }
 
   // ── Night Phase (delegated to NightPhaseManager) ──────────────────
@@ -174,7 +303,7 @@ export class Game {
     this.phase = Phase.Night;
 
     this.nightManager.startNight();
-    this.emit()
+    this.emit();
   }
 
   playerPerformAction(playerId: PlayerId): void {
@@ -188,7 +317,9 @@ export class Game {
     const remaining = (this.currentGameRolesMap.get(roleName) || 1) - 1;
     this.currentGameRolesMap.set(roleName, remaining);
 
-    console.log(`✅ ${player.name} (${roleName}) performed action. Remaining for ${roleName}: ${remaining}`);
+    console.log(
+      `✅ ${player.name} (${roleName}) performed action. Remaining for ${roleName}: ${remaining}`,
+    );
   }
 
   nextAction(): any {
@@ -196,15 +327,21 @@ export class Game {
     if (nextRoleAction === undefined) {
       return;
     }
-    const rolePlayersOrg = this.players.filter((p) => p.getOriginalRole().name === nextRoleAction);
-    const rolePlayers = this.players.filter((p) => p.getRole().name === nextRoleAction);
-    this.logger.info(`next action: ${nextRoleAction}, role players ${rolePlayers.map((p) => p.name)}, original role players ${rolePlayersOrg.map((p) => p.name)}`);
+    const rolePlayersOrg = this.players.filter(
+      (p) => p.getOriginalRole().name === nextRoleAction,
+    );
+    const rolePlayers = this.players.filter(
+      (p) => p.getRole().name === nextRoleAction,
+    );
+    this.logger.info(
+      `next action: ${nextRoleAction}, role players ${rolePlayers.map((p) => p.name)}, original role players ${rolePlayersOrg.map((p) => p.name)}`,
+    );
     return nextRoleAction;
   }
 
   startPerformActions(): void {
     this.phase = Phase.Night;
-    this.emit()
+    this.emit();
   }
 
   get roleQueueWithTimer(): { roleName: string; seconds: number }[] {
@@ -219,12 +356,7 @@ export class Game {
     const totalSeconds = this.timer * 60;
     this.currentTimerSec = totalSeconds;
 
-    this.emit()
-    // this.emit("dayStarted", {
-    //   timer: this.timer,
-    //   currentTimerSec: this.currentTimerSec,
-    //   startedAt: this.startedAt,
-    // });
+    this.emit();
 
     this.timerInterval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.startedAt!) / 1000);
@@ -233,7 +365,7 @@ export class Game {
       if (this.currentTimerSec <= 0) {
         this.currentTimerSec = 0;
         clearInterval(this.timerInterval);
-        this.emit()
+        this.emit();
         this.startVoting();
       }
     }, 1000);
@@ -259,7 +391,7 @@ export class Game {
     }
     this.logger.log("Game state is now voting");
     // this.emit("votingStarted");
-    this.emit()
+    this.emit();
   }
 
   playerVote(player: PlayerId, vote: PlayerId): void {
@@ -268,9 +400,13 @@ export class Game {
     }
     this.votes.push({ voter: player, vote: vote });
     if (vote === "noWerewolf") {
-      this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for No Werewolf`);
+      this.logger.log(
+        `Voter: ${this.getPlayerById(player).name} has voted for No Werewolf`,
+      );
     } else {
-      this.logger.log(`Voter: ${this.getPlayerById(player).name} has voted for ${this.getPlayerById(vote).name} and his role is ${this.getPlayerById(vote).getRole().name}`);
+      this.logger.log(
+        `Voter: ${this.getPlayerById(player).name} has voted for ${this.getPlayerById(vote).name} and his role is ${this.getPlayerById(vote).getRole().name}`,
+      );
     }
     if (this.votes.length === this.players.length) {
       this.finish();
@@ -286,7 +422,9 @@ export class Game {
     }
 
     const playersWhoVoted = new Set(this.votes.map((v) => v.voter));
-    const playersWhoHaventVoted = this.players.filter((p) => !playersWhoVoted.has(p.id));
+    const playersWhoHaventVoted = this.players.filter(
+      (p) => !playersWhoVoted.has(p.id),
+    );
 
     if (playersWhoHaventVoted.length === 0) return;
 
@@ -296,8 +434,10 @@ export class Game {
       const randomVote = options[Math.floor(Math.random() * options.length)];
 
       this.votes.push({ voter: player.id, vote: randomVote });
-      this.logger.log(`Force vote: ${player.name} randomly voted for ${randomVote === "noWerewolf" ? "No Werewolf" : this.getPlayerById(randomVote).name}`);
-      this.emit()
+      this.logger.log(
+        `Force vote: ${player.name} randomly voted for ${randomVote === "noWerewolf" ? "No Werewolf" : this.getPlayerById(randomVote).name}`,
+      );
+      this.emit();
     }
 
     this.finish();
@@ -317,16 +457,17 @@ export class Game {
         this.logger.log(`No Werewolf has been voted: ${value} times`);
       } else {
         const player1 = this.getPlayerById(key);
-        this.logger.log(`Voter: ${player1.name} has been voted: ${value} times`);
+        this.logger.log(
+          `Voter: ${player1.name} has been voted: ${value} times`,
+        );
       }
     });
 
     this.endedAt = Date.now();
     const result = this.voteResolver.calculateResults(votes, this.players);
     this.winners = result.winningTeam;
-    this.emit()
-    // this.emit("gameEnded", { winners: result.winners, isDraw: result.isDraw, eliminatedPlayerId: result.eliminatedPlayerId });
     this.logger.info(`number of events: ${this.numberOfEvents}`);
+    this.emit();
   }
 
   // ── Restart / Destroy ─────────────────────────────────────────────
@@ -368,7 +509,9 @@ export class Game {
 
     this.nightManager.clearTimers();
 
-    this.logger.info(`available roles: ${this.availableRoles.map((r) => r.name)}`);
+    this.logger.info(
+      `available roles: ${this.availableRoles.map((r) => r.name)}`,
+    );
     this.logger.info("Game restarted");
   }
 
@@ -400,57 +543,41 @@ export class Game {
     return true;
   }
 
+  // TODO : can this be optimized? // maybe a map of sockets to players?
   emit() {
-    const sockets = this.io.sockets.sockets;
-    for (const [, socket] of sockets) {
+    this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
       if (socket.rooms.has(this.code)) {
-        const playerId = (socket as any).playerId;
-        socket.emit("updateGameSnapShot", BuildGameSnapshot(this, playerId));
+        socket.emit("updateGameSnapShot", BuildGameSnapshot(this, socket.playerId));
       }
-    }
+    })
   }
 }
 
-// function UpdateGameFromSnapshot(game: Game, snapShot: UpdateGamePayload): void {
-//   game.code = snapShot.code;
-//   game.phase = snapShot.phase;
-//   game.host = snapShot.hostId;
-//   game.players = snapShot.players.map(p => new Player(p.name));
-//   game.groundRoles = snapShot.groundCards.map(r => new Role(r.label));
-//   game.roleQueue = snapShot.roleQueue;
-//   game.currentActiveRole = snapShot.currentActiveRole;
-//   game.nightTimeRemaining = snapShot.nightTimeRemaining;
-//   game.timer = snapShot.timer.timerSeconds;
-//   game.timerInterval = setInterval(() => {
-//     const elapsed = Math.floor((Date.now() - game.startedAt!) / 1000);
-//     game.currentTimerSec = snapShot.timer.currentTimerSec - elapsed;
-//     if (game.currentTimerSec <= 0) {
-//       game.currentTimerSec = 0;
-//       clearInterval(game.timerInterval);
-//     }
-//
-//   }, 1000);
-// }
 
-
-
-export function BuildGameSnapshot(game: Game, requestingPlayerId?: PlayerId): UpdateGamePayload {
+export function BuildGameSnapshot(
+  game: Game,
+  requestingPlayerId?: PlayerId,
+): UpdateGamePayload {
   const isEndGame = game.phase === Phase.EndGame;
 
   return {
     code: game.code,
     phase: game.phase,
     hostId: game.host,
-    players: game.players.map(p => ({
+    players: game.players.map((p) => ({
       id: p.id,
       name: p.name,
       isReady: game.readyPlayers.get(p.id) ?? false,
       hasConfirmedRole: game.confirmedPlayerRoleReveal.includes(p.id),
-      hasVoted: game.votes.some(v => v.voter === p.id),
+      hasVoted: game.votes.some((v) => v.voter === p.id),
       isHost: p.id === game.host,
       ping: game.gamePings?.[p.id] ?? 0,
+      isConnected: game.connectedPlayers.has(p.id), //
     })),
-    groundCards: game.groundRoles.map((r, i) => ({ id: r.id, label: `Ground Card ${i + 1}` })),
+    groundCards: game.groundRoles.map((r, i) => ({
+      id: r.id,
+      label: `Ground Card ${i + 1}`,
+    })),
     roleQueue: game.roleQueueWithTimer,
     currentActiveRole: game.currentActiveRole || null,
     nightTimeRemaining: game.nightTimeRemaining,
@@ -463,16 +590,16 @@ export function BuildGameSnapshot(game: Game, requestingPlayerId?: PlayerId): Up
     isDraw: isEndGame ? game.winners === null : false,
     eliminatedPlayerId: isEndGame ? resolveEliminatedPlayer(game) : null,
     resultsVotes: isEndGame
-      ? game.prettyVotes.map(v => ({
-        voter: game.players.find(p => p.id === v.voter)?.name ?? v.voter,
+      ? game.prettyVotes.map((v) => ({
+        voter: game.players.find((p) => p.id === v.voter)?.name ?? v.voter,
         vote:
-          v.vote === 'noWerewolf'
-            ? 'No Werewolf'
-            : (game.players.find(p => p.id === v.vote)?.name ?? v.vote),
+          v.vote === "noWerewolf"
+            ? "No Werewolf"
+            : (game.players.find((p) => p.id === v.vote)?.name ?? v.vote),
       }))
       : null,
     resultsPlayerRoles: isEndGame
-      ? game.players.map(p => ({
+      ? game.players.map((p) => ({
         playerId: p.id,
         name: p.name,
         role: p.getRole().name,
@@ -486,7 +613,10 @@ export function BuildGameSnapshot(game: Game, requestingPlayerId?: PlayerId): Up
   };
 }
 
-function buildPlayerPrivateData(game: Game, playerId: PlayerId): PlayerPrivateData | null {
+function buildPlayerPrivateData(
+  game: Game,
+  playerId: PlayerId,
+): PlayerPrivateData | null {
   let player: ReturnType<typeof game.getPlayerById>;
   try {
     player = game.getPlayerById(playerId);
@@ -496,7 +626,7 @@ function buildPlayerPrivateData(game: Game, playerId: PlayerId): PlayerPrivateDa
 
   const role = player.getRole();
   const originalRole = player.getOriginalRole();
-  const voteEntry = game.votes.find(v => v.voter === playerId);
+  const voteEntry = game.votes.find((v) => v.voter === playerId);
 
   return {
     currentRole: role?.name ?? null,
@@ -507,14 +637,15 @@ function buildPlayerPrivateData(game: Game, playerId: PlayerId): PlayerPrivateDa
     hasPerformedAction: game.confirmedPlayerPerformActions.includes(playerId),
     hasVoted: !!voteEntry,
     votedForId: voteEntry?.vote ?? null,
-    lastActionResult: null // TODO : implement
+    lastActionResult: null, // TODO : implement
   };
 }
 
+// TODO(saif) : review this when we get to working on endgame
 function resolveEliminatedPlayer(game: Game): PlayerId | null {
   const tally = new Map<string, number>();
   for (const { vote } of game.prettyVotes) {
-    if (vote !== 'noWerewolf') {
+    if (vote !== "noWerewolf") {
       tally.set(vote, (tally.get(vote) ?? 0) + 1);
     }
   }

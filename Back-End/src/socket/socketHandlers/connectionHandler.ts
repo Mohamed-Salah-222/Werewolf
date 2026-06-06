@@ -1,6 +1,5 @@
-import { Phase } from "../../config/constants";
 import { voiceRooms } from "../../types/voice.types";
-import { SocketContext, transferHostIfNeeded } from "./shared";
+import { SocketContext } from "./shared";
 
 export function registerConnectionHandler(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;
@@ -8,9 +7,8 @@ export function registerConnectionHandler(ctx: SocketContext): void {
   socket.on("disconnect", () => {
     const currentGameCode = ctx.getCurrentGameCode();
     const currentPlayerId = ctx.getCurrentPlayerId();
-
     const game = currentGameCode ? manager.getGameByCode(currentGameCode) : null;
-    const player = game?.getPlayerById(currentPlayerId);
+    const player = game?.players.find((p) => p.id === currentPlayerId);
 
     console.log(`Client disconnected: ${socket.id}: ${currentPlayerId} : ${player?.name}`);
 
@@ -23,16 +21,7 @@ export function registerConnectionHandler(ctx: SocketContext): void {
           }
         }
 
-        if (game.phase === Phase.Waiting) {
-          game.players = game.players.filter((p) => p.id !== currentPlayerId);
-          game.readyPlayers.delete(currentPlayerId);
-
-          transferHostIfNeeded(game, currentPlayerId);
-
-          game.emit();
-        } else {
-          console.log(`⚠️ Player ${player.name} disconnected from active game ${currentGameCode} (phase: ${game.phase})`);
-        }
+        game.disconnectPlayer(currentPlayerId);
       }
     }
 

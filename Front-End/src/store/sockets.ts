@@ -12,29 +12,49 @@ export function socketListners(): void {
   initialized = true;
 
   socket.on("connect", () => {
-    console.log("connected");
-  });
-
-  socket.on("disconnect", () => {
-    console.log("disconnected");
+    const { gameCode, playerId, playerName } = useGameStore.getState();
+    if (gameCode && playerId && playerName) {
+      socket.emit("rejoinGame", { gameCode, playerId, playerName });
+    }
   });
 
   socket.on("updateGameSnapShot", (snapshot: any) => {
     const store = useGameStore.getState();
+    const prevPlayerId = store.playerId;
+
     store.hydrate(snapshot);
 
-    if (!store.playerId && snapshot.yourPlayerId) {
+    // HACK: I have no idea how setSession works but it does
+    if (!prevPlayerId && snapshot.yourPlayerId) {
       const me = snapshot.players?.find((p: any) => p.id === snapshot.yourPlayerId);
       store.setSession({
         gameCode: snapshot.code,
         playerId: snapshot.yourPlayerId,
-        playerName: sessionStorage.getItem("werewolf_playerName") || "",
+        playerName: me?.name ?? "",
         isHost: me?.isHost ?? false,
       });
+      if (me?.name) sessionStorage.setItem("werewolf_playerName", me.name);
+      return;
+    }
+
+    if (prevPlayerId && !snapshot.yourPlayerId) {
+      store.reset();
+      window.location.href = "/";
     }
   });
+
+  // Rejoin on page load if store has cached session data
+  const { gameCode, playerId, playerName } = useGameStore.getState();
+  if (gameCode && playerId && playerName) {
+    socket.emit("rejoinGame", { gameCode, playerId, playerName });
+  }
 }
 
+// NOTE : all actions are sync so are just firing and forgetting
+// maybe add a debounce or a queue later, but never add callbacks
+//
+// NOTE: thiis is made this way to have the ui dumb and not care about connection implementation
+// so if we cahnge the connection implementation, we only need to change this file
 export const gameActions = {
   joinGame: (data: unknown) => socket.emit('joinGame', data),
 

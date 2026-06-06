@@ -155,7 +155,6 @@ function HomePage() {
     setError("");
     try {
       const code = gameCode.trim().toLowerCase();
-      console.log("joining game", code);
       const name = playerName.trim();
       gameActions.joinGame({ gameCode: code, playerName: name });
       setShowJoinModal(false);

@@ -618,6 +618,27 @@
   }
 }
 
+.wr-host-transfer-banner {
+  width: 100%;
+  padding: 14px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  background-color: rgba(201, 168, 76, 0.25);
+  color: #f0d060;
+  border: 1px solid #c9a84c;
+  border-radius: 4px;
+  text-align: center;
+  font-family: var(--font-display);
+  animation: pulse-glow 2s ease-in-out infinite;
+  box-sizing: border-box;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(201, 168, 76, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(201, 168, 76, 0.6); }
+}
+
 /* ===== SETTINGS MODAL ===== */
 .wr-settings-overlay {
   position: fixed;

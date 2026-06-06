@@ -40,6 +40,7 @@ export interface UpdateGamePayload {
     hasVoted: boolean
     isHost: boolean
     ping: number
+    isConnected: boolean
   }>
   groundCards: Array<{ id: string; label: string }>
   roleQueue: Array<{ roleName: string; seconds: number }>
