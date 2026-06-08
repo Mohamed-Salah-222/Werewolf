@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -14,7 +14,7 @@ export const createMinionAction = (): MinionAction => ({
 export class Minion implements Role {
   public id: string;
   public name: string = "Minion";
-  public team: Team = Team.Villains;
+  public team: Team = Team.Villain;
   public description: string = "Sees who the Werewolves are. Wins if voted out and Werewolves win";
 
   constructor() {

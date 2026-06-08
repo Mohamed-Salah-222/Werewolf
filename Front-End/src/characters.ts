@@ -27,7 +27,7 @@ import oracle2d from "./assets/oracle_2d.webp";
 export interface CharacterData {
   id: string;
   name: string;
-  team: "villain" | "village" | "neutral";
+  team: Team;
   title: string;
   description: string;
   ability: string;
@@ -41,8 +41,10 @@ export const characters: CharacterData[] = [
     name: "Werewolf",
     team: "villain",
     title: "The Beast Among Us",
-    description: "A creature of the night hiding in plain sight. When darkness falls, the beast awakens and hunts with its pack.",
-    ability: "At night, Werewolves open eyes, see each other, if alone, you may peek one center card once.",
+    description:
+      "A creature of the night hiding in plain sight. When darkness falls, the beast awakens and hunts with its pack.",
+    ability:
+      "At night, Werewolves open eyes, see each other, if alone, you may peek one center card once.",
     square: werewolfSquare,
     fullBody: werewolf2d,
   },
@@ -51,8 +53,10 @@ export const characters: CharacterData[] = [
     name: "Minion",
     team: "villain",
     title: "The Shadow Servant",
-    description: "A devoted servant sworn to the wolves. He knows their faces in the dark, yet remains unseen.",
-    ability: "You know the Werewolves, but they don't know you, if you die, their team just wins instantly.",
+    description:
+      "A devoted servant sworn to the wolves. He knows their faces in the dark, yet remains unseen.",
+    ability:
+      "You know the Werewolves, but they don't know you, if you die, their team just wins instantly.",
     square: minionSquare,
     fullBody: minion2d,
   },
@@ -61,8 +65,10 @@ export const characters: CharacterData[] = [
     name: "Seer",
     team: "village",
     title: "The All-Seeing Eye",
-    description: "Gifted with visions beyond mortal sight. The Seer peers into hidden souls, seeking truth in whispers and shadows.",
-    ability: "You have two options either view one player's role or instead view two center cards.",
+    description:
+      "Gifted with visions beyond mortal sight. The Seer peers into hidden souls, seeking truth in whispers and shadows.",
+    ability:
+      "You have two options either view one player's role or instead view two center cards.",
     square: seerSquare,
     fullBody: seer2d,
   },
@@ -71,8 +77,10 @@ export const characters: CharacterData[] = [
     name: "Robber",
     team: "village",
     title: "The Night Thief",
-    description: "A sly thief who steals more than gold. In the silence of night, he trades identities and wakes unsure of the face he now wears.",
-    ability: "Steal a role from another player then look at it, you become that role for the rest of play.",
+    description:
+      "A sly thief who steals more than gold. In the silence of night, he trades identities and wakes unsure of the face he now wears.",
+    ability:
+      "Steal a role from another player then look at it, you become that role for the rest of play.",
     square: robberSquare,
     fullBody: robber2d,
   },
@@ -81,8 +89,10 @@ export const characters: CharacterData[] = [
     name: "Troublemaker",
     team: "village",
     title: "The Chaos Weaver",
-    description: "She thrives in confusion and delight. With careless hands she twists fate, swapping destinies while laughter echoes in the dark.",
-    ability: "Swap two other players' roles at night without looking, their roles change, they won't know.",
+    description:
+      "She thrives in confusion and delight. With careless hands she twists fate, swapping destinies while laughter echoes in the dark.",
+    ability:
+      "Swap two other players' roles at night without looking, their roles change, they won't know.",
     square: troublemakerSquare,
     fullBody: troublemaker2d,
   },
@@ -91,8 +101,10 @@ export const characters: CharacterData[] = [
     name: "Mason",
     team: "village",
     title: "The Sworn Brother",
-    description: "Bound by oath and silent trust, Masons recognize their own. In a village filled with lies, their shared loyalty never breaks.",
-    ability: "Wake with the other Mason and recognize each other the mason bond can never break",
+    description:
+      "Bound by oath and silent trust, Masons recognize their own. In a village filled with lies, their shared loyalty never breaks.",
+    ability:
+      "Wake with the other Mason and recognize each other the mason bond can never break",
     square: masonSquare,
     fullBody: mason2d,
   },
@@ -101,8 +113,10 @@ export const characters: CharacterData[] = [
     name: "Drunk",
     team: "village",
     title: "The Lost Soul",
-    description: "Lost in haze and heavy drink, the Drunk stumbles through fate. By morning, the role once held may be gone without notice.",
-    ability: "At night, swap your role with a random ground card and do not look",
+    description:
+      "Lost in haze and heavy drink, the Drunk stumbles through fate. By morning, the role once held may be gone without notice.",
+    ability:
+      "At night, swap your role with a random ground card and do not look",
     square: drunkSquare,
     fullBody: drunk2d,
   },
@@ -111,8 +125,10 @@ export const characters: CharacterData[] = [
     name: "Insomniac",
     team: "village",
     title: "The Sleepless Watcher",
-    description: "Sleep never comes to this soul. While others scheme in darkness, the Insomniac waits to see what remains by dawn.",
-    ability: "Wake last and check your current role card to see whether it changed during the night.",
+    description:
+      "Sleep never comes to this soul. While others scheme in darkness, the Insomniac waits to see what remains by dawn.",
+    ability:
+      "Wake last and check your current role card to see whether it changed during the night.",
     square: insomniacSquare,
     fullBody: insomniac2d,
   },
@@ -121,8 +137,10 @@ export const characters: CharacterData[] = [
     name: "Clone",
     team: "village",
     title: "The Mimic",
-    description: "A blank reflection seeking identity. The Clone mirrors another's fate, becoming what it sees and living that borrowed truth.",
-    ability: "At night, choose a player and copy their role, you become that role and do its night action.",
+    description:
+      "A blank reflection seeking identity. The Clone mirrors another's fate, becoming what it sees and living that borrowed truth.",
+    ability:
+      "At night, choose a player and copy their role, you become that role and do its night action.",
     square: cloneSquare,
     fullBody: clone2d,
   },
@@ -131,8 +149,10 @@ export const characters: CharacterData[] = [
     name: "Joker",
     team: "neutral",
     title: "The Wild Card",
-    description: "Madness wrapped in a grin. The Joker thrives on chaos, claiming victory only through chosen defeat.",
-    ability: "You win if the village votes to eliminate you, act suspicious, but never admit your goal",
+    description:
+      "Madness wrapped in a grin. The Joker thrives on chaos, claiming victory only through chosen defeat.",
+    ability:
+      "You win if the village votes to eliminate you, act suspicious, but never admit your goal",
     square: jokerSquare,
     fullBody: joker2d,
   },
@@ -141,8 +161,10 @@ export const characters: CharacterData[] = [
     name: "Warlock",
     team: "village",
     title: "The Hex Caster",
-    description: "A master of dark enchantments who twists fate from the shadows. With a flick of his wrist, he curses another's identity into the unknown.",
-    ability: "Choose a playerbtheir role is swapped with a random ground card. You don't see what they become.",
+    description:
+      "A master of dark enchantments who twists fate from the shadows. With a flick of his wrist, he curses another's identity into the unknown.",
+    ability:
+      "Choose a playerbtheir role is swapped with a random ground card. You don't see what they become.",
     square: warlockSquare,
     fullBody: warlock2d,
   },
@@ -151,8 +173,10 @@ export const characters: CharacterData[] = [
     name: "Oracle",
     team: "village",
     title: "The Whispering Seer",
-    description: "Visions come unbidden to the Oracle. Fragments of the night's secrets echo through his mind a stolen role, a hidden wolf, a broken bond.",
-    ability: "At the end of night, receive a random vision from another player's action. It could change everything.",
+    description:
+      "Visions come unbidden to the Oracle. Fragments of the night's secrets echo through his mind a stolen role, a hidden wolf, a broken bond.",
+    ability:
+      "At the end of night, receive a random vision from another player's action. It could change everything.",
     square: oracleSquare,
     fullBody: oracle2d,
   },
@@ -167,18 +191,66 @@ export interface CardStyleData {
 }
 
 export const cardStyleMap: Record<string, CardStyleData> = {
-  werewolf: { frameColor: "#4a0e0e", panelColor: "#470d0d", borderColor: "#252525" },
-  minion: { frameColor: "#4a0e0e", panelColor: "#470d0d", borderColor: "#252525" },
-  seer: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  robber: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  troublemaker: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  mason: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  drunk: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  insomniac: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  clone: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  joker: { frameColor: "#0e2a1a", panelColor: "#0a2015", borderColor: "#1a3a2a" },
-  warlock: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
-  oracle: { frameColor: "#2a2a2a", panelColor: "#1e1e1e", borderColor: "#3a3a3a" },
+  werewolf: {
+    frameColor: "#4a0e0e",
+    panelColor: "#470d0d",
+    borderColor: "#252525",
+  },
+  minion: {
+    frameColor: "#4a0e0e",
+    panelColor: "#470d0d",
+    borderColor: "#252525",
+  },
+  seer: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  robber: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  troublemaker: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  mason: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  drunk: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  insomniac: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  clone: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  joker: {
+    frameColor: "#0e2a1a",
+    panelColor: "#0a2015",
+    borderColor: "#1a3a2a",
+  },
+  warlock: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
+  oracle: {
+    frameColor: "#2a2a2a",
+    panelColor: "#1e1e1e",
+    borderColor: "#3a3a3a",
+  },
 };
 
 /** Get full GameCard props for a role by name */
@@ -198,6 +270,7 @@ export function getGameCardData(roleName: string) {
 
 // ===== CARD IMAGES =====
 
+import { Team } from "@werewolf/shared";
 import backCard from "./assets/back_card.webp";
 import werewolfCard from "./assets/werewolf_card.webp";
 import minionCard from "./assets/minion_card.webp";
@@ -235,17 +308,37 @@ export interface CardData {
 export const backCardImage = backCard;
 
 export const allCards: CardData[] = [
-  { id: "werewolf", name: "Werewolf", image: werewolfCard, small: werewolfCardSmall },
+  {
+    id: "werewolf",
+    name: "Werewolf",
+    image: werewolfCard,
+    small: werewolfCardSmall,
+  },
   { id: "minion", name: "Minion", image: minionCard, small: minionCardSmall },
   { id: "seer", name: "Seer", image: seerCard, small: seerCardSmall },
   { id: "robber", name: "Robber", image: robberCard, small: robberCardSmall },
-  { id: "troublemaker", name: "Troublemaker", image: troublemakerCard, small: troublemakerCardSmall },
+  {
+    id: "troublemaker",
+    name: "Troublemaker",
+    image: troublemakerCard,
+    small: troublemakerCardSmall,
+  },
   { id: "mason", name: "Mason", image: masonCard, small: masonCardSmall },
   { id: "drunk", name: "Drunk", image: drunkCard, small: drunkCardSmall },
-  { id: "insomniac", name: "Insomniac", image: insomniacCard, small: insomniacCardSmall },
+  {
+    id: "insomniac",
+    name: "Insomniac",
+    image: insomniacCard,
+    small: insomniacCardSmall,
+  },
   { id: "clone", name: "Clone", image: cloneCard, small: cloneCardSmall },
   { id: "joker", name: "Joker", image: jokerCard, small: jokerCardSmall },
-  { id: "warlock", name: "Warlock", image: warlockCard, small: warlockCardSmall },
+  {
+    id: "warlock",
+    name: "Warlock",
+    image: warlockCard,
+    small: warlockCardSmall,
+  },
   { id: "oracle", name: "Oracle", image: oracleCard, small: oracleCardSmall },
 ];
 

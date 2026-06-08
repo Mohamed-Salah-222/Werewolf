@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Team } from "@werewolf/shared";
 import "./HowToPlay.css";
 
 interface Props {
@@ -44,14 +45,14 @@ const CHARACTER_INFO = [
 ];
 
 function teamColor(team: string): string {
-  if (team === "villain") return "var(--color-villain)";
-  if (team === "neutral") return "var(--color-neutral)";
+  if (team === Team.Villain) return "var(--color-villain)";
+  if (team === Team.Neutral) return "var(--color-neutral)";
   return "var(--color-village)";
 }
 
 function teamLabel(team: string): string {
-  if (team === "villain") return "WEREWOLF";
-  if (team === "neutral") return "NEUTRAL";
+  if (team === Team.Villain) return "WEREWOLF";
+  if (team === Team.Neutral) return "NEUTRAL";
   return "VILLAGE";
 }
 

@@ -1,4 +1,5 @@
 import {
+  SOCKET_EVENTS,
   Phase,
   Team,
   TimerOption,
@@ -6,27 +7,24 @@ import {
   NUMBER_OF_GROUND_ROLES,
   MIN_PLAYERS,
   MAX_PLAYERS,
-} from "../../config/constants";
-import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  PlayerSocket,
-} from "../../types/socket.types";
-import { Role } from "../roles";
-import { Player } from "../Player";
-import { Logger } from "../../utils/Logger";
-import {
+} from "@werewolf/shared";
+import type {
   PlayerId,
   Settings,
   Vote,
   UpdateGamePayload,
   PlayerPrivateData,
-} from "../../types/game.types";
+  ClientToServerEvents,
+  ServerToClientEvents,
+} from "@werewolf/shared";
+import { PlayerSocket } from "../../types/socket.types";
+import { Role } from "../roles";
+import { Player } from "../Player";
+import { Logger } from "../../utils/Logger";
 import { NightPhaseManager } from "./NightPhaseManager";
 import { VoteResolver } from "./VoteResolver";
 import { RoleAssigner } from "./RoleAssigner";
 import { Server, Socket } from "socket.io";
-
 
 // NOTE: always emit at the end of any method if you change game state
 export class Game {
@@ -56,6 +54,7 @@ export class Game {
   currentTimerSec: number;
   host: PlayerId;
   currentActiveRole: string = "";
+  currentActiveRoleStartedAt: number | null = null;
   endedAt: number | null = null;
   lastActivityAt: number = Date.now();
   actionHistory: Array<{
@@ -66,11 +65,13 @@ export class Game {
   gamePings: Record<string, number> = {};
   gamePingTimestamps: Record<string, number> = {};
   io: Server<ClientToServerEvents, ServerToClientEvents>;
-  public nightTimeRemaining: number = 0;
+  nightTimeRemaining: number = 0;
   connectedPlayers: Set<PlayerId> = new Set();
   hostTransferTimeout: NodeJS.Timeout | null = null;
-  readonly disconnectGraceSeconds = 10;
+  roleRevealTimeout: NodeJS.Timeout | null = null;
+  roleRevealEndsAt: number | null = null;
 
+  readonly disconnectGraceSeconds = 10;
   private availableRoles: Role[] = [];
   private nightManager: NightPhaseManager;
   private voteResolver: VoteResolver;
@@ -162,18 +163,33 @@ export class Game {
     this.players = this.players.filter((p) => p.id !== kickedPlayerId);
     this.readyPlayers.delete(kickedPlayerId);
 
+
+    // huh again ? how can a host be even kicked ?
     if (this.host === kickedPlayerId && this.players.length > 0) {
-      this.host = this.players[0].id;
-      console.log(`Host transferred to ${this.players[0].name} (${this.host})`);
+      if (this.hostTransferTimeout) {
+        clearTimeout(this.hostTransferTimeout);
+        this.hostTransferTimeout = null;
+      }
+      let newHost = this.players.find((p) =>
+        this.connectedPlayers.has(p.id),
+      );
+      newHost = newHost ?? this.players[0];
+      this.host = newHost.id;
+      console.log(`Host transferred to ${newHost.name} (${this.host})`);
     }
 
+    this.emit();
+
+    // NOTE : we always need to emit before we disconnect
     this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
-      if ((socket as typeof socket & { playerId: PlayerId }).playerId === kickedPlayerId) {
+      if (socket.playerId === kickedPlayerId) {
+        socket.emit(SOCKET_EVENTS.SERVER.KICKED, {
+          message: "You have been removed from the game",
+        });
         socket.disconnect(true);
       }
     });
 
-    this.emit();
     return player;
   }
 
@@ -201,8 +217,14 @@ export class Game {
     this.logger.info(`Player ${player.name} disconnected`);
 
     if (this.host === playerId && this.connectedPlayers.size > 0) {
-
+      if (this.hostTransferTimeout) {
+        clearTimeout(this.hostTransferTimeout);
+      }
       this.hostTransferTimeout = setTimeout(() => {
+        if (this.host !== playerId) {
+          this.hostTransferTimeout = null;
+          return;
+        }
         const firstConnected = this.players.find((p) =>
           this.connectedPlayers.has(p.id),
         );
@@ -216,7 +238,7 @@ export class Game {
           this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
             if (socket.playerId === firstConnected.id) {
               const oldName = oldHost?.name ?? "The previous host";
-              socket.emit("hostTransferred", {
+              socket.emit(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, {
                 message: `${oldName} disconnected. You are now the host!`,
               });
             }
@@ -283,6 +305,10 @@ export class Game {
     );
 
     this.phase = Phase.Role;
+    this.roleRevealEndsAt = Date.now() + 30000;
+    this.roleRevealTimeout = setTimeout(() => {
+      this.startNight();
+    }, 30000);
     this.emit();
   }
 
@@ -294,6 +320,14 @@ export class Game {
 
     this.confirmedPlayerRoleReveal.push(playerId);
 
+    if (this.confirmedPlayerRoleReveal.length === this.players.length) {
+      if (this.roleRevealTimeout) {
+        clearTimeout(this.roleRevealTimeout);
+        this.roleRevealTimeout = null;
+      }
+      this.startNight();
+    }
+
     this.emit();
   }
 
@@ -303,7 +337,6 @@ export class Game {
     this.phase = Phase.Night;
 
     this.nightManager.startNight();
-    this.emit();
   }
 
   playerPerformAction(playerId: PlayerId): void {
@@ -354,9 +387,10 @@ export class Game {
     this.phase = Phase.Discussion;
     this.startedAt = Date.now();
     const totalSeconds = this.timer * 60;
+    // const totalSeconds = 10; // for testing 
     this.currentTimerSec = totalSeconds;
 
-    this.emit();
+    this.emit()
 
     this.timerInterval = setInterval(() => {
       const elapsed = Math.floor((Date.now() - this.startedAt!) / 1000);
@@ -365,7 +399,6 @@ export class Game {
       if (this.currentTimerSec <= 0) {
         this.currentTimerSec = 0;
         clearInterval(this.timerInterval);
-        this.emit();
         this.startVoting();
       }
     }, 1000);
@@ -390,7 +423,6 @@ export class Game {
       clearInterval(this.timerInterval);
     }
     this.logger.log("Game state is now voting");
-    // this.emit("votingStarted");
     this.emit();
   }
 
@@ -417,9 +449,7 @@ export class Game {
     if (hostId !== this.host) {
       throw new Error("Only the host can force votes");
     }
-    if (this.phase !== Phase.Vote) {
-      throw new Error("Can only force votes during voting phase");
-    }
+    if (this.phase !== Phase.Vote) return;
 
     const playersWhoVoted = new Set(this.votes.map((v) => v.voter));
     const playersWhoHaventVoted = this.players.filter(
@@ -437,7 +467,6 @@ export class Game {
       this.logger.log(
         `Force vote: ${player.name} randomly voted for ${randomVote === "noWerewolf" ? "No Werewolf" : this.getPlayerById(randomVote).name}`,
       );
-      this.emit();
     }
 
     this.finish();
@@ -475,6 +504,12 @@ export class Game {
   restart(): void {
     for (const player of this.players) {
       player.reset();
+      player.lastActionResult = null;
+      // HUH ? where does this come from ? wtf ? 
+      // // NOTE : look into this
+      (player as any)._wasClone = undefined;
+      (player as any)._cloneAwaitingSecondAction = undefined;
+      (player as any)._cloneFirstResult = undefined;
     }
 
     this.startedAt = null;
@@ -492,6 +527,11 @@ export class Game {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
+    if (this.roleRevealTimeout) {
+      clearTimeout(this.roleRevealTimeout);
+      this.roleRevealTimeout = null;
+    }
+    this.roleRevealEndsAt = null;
     this.confirmedPlayerRoleReveal = [];
     this.confirmedPlayerPerformActions = [];
     this.currentTimerSec = 0;
@@ -513,6 +553,7 @@ export class Game {
       `available roles: ${this.availableRoles.map((r) => r.name)}`,
     );
     this.logger.info("Game restarted");
+    this.emit();
   }
 
   destroy(): void {
@@ -547,12 +588,14 @@ export class Game {
   emit() {
     this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
       if (socket.rooms.has(this.code)) {
-        socket.emit("updateGameSnapShot", BuildGameSnapshot(this, socket.playerId));
+        socket.emit(
+          SOCKET_EVENTS.SERVER.UPDATE_GAME_SNAPSHOT,
+          BuildGameSnapshot(this, socket.playerId),
+        );
       }
-    })
+    });
   }
 }
-
 
 export function BuildGameSnapshot(
   game: Game,
@@ -580,9 +623,10 @@ export function BuildGameSnapshot(
     })),
     roleQueue: game.roleQueueWithTimer,
     currentActiveRole: game.currentActiveRole || null,
+    currentActiveRoleStartedAt: game.currentActiveRoleStartedAt,
     nightTimeRemaining: game.nightTimeRemaining,
     timer: {
-      timerSeconds: game.timer ?? null,
+      timerSeconds: game.timer != null ? game.timer * 60 : null,
       currentTimerSec: game.currentTimerSec ?? null,
       startedAt: game.startedAt ?? null,
     },
@@ -610,6 +654,7 @@ export function BuildGameSnapshot(
       ? buildPlayerPrivateData(game, requestingPlayerId)
       : null,
     yourPlayerId: requestingPlayerId ?? null,
+    roleRevealEndsAt: game.roleRevealEndsAt,
   };
 }
 
@@ -637,7 +682,7 @@ function buildPlayerPrivateData(
     hasPerformedAction: game.confirmedPlayerPerformActions.includes(playerId),
     hasVoted: !!voteEntry,
     votedForId: voteEntry?.vote ?? null,
-    lastActionResult: null, // TODO : implement
+    lastActionResult: player.lastActionResult ?? null,
   };
 }
 

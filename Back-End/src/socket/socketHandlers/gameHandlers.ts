@@ -1,6 +1,6 @@
-import { ERROR_MESSAGES, VALIDATION } from "../../config/constants";
+import { SOCKET_EVENTS, ERROR_MESSAGES, VALIDATION } from "@werewolf/shared";
+import type { JoinGameData } from "@werewolf/shared";
 import { SocketContext, safeHandler, getGameOrThrow, assertHost } from "./shared";
-import { JoinGameData } from "../../types/socket.types";
 import { Game } from "../../entities/game/Game";
 
 // TODO : move to game.ts
@@ -17,7 +17,7 @@ function pickRandomName(game: Game): string {
 export function registerGameHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;
 
-  socket.on("joinGame", safeHandler("joinGame", socket, (data: JoinGameData) => {
+  socket.on(SOCKET_EVENTS.CLIENT.JOIN_GAME, safeHandler("joinGame", socket, (data: JoinGameData) => {
     const { gameCode } = data;
     let { playerName } = data;
     console.log("Joining game", gameCode, playerName);
@@ -59,19 +59,19 @@ export function registerGameHandlers(ctx: SocketContext): void {
     console.log(`✅ Player ${resolvedName} joined game ${gameCode}`);
   }));
 
-  socket.on("startGame", safeHandler("startGame", socket, ({ gameCode, playerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.START_GAME, safeHandler("startGame", socket, ({ gameCode, playerId }) => {
     const game = getGameOrThrow(manager, gameCode);
     assertHost(playerId, game);
     game.start();
     console.log(`Game ${gameCode} started`);
   }));
 
-  socket.on("confirmRoleReveal", safeHandler("confirmRoleReveal", socket, ({ gameCode, playerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.CONFIRM_ROLE_REVEAL, safeHandler("confirmRoleReveal", socket, ({ gameCode, playerId }) => {
     const game = getGameOrThrow(manager, gameCode);
     game.confirmPlayerRoleReveal(playerId);
   }));
 
-  socket.on("performAction", safeHandler("performAction", socket, ({ gameCode, playerId, action }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, safeHandler("performAction", socket, ({ gameCode, playerId, action }) => {
     const game = getGameOrThrow(manager, gameCode);
 
     const player = game.getPlayerById(playerId);
@@ -112,24 +112,25 @@ export function registerGameHandlers(ctx: SocketContext): void {
     game.playerPerformAction(playerId);
   }));
 
-  socket.on("vote", safeHandler("vote", socket, ({ gameCode, playerId, votedPlayerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOTE, safeHandler("vote", socket, ({ gameCode, playerId, votedPlayerId }) => {
     const game = getGameOrThrow(manager, gameCode);
     game.playerVote(playerId, votedPlayerId);
     console.log(`Player ${playerId} voted in game ${gameCode}`);
   }));
 
-  socket.on("forceVotes", safeHandler("forceVotes", socket, (data: { gameCode: string; playerId: string }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.FORCE_VOTES, safeHandler("forceVotes", socket, (data: { gameCode: string; playerId: string }) => {
     const game = getGameOrThrow(manager, data.gameCode);
     game.forceVotes(data.playerId);
   }));
 
-  socket.on("restartGame", safeHandler("restartGame", socket, ({ gameCode }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.RESTART_GAME, safeHandler("restartGame", socket, ({ gameCode }: { gameCode: string }) => {
     const game = getGameOrThrow(manager, gameCode);
+    assertHost((socket as any).playerId, game);
     game.restart();
     console.log(`Game ${gameCode} restarted`);
   }));
 
-  socket.on("skipToVote", safeHandler("skipToVote", socket, (data: { gameCode: string; playerId: string }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.SKIP_TO_VOTE, safeHandler("skipToVote", socket, (data: { gameCode: string; playerId: string }) => {
     const game = getGameOrThrow(manager, data.gameCode);
     game.skipToVote(data.playerId);
   }));

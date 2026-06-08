@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -14,7 +14,7 @@ export const createInsomniacAction = (): InsomniacAction => ({
 export class Insomniac implements Role {
   public id: string;
   public name: string = "Insomniac";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Wakes up at the end of the night to check if their role has changed";
 
   constructor() {

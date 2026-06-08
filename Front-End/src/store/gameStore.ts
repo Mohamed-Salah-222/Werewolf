@@ -1,6 +1,7 @@
 // src/store/gameStore.ts
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { UpdateGamePayload } from "@werewolf/shared";
 
 export interface PlayerInfo {
   id: string;
@@ -14,7 +15,7 @@ export interface PlayerInfo {
 }
 
 export interface GameStore {
-  hydrate: (snapshot: any) => void;
+  hydrate: (snapshot: UpdateGamePayload) => void;
   // Session
   gameCode: string | null;
   playerId: string | null;
@@ -30,11 +31,15 @@ export interface GameStore {
   roleDescription: string | null;
   hasConfirmedRole: boolean;
 
+  // Role reveal
+  roleRevealEndsAt: number | null;
+
   // Night phase
   roleQueue: Array<{ roleName: string; seconds: number }>;
   groundCards: Array<{ id: string; label: string }>; hasPerformedAction: boolean;
   lastActionResult: Record<string, unknown> | null;
   initialActiveRole: string | null;
+  currentActiveRoleStartedAt: number | null;
 
   // Discussion
   timerSeconds: number | null;
@@ -85,11 +90,13 @@ const initialState = {
   roleTeam: null,
   roleDescription: null,
   hasConfirmedRole: false,
+  roleRevealEndsAt: null,
   roleQueue: [],
   groundCards: [],
   hasPerformedAction: false,
   lastActionResult: null,
   initialActiveRole: null,
+  currentActiveRoleStartedAt: null,
   timerSeconds: null,
   currentTimerSec: null,
   startedAt: null,
@@ -167,7 +174,7 @@ export const useGameStore = create<GameStore>()(
       hydrate: (snapshot) =>
         set((state) => {
           const priv = snapshot.playerPrivateData;
-          const me = snapshot.players?.find((p: any) => p.id === snapshot.yourPlayerId);
+          const me = snapshot.players?.find((p) => p.id === snapshot.yourPlayerId);
           return {
             players: snapshot.players ?? [],
             gameCode: snapshot.code,
@@ -182,12 +189,15 @@ export const useGameStore = create<GameStore>()(
 
             hasConfirmedRole: priv?.hasConfirmedRole ?? false,
 
+            roleRevealEndsAt: snapshot.roleRevealEndsAt ?? null,
+
             roleQueue: snapshot.roleQueue ?? [],
             groundCards: snapshot.groundCards ?? [],
 
             hasPerformedAction: priv?.hasPerformedAction ?? false,
             lastActionResult: priv?.lastActionResult ?? null,
             initialActiveRole: snapshot.currentActiveRole,
+            currentActiveRoleStartedAt: snapshot.currentActiveRoleStartedAt,
 
             timerSeconds: snapshot.timer?.timerSeconds ?? null,
             currentTimerSec: snapshot.timer?.currentTimerSec ?? null,

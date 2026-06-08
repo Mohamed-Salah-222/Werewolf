@@ -1,3 +1,4 @@
+import { SOCKET_EVENTS } from "@werewolf/shared";
 import { voiceRooms } from "../../types/voice.types";
 import { SocketContext } from "./shared";
 
@@ -5,17 +6,16 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   const { socket, io, manager } = ctx;
 
   // VOICE JOIN
-  socket.on("voiceJoin", ({ gameCode, playerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOICE_JOIN, ({ gameCode, playerId }) => {
     const game = manager.getGameByCode(gameCode);
     if (!game) {
-      socket.emit("error", { message: "Game not found" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Game not found" });
       return;
     }
 
-    // Find player in game
     const player = game.getPlayerById(playerId);
     if (!player) {
-      socket.emit("error", { message: "Player not found in this game" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Player not found in this game" });
       return;
     }
 
@@ -26,19 +26,16 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
       voiceRooms.set(gameCode, room);
     }
 
-    // Check max players (14)
     if (room.players.size >= 14) {
-      socket.emit("error", { message: "Voice chat is full (max 14 players)" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Voice chat is full (max 14 players)" });
       return;
     }
 
-    // store mapping
     room.players.set(playerId, socket.id);
 
     socket.join(`voice:${gameCode}`);
 
-    // notify others to create peer
-    socket.to(`voice:${gameCode}`).emit("voiceNewPeer", {
+    socket.to(`voice:${gameCode}`).emit(SOCKET_EVENTS.SERVER.VOICE_NEW_PEER, {
       playerId,
     });
 
@@ -46,12 +43,12 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   });
 
   // VOICE LEAVE
-  socket.on("voiceLeave", ({ playerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOICE_LEAVE, ({ playerId }) => {
     for (const [gameCode, room] of voiceRooms) {
       if (room.players.has(playerId)) {
         room.players.delete(playerId);
 
-        io.to(`voice:${gameCode}`).emit("voiceLeave", { playerId });
+        io.to(`voice:${gameCode}`).emit(SOCKET_EVENTS.SERVER.VOICE_LEAVE, { playerId });
 
         console.log(`🔇 ${playerId} left voice ${gameCode}. Total voice participants: ${room.players.size}`);
 
@@ -66,7 +63,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   });
 
   // OFFER RELAY
-  socket.on("voiceOffer", ({ to, offer }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOICE_OFFER, ({ to, offer }) => {
     let senderPlayerId: string | null = null;
     let gameCode: string | null = null;
 
@@ -85,7 +82,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
       const targetSocketId = room.players.get(to);
 
       if (targetSocketId) {
-        io.to(targetSocketId).emit("voiceOffer", {
+        io.to(targetSocketId).emit(SOCKET_EVENTS.SERVER.VOICE_OFFER, {
           from: to === to ? senderPlayerId : to,
           offer,
         });
@@ -95,7 +92,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   });
 
   // ANSWER RELAY
-  socket.on("voiceAnswer", ({ to, answer }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOICE_ANSWER, ({ to, answer }) => {
     let senderPlayerId: string | null = null;
 
     for (const [, room] of voiceRooms) {
@@ -112,7 +109,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
       const targetSocketId = room.players.get(to);
 
       if (targetSocketId) {
-        io.to(targetSocketId).emit("voiceAnswer", {
+        io.to(targetSocketId).emit(SOCKET_EVENTS.SERVER.VOICE_ANSWER, {
           from: senderPlayerId,
           answer,
         });
@@ -122,7 +119,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   });
 
   // ICE RELAY
-  socket.on("voiceIce", ({ to, candidate }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.VOICE_ICE, ({ to, candidate }) => {
     let senderPlayerId: string | null = null;
 
     for (const [, room] of voiceRooms) {
@@ -139,7 +136,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
       const targetSocketId = room.players.get(to);
 
       if (targetSocketId) {
-        io.to(targetSocketId).emit("voiceIce", {
+        io.to(targetSocketId).emit(SOCKET_EVENTS.SERVER.VOICE_ICE, {
           from: senderPlayerId,
           candidate,
         });

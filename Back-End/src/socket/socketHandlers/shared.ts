@@ -1,8 +1,8 @@
 import { Server, Socket } from "socket.io";
+import { ERROR_MESSAGES } from "@werewolf/shared";
+import type { ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
 import { Manager } from "../../entities/Manager";
-import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
 import { Game } from "../../entities/game";
-import { ERROR_MESSAGES, Phase } from "../../config/constants";
 
 export type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 export type AppServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -44,8 +44,18 @@ export function assertHost(playerId: string, game: Game): void {
 }
 
 export function transferHostIfNeeded(game: Game, removedPlayerId: string): void {
-  if (game.host === removedPlayerId && game.players.length > 0) {
-    game.host = game.players[0].id;
-    console.log(`👑 Host transferred to ${game.players[0].name} (${game.host})`);
+  if (game.host !== removedPlayerId) return;
+  if (game.players.length === 0) return;
+
+  if (game.hostTransferTimeout) {
+    clearTimeout(game.hostTransferTimeout);
+    game.hostTransferTimeout = null;
   }
+
+  const firstConnected = game.players.find((p) =>
+    game.connectedPlayers.has(p.id),
+  );
+  const newHost = firstConnected ?? game.players[0];
+  game.host = newHost.id;
+  console.log(`👑 Host transferred to ${newHost.name} (${game.host})`);
 }

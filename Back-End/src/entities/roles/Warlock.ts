@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -16,7 +16,7 @@ export const createWarlockAction = (targetPlayer: { id: string }): WarlockAction
 export class Warlock implements Role {
   public id: string;
   public name: string = "Warlock";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Swaps a player's role with a random ground card without looking";
 
   constructor() {

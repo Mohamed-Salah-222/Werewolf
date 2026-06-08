@@ -47,7 +47,7 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
 
-    if (actionResult.masons.length > 0) {
+    if (actionResult.masons?.length > 0) {
       const masonIds = actionResult.masons.map((m) => m.id);
       const totalFlipTime = 500 + (masonIds.length - 1) * 400;
 

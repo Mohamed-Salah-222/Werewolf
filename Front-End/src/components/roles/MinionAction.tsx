@@ -46,7 +46,7 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
 
-    if (actionResult.werewolves.length > 0) {
+    if (actionResult.werewolves?.length > 0) {
       const wwIds = actionResult.werewolves.map((w) => w.id);
       const totalFlipTime = 500 + (wwIds.length - 1) * 400;
 

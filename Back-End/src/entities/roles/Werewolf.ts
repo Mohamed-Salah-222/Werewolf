@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -14,7 +14,7 @@ export const createWerewolfAction = (): WerewolfAction => ({
 export class Werewolf implements Role {
   public id: string;
   public name: string = "Werewolf";
-  public team: Team = Team.Villains;
+  public team: Team = Team.Villain;
   public description: string = "Sees other Werewolves. If alone, sees one ground card";
 
   constructor() {

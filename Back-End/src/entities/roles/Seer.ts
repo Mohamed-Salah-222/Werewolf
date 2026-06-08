@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -36,7 +36,7 @@ export const createSeerAction = {
 export class Seer implements Role {
   public id: string;
   public name: string = "Seer";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Looks at one player's role OR two ground cards";
 
   constructor() {

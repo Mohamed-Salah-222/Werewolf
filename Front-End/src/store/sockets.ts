@@ -1,7 +1,7 @@
+import { SOCKET_EVENTS } from "@werewolf/shared";
+import type { UpdateGamePayload, JoinGameData, RejoinGameData } from "@werewolf/shared";
 import socket from "../socket";
 import { useGameStore } from "./gameStore";
-
-type PlayerId = string;
 
 let initialized = false;
 
@@ -14,19 +14,18 @@ export function socketListners(): void {
   socket.on("connect", () => {
     const { gameCode, playerId, playerName } = useGameStore.getState();
     if (gameCode && playerId && playerName) {
-      socket.emit("rejoinGame", { gameCode, playerId, playerName });
+      socket.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, { gameCode, playerId, playerName });
     }
   });
 
-  socket.on("updateGameSnapShot", (snapshot: any) => {
+  socket.on(SOCKET_EVENTS.SERVER.UPDATE_GAME_SNAPSHOT, (snapshot: UpdateGamePayload) => {
     const store = useGameStore.getState();
     const prevPlayerId = store.playerId;
 
     store.hydrate(snapshot);
 
-    // HACK: I have no idea how setSession works but it does
     if (!prevPlayerId && snapshot.yourPlayerId) {
-      const me = snapshot.players?.find((p: any) => p.id === snapshot.yourPlayerId);
+      const me = snapshot.players?.find((p) => p.id === snapshot.yourPlayerId);
       store.setSession({
         gameCode: snapshot.code,
         playerId: snapshot.yourPlayerId,
@@ -43,78 +42,77 @@ export function socketListners(): void {
     }
   });
 
-  // Rejoin on page load if store has cached session data
+  socket.on(SOCKET_EVENTS.SERVER.KICKED, () => {
+    const store = useGameStore.getState();
+    store.reset();
+    window.location.href = "/";
+  });
+
   const { gameCode, playerId, playerName } = useGameStore.getState();
   if (gameCode && playerId && playerName) {
-    socket.emit("rejoinGame", { gameCode, playerId, playerName });
+    socket.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, { gameCode, playerId, playerName });
   }
 }
 
-// NOTE : all actions are sync so are just firing and forgetting
-// maybe add a debounce or a queue later, but never add callbacks
-//
-// NOTE: thiis is made this way to have the ui dumb and not care about connection implementation
-// so if we cahnge the connection implementation, we only need to change this file
 export const gameActions = {
-  joinGame: (data: unknown) => socket.emit('joinGame', data),
+  joinGame: (data: JoinGameData) => socket.emit(SOCKET_EVENTS.CLIENT.JOIN_GAME, data),
 
-  rejoinGame: (data: unknown) => socket.emit('rejoinGame', data),
+  rejoinGame: (data: RejoinGameData) => socket.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, data),
 
-  leaveGame: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('leaveGame', data),
+  leaveGame: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.LEAVE_GAME, data),
 
-  playerReady: (data: { gameCode: string; playerId: PlayerId; ready: boolean }) =>
-    socket.emit('playerReady', data),
+  playerReady: (data: { gameCode: string; playerId: string; ready: boolean }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.PLAYER_READY, data),
 
-  kickPlayer: (data: { gameCode: string; hostId: PlayerId; kickedPlayerId: PlayerId }) =>
-    socket.emit('kickPlayer', data),
+  kickPlayer: (data: { gameCode: string; hostId: string; kickedPlayerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.KICK_PLAYER, data),
 
   changeName: (data: { gameCode: string; playerId: string; newName: string }) =>
-    socket.emit('changeName', data),
+    socket.emit(SOCKET_EVENTS.CLIENT.CHANGE_NAME, data),
 
-  settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: unknown }) =>
-    socket.emit('settingsUpdate', data),
+  settingsUpdate: (data: { gameCode: string; playerId: string; settings: unknown }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.SETTINGS_UPDATE, data),
 
-  startGame: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('startGame', data),
+  startGame: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.START_GAME, data),
 
-  confirmRoleReveal: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('confirmRoleReveal', data),
+  confirmRoleReveal: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.CONFIRM_ROLE_REVEAL, data),
 
-  performAction: (data: { gameCode: string; playerId: PlayerId; action: unknown }) =>
-    socket.emit('performAction', data),
+  performAction: (data: { gameCode: string; playerId: string; action: unknown }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, data),
 
-  vote: (data: { gameCode: string; playerId: PlayerId; votedPlayerId: PlayerId }) =>
-    socket.emit('vote', data),
+  vote: (data: { gameCode: string; playerId: string; votedPlayerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOTE, data),
 
-  skipToVote: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('skipToVote', data),
+  skipToVote: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.SKIP_TO_VOTE, data),
 
   forceVotes: (data: { gameCode: string; playerId: string }) =>
-    socket.emit('forceVotes', data),
+    socket.emit(SOCKET_EVENTS.CLIENT.FORCE_VOTES, data),
 
-  restartGame: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('restartGame', data),
+  restartGame: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.RESTART_GAME, data),
 
   pingMeasure: (data: { gameCode: string; playerId: string }) =>
-    socket.emit('pingMeasure', data),
+    socket.emit(SOCKET_EVENTS.CLIENT.PING_MEASURE, data),
 
   reportPing: (data: { gameCode: string; playerId: string; ping: number }) =>
-    socket.emit('reportPing', data),
+    socket.emit(SOCKET_EVENTS.CLIENT.REPORT_PING, data),
 
-  voiceJoin: (data: { gameCode: string; playerId: PlayerId }) =>
-    socket.emit('voiceJoin', data),
+  voiceJoin: (data: { gameCode: string; playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_JOIN, data),
 
-  voiceOffer: (data: { to: PlayerId; offer: unknown }) =>
-    socket.emit('voiceOffer', data),
+  voiceOffer: (data: { to: string; offer: unknown }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_OFFER, data),
 
-  voiceAnswer: (data: { to: PlayerId; answer: unknown }) =>
-    socket.emit('voiceAnswer', data),
+  voiceAnswer: (data: { to: string; answer: unknown }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_ANSWER, data),
 
-  voiceIce: (data: { to: PlayerId; candidate: unknown }) =>
-    socket.emit('voiceIce', data),
+  voiceIce: (data: { to: string; candidate: unknown }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_ICE, data),
 
-  voiceLeave: (data: { playerId: PlayerId }) =>
-    socket.emit('voiceLeave', data),
+  voiceLeave: (data: { playerId: string }) =>
+    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_LEAVE, data),
 }
-

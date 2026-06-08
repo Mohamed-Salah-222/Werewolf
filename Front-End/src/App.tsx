@@ -10,11 +10,14 @@ import Vote from "./pages/Vote";
 import Results from "./pages/Results";
 import JoinPage from "./pages/JoinPage";
 import { socketListners } from "./store/sockets";
+import GlobalPhaseRouter from "./components/GlobalPhaseRouter";
 
 function AppRoutes() {
   socketListners();
   // useSocketRejoin();
   return (
+    <>
+      <GlobalPhaseRouter />
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
@@ -25,6 +28,7 @@ function AppRoutes() {
       <Route path="/results/:gameCode" element={<Results />} />
       <Route path="/join/:gameCode" element={<JoinPage />} />
     </Routes>
+    </>
   );
 }
 

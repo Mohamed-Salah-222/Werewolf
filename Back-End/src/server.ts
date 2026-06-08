@@ -5,7 +5,7 @@ import dotenv from "dotenv";
 
 import { Manager } from "./entities/Manager";
 import { initializeSocketHandlers } from "./socket/socketHandlers";
-import { ClientToServerEvents, ServerToClientEvents } from "./types/socket.types";
+import type { ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
 
 dotenv.config();
 

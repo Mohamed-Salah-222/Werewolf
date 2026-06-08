@@ -1,6 +1,6 @@
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
+import type { PlayerId, Vote } from "@werewolf/shared";
 import { Player } from "../Player";
-import { PlayerId, Vote } from "../../types/game.types";
 import { Logger } from "../../utils/Logger";
 
 export class VoteResolver {
@@ -44,17 +44,17 @@ export class VoteResolver {
         });
 
       if (allWerewolves) {
-        winners = Team.Heroes;
+        winners = Team.Village;
       } else {
         const jokerTied = tiedPlayerIds.some((id) => {
           const player = getPlayerById(id);
-          return player.getRole().team === Team.Joker;
+          return player.getRole().team === Team.Neutral;
         });
 
         if (jokerTied) {
-          winners = Team.Joker;
+          winners = Team.Neutral;
         } else {
-          winners = Team.Villains;
+          winners = Team.Villain;
         }
       }
 
@@ -67,24 +67,24 @@ export class VoteResolver {
     if (voted === "noWerewolf") {
       for (const player of players) {
         if (player.getRole().name === "Werewolf") {
-          winners = Team.Villains;
+          winners = Team.Villain;
           return { winners, isDraw: false, eliminatedPlayerId: null, winningTeam: winners };
         }
       }
-      winners = Team.Heroes;
+      winners = Team.Village;
       return { winners, isDraw: false, eliminatedPlayerId: null, winningTeam: winners };
     }
 
     const votedPlayerRole = getPlayerById(voted).getRole();
 
-    if (votedPlayerRole.team === Team.Joker) {
-      winners = Team.Joker;
+    if (votedPlayerRole.team === Team.Neutral) {
+      winners = Team.Neutral;
     } else if (votedPlayerRole.name === "Minion") {
-      winners = Team.Villains;
-    } else if (votedPlayerRole.team === Team.Villains) {
-      winners = Team.Heroes;
+      winners = Team.Villain;
+    } else if (votedPlayerRole.team === Team.Villain) {
+      winners = Team.Village;
     } else {
-      winners = Team.Villains;
+      winners = Team.Villain;
     }
 
     return { winners, isDraw: false, eliminatedPlayerId: voted, winningTeam: winners };

@@ -1,15 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SOCKET_EVENTS } from "@werewolf/shared";
 import socket from "../socket";
-import { API_URL } from "../config";
 // import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
 import { useGameStore } from "../store/gameStore";
-
-interface PlayerInfo {
-  id: string;
-  name: string;
-}
+import { gameActions } from "../store/sockets";
 
 type ViewState = "voting" | "sealing" | "waiting";
 
@@ -20,66 +16,24 @@ function Vote() {
   const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
+  const storePlayers = useGameStore((s) => s.players);
   const hasVotedStore = useGameStore((s) => s.hasVoted);
-  const setPhase = useGameStore((s) => s.setPhase);
-  const setResultsData = useGameStore((s) => s.setResultsData);
   const setHasVoted = useGameStore((s) => s.setHasVoted);
 
   const votedForId = useGameStore((s) => s.votedForId);
   const setVotedForId = useGameStore((s) => s.setVotedForId);
 
-  const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [selected, setSelected] = useState<string | null>(votedForId);
   const [viewState, setViewState] = useState<ViewState>(hasVotedStore ? "waiting" : "voting");
-  const [votedPlayers, setVotedPlayers] = useState<Set<string>>(new Set());
+  // Derived from store snapshot (stays in sync with server)
+  const votedPlayers = new Set(storePlayers.filter(p => p.hasVoted).map(p => p.id));
 
   // Force votes state
   const [showForceConfirm, setShowForceConfirm] = useState(false);
   const [forcing, setForcing] = useState(false);
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
-        const data = await res.json();
-        if (data.success && data.data.players) {
-          setPlayers(data.data.players);
-        }
-      } catch {
-        console.error("Failed to fetch players");
-      }
-    };
-    fetchPlayers();
-  }, [gameCode]);
-
-  useEffect(() => {
     if (!socket.connected) socket.connect();
-
-    socket.on("voteConfirmed", (data: { playerId: string }) => {
-      setVotedPlayers((prev) => {
-        const next = new Set(prev);
-        next.add(data.playerId);
-        return next;
-      });
-    });
-
-    socket.on("gameEnded", (data: { winners: string; isDraw: boolean; eliminatedPlayerId: string | null; votes: Array<{ voter: string; vote: string }>; playerRoles: Array<{ playerId: string; name: string; role: string }>; actionHistory?: Array<{ role: string; playerName: string; description: string }> }) => {
-      setResultsData({
-        winners: data.winners,
-        isDraw: data.isDraw,
-        eliminatedPlayerId: data.eliminatedPlayerId,
-        votes: data.votes,
-        playerRoles: data.playerRoles,
-        actionHistory: data.actionHistory || [],
-      });
-      setPhase("results");
-      navigate(`/results/${gameCode}`);
-    });
-
-    return () => {
-      socket.off("voteConfirmed");
-      socket.off("gameEnded");
-    };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
   const handleVote = () => {
@@ -88,7 +42,7 @@ function Vote() {
     setViewState("sealing");
     setHasVoted(true);
     setVotedForId(selected);
-    socket.emit("vote", { gameCode, playerId, votedPlayerId: selected });
+    socket.emit(SOCKET_EVENTS.CLIENT.VOTE, { gameCode, playerId, votedPlayerId: selected });
 
     setTimeout(() => {
       setViewState("waiting");
@@ -99,7 +53,7 @@ function Vote() {
     if (forcing) return;
     setForcing(true);
     setShowForceConfirm(false);
-    socket.emit("forceVotes", { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
+    socket.emit(SOCKET_EVENTS.CLIENT.FORCE_VOTES, { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
       if (response && !response.success) {
         console.error("Force votes failed:", response.error);
         setForcing(false);
@@ -108,8 +62,8 @@ function Vote() {
     });
   }, [forcing, gameCode, playerId]);
 
-  const others = players.filter((p) => p.id !== playerId);
-  const totalPlayers = players.length;
+  const others = storePlayers.filter((p) => p.id !== playerId);
+  const totalPlayers = storePlayers.length;
   const totalVoted = votedPlayers.size + (!votedPlayers.has(playerId) && (viewState === "waiting" || viewState === "sealing") ? 1 : 0);
 
   // Count how many haven't voted (for the force button label)
@@ -117,7 +71,7 @@ function Vote() {
 
   const getVotedName = () => {
     if (selected === "noWerewolf") return "No Werewolf";
-    return players.find((p) => p.id === selected)?.name || "Unknown";
+    return storePlayers.find((p) => p.id === selected)?.name || "Unknown";
   };
 
   return (
@@ -178,7 +132,7 @@ function Vote() {
             {/* Voter progress */}
             <p className="vote-waiting-hint">Waiting for other players</p>
             <div className="vote-progress-list">
-              {players.map((p, i) => {
+              {storePlayers.map((p, i) => {
                 const isSelf = p.id === playerId;
                 const hasVoted = votedPlayers.has(p.id) || isSelf;
 
@@ -221,6 +175,18 @@ function Vote() {
           </div>
         </div>
       )}
+
+      {/* Leave button */}
+      <button
+        className="rr-leave-btn"
+        onClick={() => {
+          gameActions.leaveGame({ gameCode: gameCode!, playerId });
+          useGameStore.getState().reset();
+          navigate("/");
+        }}
+      >
+        LEAVE
+      </button>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Crown, CircleHelp } from "lucide-react";
+import { SOCKET_EVENTS, MIN_PLAYERS, TimerOption, DEFAULT_TIMER } from "@werewolf/shared";
 import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
 import HowToPlay from "../components/HowToPlay";
@@ -10,24 +11,12 @@ import { gameActions } from "../store/sockets";
 
 // ===== CONSTANTS =====
 
-const MIN_PLAYERS = 6;
 const PING_INTERVAL = 4000;
 const SIGNAL_GREAT = 100;
 const SIGNAL_GOOD = 200;
 const SIGNAL_OKAY = 400;
 
 // ===== TYPES =====
-
-const TimerOption = {
-  Short: 4,
-  Medium: 6,
-  Long: 8,
-  VeryLong: 10,
-} as const;
-
-const DEFAULT_TIMER = TimerOption.Medium;
-
-type TimerOption = (typeof TimerOption)[keyof typeof TimerOption];
 
 interface Settings {
   timer: TimerOption;
@@ -83,9 +72,9 @@ function WaitingRoom() {
   const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
-  const phase = useGameStore((s) => s.phase);
   const players = useGameStore((s) => s.players);
   const reset = useGameStore((s) => s.reset);
+  const setIsHost = useGameStore((s) => s.setIsHost);
 
   const navigate = useNavigate();
 
@@ -135,7 +124,7 @@ function WaitingRoom() {
       const start = Date.now();
       socket.volatile.emit("pingMeasure", { gameCode, playerId }, () => {
         const latency = Date.now() - start;
-        socket.emit("reportPing", { gameCode, playerId, ping: latency });
+        socket.emit(SOCKET_EVENTS.CLIENT.REPORT_PING, { gameCode, playerId, ping: latency });
       });
     };
 
@@ -155,39 +144,18 @@ function WaitingRoom() {
       startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
     };
 
-    socket.on("error", onError);
-    return () => {
-      socket.off("error", onError);
-    };
-  }, []);
-
-  // Host transfer notification
-  useEffect(() => {
     const onTransfer = (data: { message: string }) => {
+      setIsHost(true);
       setHostTransferMsg(data.message);
     };
-    socket.on("hostTransferred", onTransfer);
+
+    socket.on(SOCKET_EVENTS.SERVER.ERROR, onError);
+    socket.on(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, onTransfer);
     return () => {
-      socket.off("hostTransferred", onTransfer);
+      socket.off(SOCKET_EVENTS.SERVER.ERROR, onError);
+      socket.off(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, onTransfer);
     };
   }, []);
-
-  // Phase watcher — navigate when game transitions
-  useEffect(() => {
-    if (phase !== "waiting" && phase !== "home" && gameCode) {
-      const routeMap: Record<string, string> = {
-        role: "role-reveal",
-        night: "night",
-        discussion: "discussion",
-        vote: "vote",
-        results: "results",
-      };
-      const route = routeMap[phase];
-      if (route) {
-        navigate(`/${route}/${gameCode}`);
-      }
-    }
-  }, [phase, gameCode, navigate]);
 
   // ===== HANDLERS =====
 

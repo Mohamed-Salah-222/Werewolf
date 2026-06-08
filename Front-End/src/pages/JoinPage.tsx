@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SOCKET_EVENTS } from "@werewolf/shared";
 import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
@@ -13,7 +14,6 @@ function JoinPage() {
   const { gameCode: urlCode } = useParams<{ gameCode: string }>();
   const navigate = useNavigate();
 
-  const phase = useGameStore((s) => s.phase);
   const playerId = useGameStore((s) => s.playerId);
   const gameCode = useGameStore((s) => s.gameCode);
 
@@ -46,7 +46,7 @@ function JoinPage() {
       setErrorMsg(data?.message || "Failed to join game.");
     };
 
-    socket.on("error", onError);
+    socket.on(SOCKET_EVENTS.SERVER.ERROR, onError);
 
     const doJoin = () => {
       if (resolvedRef.current) return;
@@ -72,27 +72,11 @@ function JoinPage() {
 
     return () => {
       resolvedRef.current = true;
-      socket.off("error", onError);
+      socket.off(SOCKET_EVENTS.SERVER.ERROR, onError);
       socket.off("connect", doJoin);
       clearTimeout(timeout);
     };
   }, [code, isValidCode]);
-
-  // ── Phase watcher — guard against stale store state ───────────────────────
-  useEffect(() => {
-    if (phase === "home" || gameCode !== code || !playerId) return;
-    resolvedRef.current = true;
-    const routeMap: Record<string, string> = {
-      waiting: "waiting",
-      role: "role-reveal",
-      night: "night",
-      discussion: "discussion",
-      vote: "vote",
-      results: "results",
-    };
-    const route = routeMap[phase];
-    if (route) navigate(`/${route}/${code}`, { replace: true });
-  }, [phase, gameCode, code, playerId, navigate]);
 
   // ===== RENDER =====
 

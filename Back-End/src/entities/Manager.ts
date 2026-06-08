@@ -1,8 +1,8 @@
 import { Server, Socket } from "socket.io";
+import { Phase } from "@werewolf/shared";
+import type { ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
 import { Game } from "./game";
-import { Phase } from "../config/constants";
 import { Logger } from "../utils/Logger";
-import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.types";
 
 export class Manager {
   public games: Game[];

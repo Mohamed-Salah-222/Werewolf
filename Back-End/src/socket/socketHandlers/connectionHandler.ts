@@ -1,3 +1,4 @@
+import { SOCKET_EVENTS } from "@werewolf/shared";
 import { voiceRooms } from "../../types/voice.types";
 import { SocketContext } from "./shared";
 
@@ -31,7 +32,7 @@ export function registerConnectionHandler(ctx: SocketContext): void {
         if (socketId === socket.id) {
           room.players.delete(playerId);
 
-          socket.to(`voice:${gameCode}`).emit("voiceLeave", { playerId });
+          socket.to(`voice:${gameCode}`).emit(SOCKET_EVENTS.SERVER.VOICE_LEAVE, { playerId });
 
           console.log(`🔇 ${playerId} left voice`);
 

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback, type ComponentType } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SOCKET_EVENTS } from "@werewolf/shared";
 
 import socket from "../socket";
-import { API_URL } from "../config";
 
 import ActionComplete from "../components/roles/ActionComplete";
 import WerewolfAction from "../components/roles/WerewolfAction";
@@ -22,6 +22,7 @@ import NightRoleProgress from "../components/roles/NightRoleProgress";
 import "./NightPhase.css";
 
 import { useGameStore } from "../store/gameStore";
+import { gameActions } from "../store/sockets";
 
 // ===== TYPES =====
 
@@ -57,14 +58,6 @@ const ROLE_COMPONENTS: Record<string, ComponentType<any>> = {
 const ROLES_WITH_PERSISTENT_ACTION = new Set(["werewolf", "minion", "seer", "mason", "robber", "troublemaker", "drunk", "joker", "clone", "insomniac", "warlock", "oracle"]);
 // ===== HELPERS =====
 
-// FIX #1: Safe interval management — always clear before setting
-function clearIntervalRef(ref: React.MutableRefObject<ReturnType<typeof setInterval> | null>) {
-  if (ref.current) {
-    clearInterval(ref.current);
-    ref.current = null;
-  }
-}
-
 // ===== COMPONENT =====
 
 function NightPhase() {
@@ -77,25 +70,14 @@ function NightPhase() {
   const hasAlreadyActed = useGameStore((s) => s.hasPerformedAction);
   const roleQueue = useGameStore((s) => s.roleQueue);
   const storeGroundCards = useGameStore((s) => s.groundCards);
+  const storePlayers = useGameStore((s) => s.players);
   const storeInitialActiveRole = useGameStore((s) => s.initialActiveRole);
+  const currentActiveRoleStartedAt = useGameStore((s) => s.currentActiveRoleStartedAt);
   const storeLastActionResult = useGameStore((s) => s.lastActionResult);
-  const setPhase = useGameStore((s) => s.setPhase);
-  const setDiscussionData = useGameStore((s) => s.setDiscussionData);
-  const setHasPerformedAction = useGameStore((s) => s.setHasPerformedAction);
-  const setLastActionResult = useGameStore((s) => s.setLastActionResult);
+  const myRole = useGameStore((s) => s.roleName) || "";
 
-  const [myRole] = useState<string>(useGameStore.getState().roleName || "");
   const [showSplash, setShowSplash] = useState(!hasAlreadyActed);
-  const [isMyTurn, setIsMyTurn] = useState(() => {
-    if (hasAlreadyActed) return false;
-    if (storeInitialActiveRole && myRole) {
-      return storeInitialActiveRole.toLowerCase() === myRole.toLowerCase();
-    }
-    return false;
-  });
-  const [actionDone, setActionDone] = useState(hasAlreadyActed);
-  const [actionResult, setActionResult] = useState<{ message?: string } | null>(hasAlreadyActed ? storeLastActionResult || { message: "Action was performed" } : null);
-  const [players, setPlayers] = useState<Array<{ id: string; name: string }>>([]);
+  const [actionResult, setActionResult] = useState<Record<string, unknown> | null>(hasAlreadyActed ? storeLastActionResult : null);
   const [groundCards, setGroundCards] = useState<Array<{ id: string; label: string }>>(storeGroundCards || []);
   const [roleTimer, setRoleTimer] = useState<number>(0);
 
@@ -109,39 +91,6 @@ function NightPhase() {
   // Queue-level tracking
   const [activeRole, setActiveRole] = useState<string>(storeInitialActiveRole || "");
   const [queueTimer, setQueueTimer] = useState<number>(0);
-  const queueTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Refs to avoid stale closures in socket callbacks
-  const pendingNavigationRef = useRef<{
-    timerSeconds: number;
-    currentTimerSec: number;
-    startedAt: number;
-  } | null>(null);
-  const actionResultRef = useRef<{ message?: string } | null>(actionResult);
-  const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const timerMaxRef = useRef<number>(0);
-  const actionDoneRef = useRef(actionDone);
-
-  // FIX #3: Guard against double navigation
-  const hasNavigatedRef = useRef(false);
-
-  // FIX #4: Buffer timer data received during splash
-  const showSplashRef = useRef(showSplash);
-  const pendingTimerRef = useRef<{ roleName: string; seconds: number; receivedAt: number } | null>(null);
-  const pendingTurnRef = useRef<boolean>(false);
-
-  // Keep refs in sync
-  useEffect(() => {
-    actionResultRef.current = actionResult;
-  }, [actionResult]);
-
-  useEffect(() => {
-    actionDoneRef.current = actionDone;
-  }, [actionDone]);
-
-  useEffect(() => {
-    showSplashRef.current = showSplash;
-  }, [showSplash]);
 
   // Splash screen timer
   useEffect(() => {
@@ -152,291 +101,51 @@ function NightPhase() {
     return () => clearTimeout(timer);
   }, [showSplash]);
 
-  // FIX #4: When splash ends, apply any buffered timer/turn data
+  // Sync active role from store
   useEffect(() => {
-    if (showSplash) return; // Still showing splash
+    if (storeInitialActiveRole) setActiveRole(storeInitialActiveRole);
+  }, [storeInitialActiveRole]);
 
-    // Apply buffered turn state
-    if (pendingTurnRef.current) {
-      setIsMyTurn(true);
-      pendingTurnRef.current = false;
-    }
+  // Derive isMyTurn from current state (no useState needed)
+  const isMyTurn = !hasAlreadyActed &&
+    storeInitialActiveRole?.toLowerCase() === myRole.toLowerCase();
 
-    // Apply buffered timer — adjust for time elapsed during splash
-    if (pendingTimerRef.current) {
-      const { seconds, receivedAt, roleName } = pendingTimerRef.current;
-      pendingTimerRef.current = null;
-
-      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDoneRef.current) {
-        const elapsedDuringSplash = Math.floor((Date.now() - receivedAt) / 1000);
-        const adjusted = Math.max(seconds - elapsedDuringSplash, 0);
-        timerMaxRef.current = seconds; // Keep original max for the fraction bar
-        setRoleTimer(adjusted);
-
-        if (adjusted > 0) {
-          clearIntervalRef(timerIntervalRef);
-          const startedAt = Date.now();
-          timerIntervalRef.current = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-            const remaining = Math.max(adjusted - elapsed, 0);
-            setRoleTimer(remaining);
-            if (remaining <= 0) clearIntervalRef(timerIntervalRef);
-          }, 1000);
-        }
-      }
-    }
-  }, [showSplash, myRole]);
-
-  // Fetch players
+  // Sync ground cards from store
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
-        const data = await res.json();
-        if (data.success && data.data.players) {
-          setPlayers(data.data.players);
-        }
-      } catch {
-        console.error("Failed to fetch game data");
-      }
-    };
-    fetchPlayers();
-  }, [gameCode]);
+    if (storeGroundCards) setGroundCards(storeGroundCards);
+  }, [storeGroundCards]);
 
-  // Sync rejoin state
+  // Sync action result from store (for rejoin)
   useEffect(() => {
-    if (hasAlreadyActed && !actionDone) {
-      setActionDone(true);
-      setIsMyTurn(false);
-      const result = storeLastActionResult || { message: "Action was performed" };
-      setActionResult(result);
-      actionResultRef.current = result;
+    if (hasAlreadyActed && storeLastActionResult) {
+      setActionResult(storeLastActionResult);
     }
   }, [hasAlreadyActed, storeLastActionResult]);
 
-  // FIX #3: Safe navigation helper — prevents double navigation
-  const navigateToDiscussion = useCallback(
-    (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => {
-      if (hasNavigatedRef.current) return;
-      hasNavigatedRef.current = true;
-
-      clearIntervalRef(timerIntervalRef);
-      clearIntervalRef(queueTimerRef);
-
-      setDiscussionData(data);
-      setPhase("discussion");
-      navigate(`/discussion/${gameCode}`);
-    },
-    [gameCode, navigate, setDiscussionData, setPhase],
-  );
-
-  // Queue progress listener
+  // Per-role countdown timer from currentActiveRoleStartedAt
   useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    const handleNightProgress = (data: { roleName: string; seconds: number }) => {
-      setActiveRole(data.roleName);
-      setQueueTimer(data.seconds);
-
-      // FIX #1: Use safe clear helper
-      clearIntervalRef(queueTimerRef);
-      const slotStartedAt = Date.now();
-      queueTimerRef.current = setInterval(() => {
-        const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
-        const remaining = Math.max(data.seconds - elapsed, 0);
-        setQueueTimer(remaining);
-        if (remaining <= 0) clearIntervalRef(queueTimerRef);
-      }, 1000);
-    };
-
-    socket.on("nightRoleProgress", handleNightProgress);
-
-    return () => {
-      socket.off("nightRoleProgress", handleNightProgress);
-      clearIntervalRef(queueTimerRef);
-    };
-  }, [gameCode]);
-
-  // Clone insomniac result listener
-  useEffect(() => {
-    const handler = (data: { message: string; originalRole: string; currentRole: string; hasChanged: boolean }) => {
-      const result = {
-        message: data.message,
-        originalRole: data.originalRole,
-        currentRole: data.currentRole,
-        hasChanged: data.hasChanged,
-      };
-      setActionResult(result);
-      actionResultRef.current = result;
-    };
-
-    socket.on("cloneInsomniacResult", handler);
-    return () => {
-      socket.off("cloneInsomniacResult", handler);
-    };
-  }, [gameCode]);
-
-  useEffect(() => {
-    const handler = (data: { hasVision: boolean; sourceRole?: string; vision?: string; message?: string }) => {
-      console.log("🔮 Frontend received cloneOracleResult:", data);
-      setActionResult(data);
-      actionResultRef.current = data;
-    };
-
-    socket.on("cloneOracleResult", handler);
-    return () => {
-      socket.off("cloneOracleResult", handler);
-    };
-  }, [gameCode]);
-
-  // Main game logic listeners
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    socket.on("groundCards", (data: { cards: Array<{ id: string; label: string }> }) => {
-      setGroundCards(data.cards);
-    });
-
-    socket.on("roleActionQueue", (roleName: string) => {
-      if (myRole.toLowerCase() === roleName.toLowerCase() && !actionDoneRef.current) {
-        // FIX #4: If splash is still showing, buffer the turn
-        if (showSplashRef.current) {
-          pendingTurnRef.current = true;
-        } else {
-          setIsMyTurn(true);
-        }
-      } else {
-        setIsMyTurn(false);
-      }
-    });
-
-    socket.on("roleTimer", (data: { roleName: string; seconds: number }) => {
-      if (myRole.toLowerCase() === data.roleName.toLowerCase() && !actionDoneRef.current) {
-        // FIX #4: If splash is still showing, buffer the timer data
-        if (showSplashRef.current) {
-          pendingTimerRef.current = {
-            roleName: data.roleName,
-            seconds: data.seconds,
-            receivedAt: Date.now(),
-          };
-          return;
-        }
-
-        timerMaxRef.current = data.seconds;
-        setRoleTimer(data.seconds);
-        // FIX #1: Use safe clear helper
-        clearIntervalRef(timerIntervalRef);
-        const slotStartedAt = Date.now();
-        timerIntervalRef.current = setInterval(() => {
-          const elapsed = Math.floor((Date.now() - slotStartedAt) / 1000);
-          const remaining = Math.max(data.seconds - elapsed, 0);
-          setRoleTimer(remaining);
-          if (remaining <= 0) clearIntervalRef(timerIntervalRef);
-        }, 1000);
-      }
-    });
-
-    socket.on("actionResult", (data: { success: boolean; message: string; data?: any }) => {
-      const result = data.data || { message: data.message };
-
-      // Clone first-action result
-      if (awaitingCloneResultRef.current && result.clonedRole) {
-        awaitingCloneResultRef.current = false;
-        setCloneResult(result as CloneResult);
-
-        if (!result.needsSecondAction) {
-          setActionResult(result);
-          actionResultRef.current = result;
-          setActionDone(true);
-          setIsMyTurn(false);
-
-          setHasPerformedAction(true);
-          setLastActionResult(result);
-          setRoleTimer(0);
-          clearIntervalRef(timerIntervalRef);
-        }
-        return;
-      }
-
-      // Normal action result (or clone's second action)
-      setActionResult(result);
-      actionResultRef.current = result;
-      setActionDone(true);
-      setIsMyTurn(false);
-
-      setHasPerformedAction(true);
-      setLastActionResult(result);
+    if (!currentActiveRoleStartedAt || !storeInitialActiveRole) {
       setRoleTimer(0);
-      clearIntervalRef(timerIntervalRef);
-
-      // FIX #2: If discussion was pending, navigate immediately
-      if (pendingNavigationRef.current) {
-        const navData = pendingNavigationRef.current;
-        pendingNavigationRef.current = null;
-        setTimeout(() => {
-          navigateToDiscussion(navData);
-        }, 300);
-      }
-    });
-
-    socket.on("discussionStarted", (data: { timerSeconds: number; currentTimerSec: number; startedAt: number }) => {
-      clearIntervalRef(timerIntervalRef);
-
-      if (!actionResultRef.current && !hasAlreadyActed) {
-        pendingNavigationRef.current = {
-          timerSeconds: data.timerSeconds,
-          currentTimerSec: data.currentTimerSec,
-          startedAt: data.startedAt,
-        };
-        return;
-      }
-
-      // FIX #3: Use safe navigation helper
-      navigateToDiscussion(data);
-    });
-
-    return () => {
-      socket.off("groundCards");
-      socket.off("roleActionQueue");
-      socket.off("roleTimer");
-      socket.off("actionResult");
-      socket.off("discussionStarted");
-      clearIntervalRef(timerIntervalRef);
+      setQueueTimer(0);
+      return;
+    }
+    const seconds = roleQueue.find(r => r.roleName === storeInitialActiveRole)?.seconds ?? 10;
+    const tick = () => {
+      const elapsed = Math.floor((Date.now() - currentActiveRoleStartedAt) / 1000);
+      const remaining = Math.max(seconds - elapsed, 0);
+      setRoleTimer(remaining);
+      setQueueTimer(remaining);
     };
-  }, [gameCode, myRole, actionDone, navigate, playerName, playerId, isHost, hasAlreadyActed, navigateToDiscussion]);
-
-  // Polling fallback for phase check when already acted
-  useEffect(() => {
-    if (!hasAlreadyActed) return;
-
-    const checkPhase = async () => {
-      // FIX #3: Don't poll if we've already navigated
-      if (hasNavigatedRef.current) return;
-      try {
-        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
-        const data = await res.json();
-        if (data.success && data.data.phase === "discussion") {
-          // FIX #3: Use safe navigation helper
-          navigateToDiscussion({
-            timerSeconds: data.data.timerSeconds,
-            currentTimerSec: data.data.currentTimerSec,
-            startedAt: data.data.startedAt,
-          });
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-
-    const interval = setInterval(checkPhase, 3000);
-    return () => clearInterval(interval);
-  }, [hasAlreadyActed, gameCode, navigateToDiscussion]);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [currentActiveRoleStartedAt, storeInitialActiveRole, roleQueue]);
 
   // ===== HANDLERS =====
 
   const handleAction = useCallback(
     (action: Record<string, unknown>) => {
-      socket.emit("performAction", { gameCode, playerId, action });
+      socket.emit(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, { gameCode, playerId, action });
     },
     [gameCode, playerId],
   );
@@ -444,7 +153,7 @@ function NightPhase() {
   const handleCloneFirstAction = useCallback(
     (action: Record<string, unknown>) => {
       awaitingCloneResultRef.current = true;
-      socket.emit("performAction", { gameCode, playerId, action });
+      socket.emit(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, { gameCode, playerId, action });
     },
     [gameCode, playerId],
   );
@@ -456,32 +165,32 @@ function NightPhase() {
     const Component = ROLE_COMPONENTS[roleLower];
     if (!Component) return null;
 
-    const locked = !isMyTurn && !actionDone;
+    const locked = !isMyTurn && !hasAlreadyActed;
     const baseProps = { onAction: handleAction, locked };
 
     switch (roleLower) {
       case "werewolf":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} actionResult={actionResult} />;
       case "minion":
-        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} actionResult={actionResult} />;
       case "clone":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} onCloneFirstAction={handleCloneFirstAction} cloneResult={cloneResult} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} onCloneFirstAction={handleCloneFirstAction} cloneResult={cloneResult} actionResult={actionResult} />;
       case "seer":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} actionResult={actionResult} />;
       case "mason":
-        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} actionResult={actionResult} />;
       case "robber":
-        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} actionResult={actionResult} />;
       case "troublemaker":
-        return <Component {...baseProps} playerId={playerId} players={players} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} actionResult={actionResult} />;
       case "drunk":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} actionResult={actionResult} />;
       case "joker":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} actionResult={actionResult} />;
       case "insomniac":
         return <Component {...baseProps} actionResult={actionResult} />;
       case "warlock":
-        return <Component {...baseProps} playerId={playerId} players={players} groundCards={groundCards} actionResult={actionResult} />;
+        return <Component {...baseProps} playerId={playerId} players={storePlayers} groundCards={groundCards} actionResult={actionResult} />;
       case "oracle":
         return <Component {...baseProps} actionResult={actionResult} />;
       default:
@@ -489,16 +198,16 @@ function NightPhase() {
     }
   };
 
-  const timerMax = timerMaxRef.current || roleTimer;
-  const timerFraction = timerMax > 0 ? roleTimer / timerMax : 0;
+  const roleMaxSeconds = roleQueue.find(r => r.roleName === storeInitialActiveRole)?.seconds ?? 10;
+  const timerFraction = roleMaxSeconds > 0 ? roleTimer / roleMaxSeconds : 0;
   const isUrgent = roleTimer <= 5;
 
   // Determine if this role uses a persistent action component (visual post-action state)
   const roleLower = myRole.toLowerCase();
   const hasPersistentAction = ROLES_WITH_PERSISTENT_ACTION.has(roleLower);
 
-  const showActionComponent = !showSplash && (isMyTurn || actionDone || hasPersistentAction);
-  const showGenericResult = actionDone && actionResult && !hasPersistentAction;
+  const showActionComponent = !showSplash && (isMyTurn || hasAlreadyActed || hasPersistentAction);
+  const showGenericResult = hasAlreadyActed && actionResult && !hasPersistentAction;
 
   // ===== RENDER =====
 
@@ -621,6 +330,18 @@ function NightPhase() {
           </div>
         </div>
       )}
+
+      {/* Leave button */}
+      <button
+        className="rr-leave-btn"
+        onClick={() => {
+          gameActions.leaveGame({ gameCode: gameCode!, playerId });
+          useGameStore.getState().reset();
+          navigate("/");
+        }}
+      >
+        LEAVE
+      </button>
     </div>
   );
 }

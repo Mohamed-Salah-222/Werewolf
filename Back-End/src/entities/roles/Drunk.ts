@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -16,7 +16,7 @@ export const createDrunkAction = (targetRoleId: string): DrunkAction => ({
 export class Drunk implements Role {
   public id: string;
   public name: string = "Drunk";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Swaps their role with a random ground card without looking at it";
 
   constructor() {

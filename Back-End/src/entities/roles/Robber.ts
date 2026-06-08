@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -16,7 +16,7 @@ export const createRobberAction = (targetPlayer: Player): RobberAction => ({
 export class Robber implements Role {
   public id: string;
   public name: string = "Robber";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Steals another player's role and looks at their new role";
 
   constructor() {

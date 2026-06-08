@@ -1,11 +1,11 @@
-import { ERROR_MESSAGES, Phase } from "../../config/constants";
+import { SOCKET_EVENTS, Phase, ERROR_MESSAGES } from "@werewolf/shared";
 import { SocketContext, transferHostIfNeeded, safeHandler, getGameOrThrow } from "./shared";
 import { BuildGameSnapshot } from "../../entities/game/Game";
 
 export function registerPlayerHandlers(ctx: SocketContext): void {
   const { socket, manager } = ctx;
 
-  socket.on("rejoinGame", safeHandler("rejoinGame", socket, (data: { gameCode: string; playerId: string; playerName: string }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.REJOIN_GAME, safeHandler("rejoinGame", socket, (data: { gameCode: string; playerId: string; playerName: string }) => {
     const { gameCode, playerId, playerName } = data;
     const game = getGameOrThrow(manager, gameCode);
 
@@ -29,12 +29,12 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     socket.join(gameCode);
 
     game.connectPlayer(player.id);
-    socket.emit("updateGameSnapShot", BuildGameSnapshot(game, player.id));
+    socket.emit(SOCKET_EVENTS.SERVER.UPDATE_GAME_SNAPSHOT, BuildGameSnapshot(game, player.id));
 
     console.log(`🔄 Player ${player.name} (${player.id}) rejoined game ${gameCode} in phase ${game.phase}`);
   }));
 
-  socket.on("settingsUpdate", safeHandler("settingsUpdate", socket, ({ gameCode, playerId, settings }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.SETTINGS_UPDATE, safeHandler("settingsUpdate", socket, ({ gameCode, playerId, settings }) => {
     const game = getGameOrThrow(manager, gameCode);
     if (game.host !== playerId) throw new Error(ERROR_MESSAGES.HOST_ONLY);
 
@@ -44,7 +44,7 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     console.log(`🔄 Settings updated in game ${gameCode}`);
   }));
 
-  socket.on("changeName", safeHandler("changeName", socket, (data: { gameCode: string; playerId: string; newName: string }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.CHANGE_NAME, safeHandler("changeName", socket, (data: { gameCode: string; playerId: string; newName: string }) => {
     const game = getGameOrThrow(manager, data.gameCode);
 
     if (game.phase !== Phase.Waiting) {
@@ -68,7 +68,7 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     console.log(`✏️ Player ${data.playerId} changed name to "${trimmed}"`);
   }));
 
-  socket.on("kickPlayer", safeHandler("kickPlayer", socket, ({ gameCode, hostId, kickedPlayerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.KICK_PLAYER, safeHandler("kickPlayer", socket, ({ gameCode, hostId, kickedPlayerId }) => {
     const game = getGameOrThrow(manager, gameCode);
     if (game.phase !== Phase.Waiting) throw new Error("Can only kick players before game starts");
     if (game.host !== hostId) throw new Error(ERROR_MESSAGES.HOST_ONLY);
@@ -79,7 +79,7 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     console.log(`Player ${player.name} kicked from game ${gameCode}`);
   }));
 
-  socket.on("leaveGame", safeHandler("leaveGame", socket, ({ gameCode, playerId }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.LEAVE_GAME, safeHandler("leaveGame", socket, ({ gameCode, playerId }) => {
     const game = getGameOrThrow(manager, gameCode);
 
     const player = game.players.find((p) => p.id === playerId);
@@ -98,18 +98,18 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
     console.log(`Player ${player.name} left game ${gameCode}`);
   }));
 
-  socket.on("playerReady", safeHandler("playerReady", socket, ({ gameCode, playerId, ready }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.PLAYER_READY, safeHandler("playerReady", socket, ({ gameCode, playerId, ready }) => {
     const game = getGameOrThrow(manager, gameCode);
     const player = game.getPlayerById(playerId);
     game.playerReady(playerId);
     console.log(`Player ${playerId} : ${player.name} ${game.readyPlayers.get(playerId) ? "is ready" : "is not ready"}`);
   }));
 
-  socket.on("pingMeasure", (_data: any) => {
+  socket.on(SOCKET_EVENTS.CLIENT.PING_MEASURE, (_data: any) => {
     return;
   });
 
-  socket.on("reportPing", safeHandler("reportPing", socket, (data: { gameCode: string; playerId: string; ping: number }) => {
+  socket.on(SOCKET_EVENTS.CLIENT.REPORT_PING, safeHandler("reportPing", socket, (data: { gameCode: string; playerId: string; ping: number }) => {
     const game = getGameOrThrow(manager, data.gameCode);
 
     if (!game.gamePings) game.gamePings = {};

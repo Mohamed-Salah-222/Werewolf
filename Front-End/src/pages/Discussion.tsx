@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { SOCKET_EVENTS, Team } from "@werewolf/shared";
 import socket from "../socket";
 // import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
 import { useGameStore } from "../store/gameStore";
+import { gameActions } from "../store/sockets";
 
 // ===== HELPERS =====
 
@@ -20,11 +22,11 @@ function getTimerState(secondsLeft: number): "normal" | "warning" | "urgent" {
   return "normal";
 }
 
-function getRoleTeam(role: string): "villain" | "village" | "neutral" {
+function getRoleTeam(role: string): Team {
   const villains = ["werewolf", "minion"];
-  if (villains.includes(role.toLowerCase())) return "villain";
-  if (role.toLowerCase() === "joker") return "neutral";
-  return "village";
+  if (villains.includes(role.toLowerCase())) return Team.Villain;
+  if (role.toLowerCase() === "joker") return Team.Neutral;
+  return Team.Village;
 }
 
 // SVG circle math
@@ -44,7 +46,6 @@ function Discussion() {
   const storeStartedAt = useGameStore((s) => s.startedAt);
   const roleName = useGameStore((s) => s.roleName) || "";
   const actionResult = useGameStore((s) => s.lastActionResult) as { message?: string } | null;
-  const setPhase = useGameStore((s) => s.setPhase);
 
   // FIX #2: Validate startedAt — useState initializer runs once,
   // so Date.now() is only called on mount, not on re-renders.
@@ -102,18 +103,8 @@ function Discussion() {
     };
   }, [startedAt, totalSeconds]);
 
-  // Socket listener
   useEffect(() => {
     if (!socket.connected) socket.connect();
-
-    socket.on("votingStarted", () => {
-      setPhase("vote");
-      navigate(`/vote/${gameCode}`);
-    });
-
-    return () => {
-      socket.off("votingStarted");
-    };
   }, [gameCode, navigate, playerName, playerId, isHost]);
 
   const skipToVote = useCallback(() => {
@@ -124,14 +115,14 @@ function Discussion() {
       intervalRef.current = null;
     }
     setSecondsLeft(0);
-    socket.emit("skipToVote", { gameCode, playerId });
+    socket.emit(SOCKET_EVENTS.CLIENT.SKIP_TO_VOTE, { gameCode, playerId });
   }, [skipping, gameCode, playerId]);
 
   // Derived
   const timerState = getTimerState(secondsLeft);
   const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
   const dashOffset = RING_CIRCUMFERENCE - progress * RING_CIRCUMFERENCE;
-  const roleTeam = roleName ? getRoleTeam(roleName) : "village";
+  const roleTeam = roleName ? getRoleTeam(roleName) : Team.Village;
 
   return (
     <div className="disc-page">
@@ -239,6 +230,18 @@ function Discussion() {
           </div>
         </div>
       )}
+
+      {/* Leave button */}
+      <button
+        className="rr-leave-btn"
+        onClick={() => {
+          gameActions.leaveGame({ gameCode: gameCode!, playerId });
+          useGameStore.getState().reset();
+          navigate("/");
+        }}
+      >
+        LEAVE
+      </button>
     </div>
   );
 }

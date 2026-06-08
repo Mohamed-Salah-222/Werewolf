@@ -1,7 +1,28 @@
-import { ROLE_NAMES, NUMBER_OF_GROUND_ROLES, getRoleDistribution, MIN_PLAYERS } from "../../config/constants";
+import { ROLE_NAMES, NUMBER_OF_GROUND_ROLES, MIN_PLAYERS } from "@werewolf/shared";
 import { Role, RoleClasses } from "../roles";
 import { Player } from "../Player";
 import { Logger } from "../../utils/Logger";
+
+function getRoleDistribution(playerCount?: number) {
+  let werewolfCount = 2;
+  if (playerCount && playerCount >= 9) {
+    werewolfCount = 3;
+  }
+  return {
+    [ROLE_NAMES.WEREWOLF]: werewolfCount,
+    [ROLE_NAMES.MINION]: 1,
+    [ROLE_NAMES.SEER]: 1,
+    [ROLE_NAMES.MASON]: 2,
+    [ROLE_NAMES.ROBBER]: 1,
+    [ROLE_NAMES.TROUBLEMAKER]: 1,
+    [ROLE_NAMES.CLONE]: 1,
+    [ROLE_NAMES.DRUNK]: 1,
+    [ROLE_NAMES.INSOMNIAC]: 1,
+    [ROLE_NAMES.JOKER]: 1,
+    [ROLE_NAMES.WARLOCK]: 1,
+    [ROLE_NAMES.ORACLE]: 1,
+  };
+}
 
 export class RoleAssigner {
   private numberOfWerewolf: number;

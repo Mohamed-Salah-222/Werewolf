@@ -75,6 +75,7 @@ export class NightPhaseManager {
       this.nightMainTimer = null;
     }
     this.host.currentActiveRole = "";
+    this.host.currentActiveRoleStartedAt = null;
 
     this.host.players.forEach((player) => {
       if (!this.host.confirmedPlayerPerformActions.includes(player.id)) {
@@ -119,6 +120,7 @@ export class NightPhaseManager {
     const playersWithRole = this.host.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
 
     this.host.currentActiveRole = nextRole;
+    this.host.currentActiveRoleStartedAt = Date.now();
 
     // Handle Clone→Insomniac: when Insomniac slot fires, check clones who copied Insomniac
     if (nextRole.toLowerCase() === "insomniac") {

@@ -1,6 +1,6 @@
+import { Phase, Team } from "@werewolf/shared";
 import { Game } from "../../entities/game";
 import { Player } from "../../entities/Player";
-import { Phase, Team } from "../../config/constants";
 import {
   Werewolf,
   Seer,
@@ -658,12 +658,12 @@ describe("Role Tests", () => {
       const drunk = new Drunk();
       const insomniac = new Insomniac();
 
-      expect(werewolf.team).toBe(Team.Villains);
-      expect(minion.team).toBe(Team.Villains);
-      expect(seer.team).toBe(Team.Heroes);
-      expect(mason.team).toBe(Team.Heroes);
-      expect(drunk.team).toBe(Team.Heroes);
-      expect(insomniac.team).toBe(Team.Heroes);
+      expect(werewolf.team).toBe(Team.Villain);
+      expect(minion.team).toBe(Team.Villain);
+      expect(seer.team).toBe(Team.Village);
+      expect(mason.team).toBe(Team.Village);
+      expect(drunk.team).toBe(Team.Village);
+      expect(insomniac.team).toBe(Team.Village);
     });
 
     it("should have unique ids", () => {

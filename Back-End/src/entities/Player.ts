@@ -1,12 +1,12 @@
 import { Role } from "./roles";
-
+import { Phase } from "@werewolf/shared";
 import { Game } from "./game";
-import { Phase } from "../config/constants";
 import { randomUUID } from "crypto";
 
 export class Player {
   name: string;
   id: string;
+  lastActionResult: Record<string, unknown> | null = null;
   private role: Role;
   private originalRole: Role;
 

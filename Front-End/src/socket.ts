@@ -1,8 +1,8 @@
 import { io } from "socket.io-client";
+import type { ServerToClientEvents, ClientToServerEvents } from "@werewolf/shared";
+import { API_URL } from "./config";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-
-const socket = io(BACKEND_URL, {
+const socket = io<ServerToClientEvents, ClientToServerEvents>(API_URL, {
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 10,
