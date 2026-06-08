@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { VALIDATION, ERROR_MESSAGES, Phase } from "../config/constants";
+import { Phase, VALIDATION, ERROR_MESSAGES } from "@werewolf/shared";
 import { manager } from "../server";
 
 

@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
+import { gameActions } from "../store/sockets";
 
 // import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
@@ -39,32 +39,15 @@ function Results() {
   const votes = useGameStore((s) => s.votes);
   const playerRoles = useGameStore((s) => s.playerRoles);
   const actionHistory = useGameStore((s) => s.actionHistory);
-  const setPhase = useGameStore((s) => s.setPhase);
   const reset = useGameStore((s) => s.reset);
 
   const [showVotes, setShowVotes] = useState(false);
   const [showSequence, setShowSequence] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    socket.on("gameRestarted", () => {
-      const { gameCode: gc, playerId: pid, playerName: pn, isHost: ih } = useGameStore.getState();
-      useGameStore.getState().reset();
-      useGameStore.getState().setSession({ gameCode: gc!, playerId: pid!, playerName: pn!, isHost: ih });
-      useGameStore.getState().setPhase("waiting");
-      navigate(`/waiting/${gameCode}`);
-    });
-
-    return () => {
-      socket.off("gameRestarted");
-    };
-  }, [gameCode, navigate, setPhase]);
-
   const handleRestart = () => {
     setRestarting(true);
-    socket.emit("restartGame", { gameCode });
+    gameActions.restartGame({ gameCode: gameCode!, playerId });
   };
 
   const isNoWerewolfVote = !isDraw && !eliminatedPlayerId;
@@ -203,6 +186,7 @@ function Results() {
           <button
             className="res-home-btn"
             onClick={() => {
+              gameActions.leaveGame({ gameCode: gameCode!, playerId });
               reset();
               navigate("/");
             }}

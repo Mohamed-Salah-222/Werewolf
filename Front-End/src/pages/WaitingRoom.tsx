@@ -1,44 +1,24 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Crown, CircleHelp } from "lucide-react";
-import socket from "../socket";
-import { API_URL } from "../config";
+import { MIN_PLAYERS, TimerOption, DEFAULT_TIMER } from "@werewolf/shared";
 import { useGameStore } from "../store/gameStore";
 import HowToPlay from "../components/HowToPlay";
 import ShareButton from "../components/ShareButton";
 import "./WaitingRoom.css";
-import { gameActions } from "../store/sockets";
+import { gameActions, startPingInterval, stopPingInterval } from "../store/sockets";
 
 // ===== CONSTANTS =====
 
-const MIN_PLAYERS = 6;
-const PING_INTERVAL = 4000;
 const SIGNAL_GREAT = 100;
 const SIGNAL_GOOD = 200;
 const SIGNAL_OKAY = 400;
 
 // ===== TYPES =====
 
-const TimerOption = {
-  Short: 4,
-  Medium: 6,
-  Long: 8,
-  VeryLong: 10,
-} as const;
-
-const DEFAULT_TIMER = TimerOption.Medium;
-
-type TimerOption = (typeof TimerOption)[keyof typeof TimerOption];
-
 interface Settings {
   timer: TimerOption;
   showHint: boolean;
-}
-
-interface PlayerStatus {
-  id: string;
-  name: string;
-  isReady: boolean;
 }
 
 type SignalLevel = 0 | 1 | 2 | 3 | 4;
@@ -86,13 +66,11 @@ function SignalBars({ level }: { level: SignalLevel }) {
 // ===== COMPONENT =====
 
 function WaitingRoom() {
-  const gameCode = useGameStore((s) => s.gameCode);
+  const gameCode = useGameStore((s) => s.gameCode) || "";
   const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
-  const setIsHost = useGameStore((s) => s.setIsHost);
-  const setPhase = useGameStore((s) => s.setPhase);
-  const setRoleInfo = useGameStore((s) => s.setRoleInfo);
+  const players = useGameStore((s) => s.players);
   const reset = useGameStore((s) => s.reset);
 
   const navigate = useNavigate();
@@ -100,38 +78,21 @@ function WaitingRoom() {
   const [settings, setSettings] = useState<Settings>({ timer: DEFAULT_TIMER, showHint: true });
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
 
-  const [players, setPlayers] = useState<PlayerStatus[]>([]);
   const [copied, setCopied] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [hostId, setHostId] = useState<string>("");
-
-  // Connection strength
-  const [playerPings, setPlayerPings] = useState<Record<string, number | null>>({});
-
-  // Kick modal (silver theme)
   const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
-
-  // How to play
   const [htpOpen, setHtpOpen] = useState(false);
   const [htpPulsing, setHtpPulsing] = useState(() => {
     return sessionStorage.getItem("wr_htp_seen") !== "true";
   });
-
-  // Rename modal
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const [renameError, setRenameError] = useState("");
-
-  // Mount animation
   const [mounted, setMounted] = useState(false);
 
-  const readySetRef = useRef<Set<string>>(new Set());
   const settingsRef = useRef<Settings>(settings);
-
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Mount animation
   useEffect(() => {
@@ -146,172 +107,15 @@ function WaitingRoom() {
     return () => {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
   }, []);
 
   // Ping measurement
   useEffect(() => {
     if (!gameCode || !playerId) return;
-
-    const measurePing = () => {
-      const start = Date.now();
-      socket.volatile.emit("pingMeasure", { gameCode, playerId }, () => {
-        const latency = Date.now() - start;
-        socket.emit("reportPing", { gameCode, playerId, ping: latency });
-      });
-    };
-
-    measurePing();
-    pingIntervalRef.current = setInterval(measurePing, PING_INTERVAL);
-
-    socket.on("playerPings", (data: Record<string, number>) => {
-      setPlayerPings(data);
-    });
-
-    return () => {
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-      socket.off("playerPings");
-    };
+    startPingInterval(gameCode, playerId);
+    return () => stopPingInterval();
   }, [gameCode, playerId]);
-
-  // Fetch players + rejoin
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    const init = async () => {
-      if (!gameCode || !playerName || playerName === "Unknown") return;
-      try {
-        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
-        const data = await res.json();
-
-        if (data.success && data.data.players) {
-          if (data.data.host) setHostId(data.data.host);
-
-          const rawReady = data.data.readyPlayers;
-          if (Array.isArray(rawReady)) {
-            for (const entry of rawReady) {
-              if (entry?.ready && entry?.id) {
-                readySetRef.current.add(entry.id);
-              }
-            }
-          }
-
-          setPlayers(
-            data.data.players.map((p: { id: string; name: string }) => ({
-              id: p.id,
-              name: p.name,
-              isReady: readySetRef.current.has(p.id),
-            })),
-          );
-
-          if (readySetRef.current.has(playerId)) setPlayerReady(true);
-        }
-
-        if (gameCode && playerName) {
-          const alreadyInGame = data.success && data.data.players?.some((p: { id: string }) => p.id === playerId);
-          if (!alreadyInGame) {
-            socket.emit("joinGame", { gameCode, playerName }, (response: { success: boolean; playerId?: string; error?: string }) => {
-              if (response.success && response.playerId) {
-                useGameStore.getState().setSession({
-                  gameCode: gameCode,
-                  playerId: response.playerId,
-                  playerName: playerName,
-                  isHost: false,
-                });
-              }
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Failed to fetch players", err);
-      }
-    };
-
-    init();
-  }, [gameCode, playerId, playerName]);
-
-  // Socket listeners
-  useEffect(() => {
-    socket.on("playerKicked", (data: { kickedPlayerId: string }) => {
-      if (data.kickedPlayerId === playerId) {
-        reset();
-        navigate("/");
-      } else {
-        readySetRef.current.delete(data.kickedPlayerId);
-        setPlayers((prev) => prev.filter((p) => p.id !== data.kickedPlayerId));
-        setPlayerPings((prev) => {
-          const next = { ...prev };
-          delete next[data.kickedPlayerId];
-          return next;
-        });
-      }
-    });
-
-    socket.on("playerJoined", (data: { playerId: string; playerName: string }) => {
-      setPlayers((prev) => {
-        if (prev.find((p) => p.id === data.playerId)) return prev;
-        return [...prev, { id: data.playerId, name: data.playerName, isReady: readySetRef.current.has(data.playerId) }];
-      });
-    });
-
-    socket.on("playerLeft", (data: { playerId: string }) => {
-      readySetRef.current.delete(data.playerId);
-      setPlayers((prev) => prev.filter((p) => p.id !== data.playerId));
-      setPlayerPings((prev) => {
-        const next = { ...prev };
-        delete next[data.playerId];
-        return next;
-      });
-    });
-
-    socket.on("playerListUpdate", (data: { players: Array<{ id: string; name: string }> }) => {
-      setPlayers(
-        data.players.map((p) => ({
-          id: p.id,
-          name: p.name,
-          isReady: readySetRef.current.has(p.id),
-        })),
-      );
-    });
-
-    socket.on("playerReady", (data: { playerId: string; ready: boolean }) => {
-      if (data.ready) {
-        readySetRef.current.add(data.playerId);
-      } else {
-        readySetRef.current.delete(data.playerId);
-      }
-      setPlayers((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, isReady: data.ready } : p)));
-      if (data.playerId === playerId) setPlayerReady(data.ready);
-    });
-
-    socket.on("hostChanged", (data: { newHostId: string }) => {
-      setHostId(data.newHostId);
-      setIsHost(data.newHostId === playerId);
-    });
-
-    socket.on("gameStarted", () => {
-      setPhase("role");
-      navigate(`/role-reveal/${gameCode}`);
-    });
-
-    socket.on("roleReveal", (data: { playerId: string; roleName: string; roleTeam: string; roleDescription: string }) => {
-      setRoleInfo({ roleName: data.roleName, roleTeam: data.roleTeam, roleDescription: data.roleDescription });
-      setPhase("role");
-      navigate(`/role-reveal/${gameCode}`);
-    });
-
-    return () => {
-      socket.off("playerJoined");
-      socket.off("playerLeft");
-      socket.off("playerListUpdate");
-      socket.off("playerReady");
-      socket.off("hostChanged");
-      socket.off("gameStarted");
-      socket.off("roleReveal");
-      socket.off("playerKicked");
-    };
-  }, [gameCode, navigate, playerName, playerId, isHost]);
 
   // ===== HANDLERS =====
 
@@ -332,31 +136,24 @@ function WaitingRoom() {
       return;
     }
     setStartError(null);
-    socket.emit("startGame", { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
-      if (response && !response.success) {
-        setStartError(response.error || "Failed to start game");
-        if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
-        startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
-      }
-    });
+    gameActions.startGame({ gameCode, playerId });
   }, [players, gameCode, playerId]);
 
   const handleUpdateSettings = useCallback(() => {
-    socket.emit("settingsUpdate", { gameCode, playerId, settings: settingsRef.current });
+    gameActions.settingsUpdate({ gameCode, playerId, settings: settingsRef.current });
     setSettingsModalOpen(false);
   }, [gameCode, playerId]);
 
   const handleLeave = useCallback(() => {
-    socket.emit("leaveGame", { gameCode, playerId });
+    gameActions.leaveGame({ gameCode, playerId });
     reset();
     navigate("/");
   }, [gameCode, playerId, navigate, reset]);
 
   const handleReady = useCallback(() => {
-    gameActions.playerReady({ gameCode, playerId, ready: !playerReady });
-    const newReady = !playerReady;
-    socket.emit("playerReady", { gameCode, playerId, ready: newReady });
-  }, [playerReady, gameCode, playerId]);
+    const currentReady = players.find((p) => p.id === playerId)?.isReady ?? false;
+    gameActions.playerReady({ gameCode, playerId, ready: !currentReady });
+  }, [players, gameCode, playerId]);
 
   const handleHintClick = useCallback(() => {
     setHtpOpen(true);
@@ -366,16 +163,14 @@ function WaitingRoom() {
     }
   }, [htpPulsing]);
 
-  // Kick handler — direct emit, no intermediate state
   const handleKick = useCallback(
     (kickedId: string) => {
-      socket.emit("kickPlayer", { gameCode, hostId: playerId, kickedPlayerId: kickedId });
+      gameActions.kickPlayer({ gameCode, hostId: playerId, kickedPlayerId: kickedId });
       setKickTarget(null);
     },
     [gameCode, playerId],
   );
 
-  // Rename handlers
   const handleRenameOpen = useCallback(() => {
     setRenameValue(playerName);
     setRenameError("");
@@ -392,24 +187,14 @@ function WaitingRoom() {
       setRenameError("Name must be 20 characters or less");
       return;
     }
-    socket.emit("changeName", { gameCode, playerId, newName: trimmed }, (res: { success: boolean; error?: string }) => {
-      if (res.success) {
-        sessionStorage.setItem("werewolf_playerName", trimmed);
-        useGameStore.getState().setSession({
-          gameCode: gameCode || "",
-          playerId,
-          playerName: trimmed,
-          isHost,
-        });
-        setRenameModalOpen(false);
-      } else {
-        setRenameError(res.error || "Failed to change name");
-      }
-    });
-  }, [renameValue, gameCode, playerId, isHost]);
+    gameActions.changeName({ gameCode, playerId, newName: trimmed });
+    sessionStorage.setItem("werewolf_playerName", trimmed);
+    setRenameModalOpen(false);
+  }, [renameValue, gameCode, playerId]);
 
   // ===== DERIVED =====
 
+  const currentReady = players.find((p) => p.id === playerId)?.isReady ?? false;
   const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
   const notReadyCount = players.filter((p) => !p.isReady).length;
   const needMore = MIN_PLAYERS - players.length;
@@ -453,7 +238,7 @@ function WaitingRoom() {
           <span className="wr-player-count">PLAYERS {players.length}/12</span>
           <div className="wr-player-list">
             {players.map((p, index) => {
-              const signal = pingToSignal(playerPings[p.id] ?? null);
+              const signal = pingToSignal(p.ping === 0 ? null : p.ping);
               const isMe = p.id === playerId;
               const showKickDots = isHost && !isMe;
 
@@ -461,7 +246,7 @@ function WaitingRoom() {
                 <div key={p.id} className="wr-player-row wr-anim-player-row" style={{ "--player-index": index } as React.CSSProperties}>
                   <div className="wr-player-info">
                     <span className={`wr-player-name ${p.isReady ? "wr-player-name--ready" : ""}`}>{p.name}</span>
-                    {p.id === hostId && (
+                    {p.isHost && (
                       <span className="wr-host-badge" title="Host">
                         <Crown size={13} strokeWidth={1.8} />
                       </span>
@@ -487,16 +272,14 @@ function WaitingRoom() {
         </div>
 
         <div className="wr-actions wr-anim-actions">
+          {startError && <div className="wr-error-message">{startError}</div>}
           {isHost && (
-            <>
-              {startError && <div className="wr-error-message">{startError}</div>}
-              <button className="wr-start-btn" onClick={handleStartGame} disabled={!canStart}>
-                {startButtonText}
-              </button>
-            </>
+            <button className="wr-start-btn" onClick={handleStartGame} disabled={!canStart}>
+              {startButtonText}
+            </button>
           )}
-          <button className={`wr-ready-btn ${playerReady ? "wr-ready-btn--active" : ""}`} onClick={handleReady}>
-            {playerReady ? "✓ READY" : "READY"}
+          <button className={`wr-ready-btn ${currentReady ? "wr-ready-btn--active" : ""}`} onClick={handleReady}>
+            {currentReady ? "✓ READY" : "READY"}
           </button>
           <button className="wr-leave-btn" onClick={handleLeave}>
             LEAVE

@@ -1,4 +1,4 @@
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 
 export interface Role {
   id: string; //* Used for matching with ground cards for roles ( Drunk , Joker , Warlock)

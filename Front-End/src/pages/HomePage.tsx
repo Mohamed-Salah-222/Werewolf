@@ -1,24 +1,24 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
 
 import { characters, type CharacterData } from "../characters";
 import "./HomePage.css";
 import HowToPlay from "../components/HowToPlay";
-import { gameActions } from "../store/sockets";
+import { Team } from "@werewolf/shared";
+import { gameActions, connectSocket } from "../store/sockets";
 
 // ===== HELPERS =====
 
 function teamColor(team: string): string {
-  if (team === "villain") return "var(--color-villain)";
-  if (team === "neutral") return "var(--color-neutral)";
+  if (team === Team.Villain) return "var(--color-villain)";
+  if (team === Team.Neutral) return "var(--color-neutral)";
   return "var(--color-village)";
 }
 
 function teamLabel(team: string): string {
-  if (team === "villain") return "WEREWOLF TEAM";
-  if (team === "neutral") return "NEUTRAL";
+  if (team === Team.Villain) return "WEREWOLF TEAM";
+  if (team === Team.Neutral) return "NEUTRAL";
   return "VILLAGE TEAM";
 }
 
@@ -26,9 +26,6 @@ function teamLabel(team: string): string {
 
 function HomePage() {
   const reset = useGameStore((s) => s.reset);
-  const phase = useGameStore((s) => s.phase);
-
-  const navigate = useNavigate();
 
   const [selectedChar, setSelectedChar] = useState<CharacterData>(characters[0]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -132,6 +129,7 @@ function HomePage() {
         return;
       }
       const code = data.data.code;
+      connectSocket();
       gameActions.joinGame({ gameCode: code, playerName: playerName.trim() });
       setShowCreateModal(false);
     } catch {
@@ -155,8 +153,8 @@ function HomePage() {
     setError("");
     try {
       const code = gameCode.trim().toLowerCase();
-      console.log("joining game", code);
       const name = playerName.trim();
+      connectSocket();
       gameActions.joinGame({ gameCode: code, playerName: name });
       setShowJoinModal(false);
     } catch {
@@ -165,26 +163,6 @@ function HomePage() {
       setLoading(false);
     }
   }, [playerName, gameCode]);
-
-  const phaseRoutes: Record<string, string> = {
-    waiting: "waiting",
-    role: "role-reveal",
-    night: "night",
-    discussion: "discussion",
-    vote: "vote",
-    endGame: "results",
-    results: "results",
-  };
-
-  useEffect(() => {
-    if (phase !== "home") {
-      const route = phaseRoutes[phase];
-      const gc = useGameStore.getState().gameCode;
-      if (route && gc) {
-        navigate(`/${route}/${gc}`);
-      }
-    }
-  }, [phase, navigate]);
 
   return (
     <div className={`home-page ${mounted ? "home-page--mounted" : ""}`}>

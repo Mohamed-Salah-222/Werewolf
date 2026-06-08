@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team, CLONE_ACTIVE_ROLES as ACTIVE_ROLES } from "../../config/constants";
+import { Team, CLONE_ACTIVE_ROLES as ACTIVE_ROLES } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -16,7 +16,7 @@ export const createCloneAction = (targetPlayer: Player): CloneAction => ({
 export class Clone implements Role {
   public id: string;
   public name: string = "Clone";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Copies another player's role and performs their action immediately";
 
   constructor() {

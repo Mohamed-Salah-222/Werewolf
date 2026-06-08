@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -14,7 +14,7 @@ export const createOracleAction = (): OracleAction => ({
 export class Oracle implements Role {
   public id: string;
   public name: string = "Oracle";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "At the end of night, receives a random action result from another player";
 
   constructor() {

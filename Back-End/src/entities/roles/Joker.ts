@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -16,7 +16,7 @@ export const createJokerAction = (targetRoleId: string): JokerAction => ({
 export class Joker implements Role {
   public id: string;
   public name: string = "Joker";
-  public team: Team = Team.Joker;
+  public team: Team = Team.Neutral;
   public description: string = "Looks at one ground card. Wins alone if voted out";
 
   constructor() {

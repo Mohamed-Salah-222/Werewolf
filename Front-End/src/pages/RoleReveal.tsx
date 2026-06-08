@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import socket from "../socket";
-import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
+import { gameActions } from "../store/sockets";
 import { allCards, backCardImage } from "../characters";
 import "./RoleReveal.css";
 
@@ -28,152 +27,63 @@ function RoleReveal() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
-  const isHost = useGameStore((s) => s.isHost);
   const storeRoleName = useGameStore((s) => s.roleName);
   const storeRoleTeam = useGameStore((s) => s.roleTeam);
   const storeRoleDescription = useGameStore((s) => s.roleDescription);
   const hasConfirmedRoleStore = useGameStore((s) => s.hasConfirmedRole);
+  const roleRevealEndsAt = useGameStore((s) => s.roleRevealEndsAt);
+  const storePlayers = useGameStore((s) => s.players);
   const setHasConfirmedRole = useGameStore((s) => s.setHasConfirmedRole);
-  const setRoleInfo = useGameStore((s) => s.setRoleInfo);
-  const setPhase = useGameStore((s) => s.setPhase);
-  const setNightData = useGameStore((s) => s.setNightData);
 
   const [flipped, setFlipped] = useState(() => !!storeRoleName);
   const [confirmed, setConfirmed] = useState(hasConfirmedRoleStore);
-  const [role, setRole] = useState<RoleInfo | null>(() => {
+  const [role] = useState<RoleInfo | null>(() => {
     return storeRoleName
       ? {
-          roleName: storeRoleName,
-          roleTeam: storeRoleTeam || "",
-          roleDescription: storeRoleDescription || "",
-        }
+        roleName: storeRoleName,
+        roleTeam: storeRoleTeam || "",
+        roleDescription: storeRoleDescription || "",
+      }
       : null;
   });
 
   const [playerStatuses, setPlayerStatuses] = useState<Array<{ id: string; name: string; confirmed: boolean }>>([]);
   const [showSlackers, setShowSlackers] = useState(false);
   const [showPhaseInfo, setShowPhaseInfo] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   // Refs to avoid stale closures and unnecessary effect re-runs
   const roleNameRef = useRef(role?.roleName ?? null);
-  const pendingActiveRoleRef = useRef<string | null>(null);
-  const pendingGroundCardsRef = useRef<Array<{
-    id: string;
-    label: string;
-  }> | null>(null);
 
   // Keep roleNameRef in sync
   useEffect(() => {
     roleNameRef.current = role?.roleName ?? null;
   }, [role]);
 
-  // FIX #2: Register socket listener BEFORE the async fetch so we
-  // don't miss any playerRoleConfirmed events that arrive during
-  // the fetch. Buffer events that arrive before fetch completes,
-  // then reconcile.
   useEffect(() => {
-    // Buffer for events that arrive before fetch completes
-    const pendingConfirms = new Set<string>();
-    let fetchComplete = false;
+    if (storePlayers.length > 0) {
+      setPlayerStatuses(
+        storePlayers.map((p) => ({
+          id: p.id,
+          name: p.name,
+          confirmed: p.hasConfirmedRole,
+        })),
+      );
+    }
+  }, [storePlayers]);
 
-    socket.on("playerRoleConfirmed", (data: { playerId: string }) => {
-      console.log("playerRoleConfirmed received:", data);
-      if (!fetchComplete) {
-        // Fetch hasn't finished yet — buffer this event
-        pendingConfirms.add(data.playerId);
-      }
-      // Always update state (if fetch is done, this is the live path;
-      // if fetch isn't done, this ensures we don't lose it even if
-      // setPlayerStatuses hasn't been called yet)
-      setPlayerStatuses((prev) => prev.map((p) => (p.id === data.playerId ? { ...p, confirmed: true } : p)));
-    });
-
-    const fetchPlayers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/api/games/${gameCode}`);
-        const data = await res.json();
-        if (data.success && data.data.players) {
-          const confirmedList: string[] = data.data.confirmedPlayerRoleReveal || [];
-          setPlayerStatuses(
-            data.data.players.map((p: { id: string; name: string }) => ({
-              id: p.id,
-              name: p.name,
-              // Merge: confirmed if the server says so OR if we got
-              // a socket event for this player during the fetch
-              confirmed: confirmedList.includes(p.id) || pendingConfirms.has(p.id),
-            })),
-          );
-        }
-      } catch (err) {
-        console.error("Failed to fetch players", err);
-      }
-      fetchComplete = true;
-    };
-
-    fetchPlayers();
-
-    return () => {
-      socket.off("playerRoleConfirmed");
-    };
-  }, [gameCode]);
-
-  // Socket listeners
+  // Countdown timer
   useEffect(() => {
-    if (!socket.connected) socket.connect();
-
-    socket.on("roleReveal", (data: { playerId: string; roleName: string; roleTeam: string; roleDescription?: string }) => {
-      if (data.playerId === playerId) {
-        setRole({
-          roleName: data.roleName,
-          roleTeam: data.roleTeam,
-          roleDescription: data.roleDescription || "",
-        });
-        setRoleInfo({ roleName: data.roleName, roleTeam: data.roleTeam, roleDescription: data.roleDescription });
-      }
-    });
-
-    socket.on("roleActionQueue", (roleName: string) => {
-      pendingActiveRoleRef.current = roleName;
-      useGameStore.getState().setInitialActiveRole(roleName);
-    });
-
-    socket.on("groundCards", (data: { cards: Array<{ id: string; label: string }> }) => {
-      pendingGroundCardsRef.current = data.cards;
-      useGameStore.getState().setGroundCards(data.cards);
-    });
-
-    // FIX #1: Write night data to the store immediately when each
-    // event arrives (already done above for roleActionQueue and
-    // groundCards). Then in nightStarted, read from the store
-    // instead of from refs — the store is the source of truth and
-    // is guaranteed to have the latest values even if events arrived
-    // during the 300ms navigation delay.
-    socket.on("nightStarted", (roleQueue: { roleName: string; seconds: number }[]) => {
-      // Read the latest values from the store, not from refs.
-      // roleActionQueue and groundCards handlers already wrote to
-      // the store via setInitialActiveRole and setGroundCards, so
-      // these are guaranteed to be up-to-date.
-      const store = useGameStore.getState();
-      setNightData({
-        roleQueue,
-        initialActiveRole: store.initialActiveRole ?? pendingActiveRoleRef.current,
-        groundCards: store.groundCards ?? pendingGroundCardsRef.current ?? [],
-      });
-      setPhase("night");
-      setTimeout(() => {
-        navigate(`/night/${gameCode}`);
-      }, 300);
-    });
-
-    return () => {
-      socket.off("roleReveal");
-      socket.off("nightStarted");
-      socket.off("roleActionQueue");
-      socket.off("groundCards");
+    if (!roleRevealEndsAt) return;
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((roleRevealEndsAt - Date.now()) / 1000));
+      setCountdown(remaining);
     };
-  }, [gameCode, playerId, navigate, playerName, isHost]);
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [roleRevealEndsAt]);
 
   const handleFlip = useCallback(() => {
     setFlipped((prev) => !prev);
@@ -183,7 +93,7 @@ function RoleReveal() {
     setConfirmed(true);
     setHasConfirmedRole(true);
     setPlayerStatuses((prev) => prev.map((p) => (p.id === playerId ? { ...p, confirmed: true } : p)));
-    socket.emit("confirmRoleReveal", { gameCode, playerId });
+    gameActions.confirmRoleReveal({ gameCode: gameCode!, playerId });
   }, [gameCode, playerId, setHasConfirmedRole]);
 
   // Derived counts
@@ -240,7 +150,9 @@ function RoleReveal() {
 
         {!flipped && <p className="rr-sub-text">Tap to reveal your role</p>}
         {flipped && !confirmed && <p className="rr-sub-text">Tap card again to hide it</p>}
-        {flipped && confirmed && <p className="rr-waiting-text">Waiting for other players</p>}
+        {flipped && confirmed && (
+          <p className="rr-waiting-text">Waiting for other players ({countdown}s)</p>
+        )}
 
         {/* Card with flip */}
         <div className="rr-card-container rr-card-container--clickable" onClick={handleFlip}>
@@ -262,6 +174,18 @@ function RoleReveal() {
             I'M READY
           </button>
         )}
+
+        {/* Leave button */}
+        <button
+          className="rr-leave-btn"
+          onClick={() => {
+            gameActions.leaveGame({ gameCode: gameCode!, playerId });
+            useGameStore.getState().reset();
+            navigate("/");
+          }}
+        >
+          LEAVE
+        </button>
       </div>
 
       {/* Slackers modal */}

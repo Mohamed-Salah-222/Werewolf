@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -18,7 +18,7 @@ export const createTroublemakerAction = (player1: Player, player2: Player): Trou
 export class Troublemaker implements Role {
   public id: string;
   public name: string = "Troublemaker";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Swaps two other players' roles without looking at them";
 
   constructor() {

@@ -1,7 +1,6 @@
 import { Server, Socket } from "socket.io";
-import { ClientToServerEvents, ServerToClientEvents } from "../../types/socket.types";
+import type { PlayerId, ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
 import { Manager } from "../../entities/Manager";
-import { PlayerId } from "../../types/game.types";
 import { SocketContext } from "./shared";
 import { registerGameHandlers } from "./gameHandlers";
 import { registerPlayerHandlers } from "./playerHandlers";

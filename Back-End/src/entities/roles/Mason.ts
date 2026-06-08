@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "../../config/constants";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -14,7 +14,7 @@ export const createMasonAction = (): MasonAction => ({
 export class Mason implements Role {
   public id: string;
   public name: string = "Mason";
-  public team: Team = Team.Heroes;
+  public team: Team = Team.Village;
   public description: string = "Wakes up with other Masons to see each other";
 
   constructor() {

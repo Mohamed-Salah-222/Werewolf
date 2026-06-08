@@ -1,15 +1,14 @@
 import { Server, Socket } from "socket.io";
+import { Phase } from "@werewolf/shared";
+import type { ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
 import { Game } from "./game";
-import { Phase, VALIDATION } from "../config/constants";
 import { Logger } from "../utils/Logger";
-import { ClientToServerEvents, ServerToClientEvents } from "../types/socket.types";
 
 export class Manager {
   public games: Game[];
   public logger: Logger;
   private io: Server<ClientToServerEvents, ServerToClientEvents> | null = null;
   private cleanupRunning = false;
-  private sockets: Socket<ClientToServerEvents, ServerToClientEvents>[] = [];
 
   public constructor() {
     this.games = [];
@@ -36,7 +35,7 @@ export class Manager {
     return game.phase === Phase.Waiting;
   }
 
-  public joinGame(code: string, name: string, socket: unknown): Game | null {
+  public joinGame(code: string, name: string, socket: Socket): Game | null {
     if (!name || name.length === 0 || typeof name !== "string") {
       console.error("Invalid name: ", name);
       return null;
@@ -93,10 +92,6 @@ export class Manager {
 
   public log(...args: any[]): void {
     args.forEach((arg) => this.logger.log(arg.toString()));
-  }
-
-  private deleteGameByCode(code: string): void {
-    this.games = this.games.filter((g) => g.code !== code);
   }
 
   private deleteFinishedGames(): void {
