@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { VoiceProvider } from "./contexts/VoiceConext";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+// import { VoiceProvider } from "./contexts/VoiceConext";
 // import { useSocketRejoin } from "./hooks/useSocketRejoin";
 import HomePage from "./pages/HomePage";
 import WaitingRoom from "./pages/WaitingRoom";
@@ -9,25 +9,36 @@ import Discussion from "./pages/Discussion";
 import Vote from "./pages/Vote";
 import Results from "./pages/Results";
 import JoinPage from "./pages/JoinPage";
-import { socketListners } from "./store/sockets";
+import { connectSocket } from "./store/sockets";
 import GlobalPhaseRouter from "./components/GlobalPhaseRouter";
+import { useEffect } from "react";
+
+
+
+function GameLayout() {
+  useEffect(() => {
+    connectSocket()
+  }, []);
+
+  return <Outlet />;
+}
 
 function AppRoutes() {
-  socketListners();
-  // useSocketRejoin();
   return (
     <>
       <GlobalPhaseRouter />
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
-      <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
-      <Route path="/night/:gameCode" element={<NightPhase />} />
-      <Route path="/discussion/:gameCode" element={<Discussion />} />
-      <Route path="/vote/:gameCode" element={<Vote />} />
-      <Route path="/results/:gameCode" element={<Results />} />
-      <Route path="/join/:gameCode" element={<JoinPage />} />
-    </Routes>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route element={<GameLayout />}>
+          <Route path="/waiting/:gameCode" element={<WaitingRoom />} />
+          <Route path="/role-reveal/:gameCode" element={<RoleReveal />} />
+          <Route path="/night/:gameCode" element={<NightPhase />} />
+          <Route path="/discussion/:gameCode" element={<Discussion />} />
+          <Route path="/vote/:gameCode" element={<Vote />} />
+          <Route path="/results/:gameCode" element={<Results />} />
+          <Route path="/join/:gameCode" element={<JoinPage />} />
+        </Route>
+      </Routes>
     </>
   );
 }
@@ -35,9 +46,9 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <VoiceProvider>
-        <AppRoutes />
-      </VoiceProvider>
+      {/* <VoiceProvider> */}
+      <AppRoutes />
+      {/* </VoiceProvider> */}
     </BrowserRouter>
   );
 }

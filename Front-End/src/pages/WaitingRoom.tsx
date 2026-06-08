@@ -1,17 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Crown, CircleHelp } from "lucide-react";
-import { SOCKET_EVENTS, MIN_PLAYERS, TimerOption, DEFAULT_TIMER } from "@werewolf/shared";
-import socket from "../socket";
+import { MIN_PLAYERS, TimerOption, DEFAULT_TIMER } from "@werewolf/shared";
 import { useGameStore } from "../store/gameStore";
 import HowToPlay from "../components/HowToPlay";
 import ShareButton from "../components/ShareButton";
 import "./WaitingRoom.css";
-import { gameActions } from "../store/sockets";
+import { gameActions, startPingInterval, stopPingInterval } from "../store/sockets";
 
 // ===== CONSTANTS =====
 
-const PING_INTERVAL = 4000;
 const SIGNAL_GREAT = 100;
 const SIGNAL_GOOD = 200;
 const SIGNAL_OKAY = 400;
@@ -74,7 +72,6 @@ function WaitingRoom() {
   const isHost = useGameStore((s) => s.isHost);
   const players = useGameStore((s) => s.players);
   const reset = useGameStore((s) => s.reset);
-  const setIsHost = useGameStore((s) => s.setIsHost);
 
   const navigate = useNavigate();
 
@@ -83,7 +80,6 @@ function WaitingRoom() {
 
   const [copied, setCopied] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
-  const [hostTransferMsg, setHostTransferMsg] = useState<string | null>(null);
   const [kickTarget, setKickTarget] = useState<{ id: string; name: string } | null>(null);
   const [htpOpen, setHtpOpen] = useState(false);
   const [htpPulsing, setHtpPulsing] = useState(() => {
@@ -97,7 +93,6 @@ function WaitingRoom() {
   const settingsRef = useRef<Settings>(settings);
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startErrorTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Mount animation
   useEffect(() => {
@@ -112,50 +107,15 @@ function WaitingRoom() {
     return () => {
       if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
     };
   }, []);
 
-  // Ping measurement (data comes back via snapshot players[].ping)
+  // Ping measurement
   useEffect(() => {
     if (!gameCode || !playerId) return;
-
-    const measurePing = () => {
-      const start = Date.now();
-      socket.volatile.emit("pingMeasure", { gameCode, playerId }, () => {
-        const latency = Date.now() - start;
-        socket.emit(SOCKET_EVENTS.CLIENT.REPORT_PING, { gameCode, playerId, ping: latency });
-      });
-    };
-
-    measurePing();
-    pingIntervalRef.current = setInterval(measurePing, PING_INTERVAL);
-
-    return () => {
-      if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
-    };
+    startPingInterval(gameCode, playerId);
+    return () => stopPingInterval();
   }, [gameCode, playerId]);
-
-  // Error listener for server-side errors
-  useEffect(() => {
-    const onError = (data: { message: string }) => {
-      setStartError(data.message);
-      if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
-      startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
-    };
-
-    const onTransfer = (data: { message: string }) => {
-      setIsHost(true);
-      setHostTransferMsg(data.message);
-    };
-
-    socket.on(SOCKET_EVENTS.SERVER.ERROR, onError);
-    socket.on(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, onTransfer);
-    return () => {
-      socket.off(SOCKET_EVENTS.SERVER.ERROR, onError);
-      socket.off(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, onTransfer);
-    };
-  }, []);
 
   // ===== HANDLERS =====
 
@@ -264,12 +224,6 @@ function WaitingRoom() {
             <CircleHelp size={34} strokeWidth={1.5} />
           </button>
         </div>
-
-        {hostTransferMsg && (
-          <div className="wr-host-transfer-banner">
-            {hostTransferMsg}
-          </div>
-        )}
 
         <div className="wr-code-section wr-anim-code">
           <span className="wr-code-label">GAME CODE</span>

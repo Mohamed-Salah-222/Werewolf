@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback, type ComponentType } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS } from "@werewolf/shared";
 
-import socket from "../socket";
 
 import ActionComplete from "../components/roles/ActionComplete";
 import WerewolfAction from "../components/roles/WerewolfAction";
@@ -145,7 +143,7 @@ function NightPhase() {
 
   const handleAction = useCallback(
     (action: Record<string, unknown>) => {
-      socket.emit(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, { gameCode, playerId, action });
+      gameActions.performAction({ gameCode: gameCode!, playerId, action });
     },
     [gameCode, playerId],
   );
@@ -153,7 +151,7 @@ function NightPhase() {
   const handleCloneFirstAction = useCallback(
     (action: Record<string, unknown>) => {
       awaitingCloneResultRef.current = true;
-      socket.emit(SOCKET_EVENTS.CLIENT.PERFORM_ACTION, { gameCode, playerId, action });
+      gameActions.performAction({ gameCode: gameCode!, playerId, action });
     },
     [gameCode, playerId],
   );

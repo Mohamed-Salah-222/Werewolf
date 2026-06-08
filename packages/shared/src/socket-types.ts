@@ -14,6 +14,7 @@ export interface RejoinGameData {
 export interface ClientToServerEvents {
   updateGameSnapShot: (snapShot: UpdateGamePayload) => void;
   joinGame: (data: JoinGameData) => void;
+  rejoinGame: (data: RejoinGameData) => void;
   leaveGame: (data: { gameCode: string; playerId: PlayerId }) => void;
   startGame: (data: { gameCode: string; playerId: PlayerId }) => void;
   confirmRoleReveal: (data: { gameCode: string; playerId: PlayerId }) => void;
@@ -23,17 +24,18 @@ export interface ClientToServerEvents {
   skipToVote: (data: { gameCode: string; playerId: PlayerId }) => void;
   playerReady: (data: { gameCode: string; playerId: PlayerId; ready: boolean }) => void;
   kickPlayer: (data: { gameCode: string; hostId: PlayerId; kickedPlayerId: PlayerId }) => void;
+  settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
+  pingMeasure: (data: { gameCode: string; playerId: string }) => void;
+  reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;
+  forceVotes: (data: { gameCode: string; playerId: string }) => void;
+  changeName: (data: { gameCode: string; playerId: string; newName: string }) => void;
+
+  // TODO: revaemp
   voiceJoin: (data: { gameCode: string; playerId: PlayerId }) => void;
   voiceOffer: (data: { to: PlayerId; offer: any }) => void;
   voiceAnswer: (data: { to: PlayerId; answer: any }) => void;
   voiceIce: (data: { to: PlayerId; candidate: any }) => void;
   voiceLeave: (data: { playerId: PlayerId }) => void;
-  settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
-  rejoinGame: (data: RejoinGameData) => void;
-  pingMeasure: (data: { gameCode: string; playerId: string }) => void;
-  reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;
-  forceVotes: (data: { gameCode: string; playerId: string }) => void;
-  changeName: (data: { gameCode: string; playerId: string; newName: string }) => void;
 }
 
 export interface ServerToClientEvents {
@@ -41,6 +43,8 @@ export interface ServerToClientEvents {
   error: (data: { message: string }) => void;
   kicked: (data: { message: string }) => void;
   hostTransferred: (data: { message: string }) => void;
+
+  // TODO: revaemp
   voiceNewPeer: (data: { playerId: PlayerId }) => void;
   voiceOffer: (data: { from: PlayerId; offer: any }) => void;
   voiceAnswer: (data: { from: PlayerId; answer: any }) => void;

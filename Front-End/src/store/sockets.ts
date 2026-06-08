@@ -1,14 +1,61 @@
 import { SOCKET_EVENTS } from "@werewolf/shared";
 import type { UpdateGamePayload, JoinGameData, RejoinGameData } from "@werewolf/shared";
-import socket from "../socket";
 import { useGameStore } from "./gameStore";
+import { io } from "socket.io-client";
+import type { ServerToClientEvents, ClientToServerEvents } from "@werewolf/shared";
+import { API_URL } from "../config";
+
+const socket = io<ServerToClientEvents, ClientToServerEvents>(API_URL, {
+  autoConnect: false,
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+});
+
+const PING_INTERVAL = 4000;
+let pingIntervalId: ReturnType<typeof setInterval> | null = null;
 
 let initialized = false;
 
-export function socketListners(): void {
-  if (!socket.connected) socket.connect();
-  if (initialized) return;
+function measurePing(gameCode: string, playerId: string) {
+  const start = Date.now();
+  socket.volatile.emit(SOCKET_EVENTS.CLIENT.PING_MEASURE, { gameCode, playerId }, () => {
+    const latency = Date.now() - start;
+    socket.emit(SOCKET_EVENTS.CLIENT.REPORT_PING, { gameCode, playerId, ping: latency });
+  });
+}
 
+export function startPingInterval(gameCode: string, playerId: string): void {
+  stopPingInterval();
+  measurePing(gameCode, playerId);
+  pingIntervalId = setInterval(() => measurePing(gameCode, playerId), PING_INTERVAL);
+}
+
+export function stopPingInterval(): void {
+  if (pingIntervalId !== null) {
+    clearInterval(pingIntervalId);
+    pingIntervalId = null;
+  }
+}
+
+export function connectAndJoin(data: JoinGameData): () => void {
+  const doJoin = () => socket.emit(SOCKET_EVENTS.CLIENT.JOIN_GAME, data);
+  if (socket.connected) {
+    doJoin();
+    return () => {};
+  }
+  socket.once("connect", doJoin);
+  if (!socket.connected) socket.connect();
+  return () => { socket.off("connect", doJoin); };
+}
+
+export function connectSocket(): void {
+  if (!initialized) socketListners();
+  if (!socket.connected) socket.connect();
+}
+
+function socketListners(): void {
   initialized = true;
 
   socket.on("connect", () => {
@@ -48,10 +95,13 @@ export function socketListners(): void {
     window.location.href = "/";
   });
 
-  const { gameCode, playerId, playerName } = useGameStore.getState();
-  if (gameCode && playerId && playerName) {
-    socket.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, { gameCode, playerId, playerName });
-  }
+  socket.on(SOCKET_EVENTS.SERVER.ERROR, (data: { message: string }) => {
+    console.error("Server error:", data.message);
+  });
+
+  socket.on(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, () => {
+    useGameStore.getState().setIsHost(true);
+  });
 }
 
 export const gameActions = {

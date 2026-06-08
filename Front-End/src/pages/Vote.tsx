@@ -1,7 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS } from "@werewolf/shared";
-import socket from "../socket";
 // import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
 import { useGameStore } from "../store/gameStore";
@@ -32,17 +30,13 @@ function Vote() {
   const [showForceConfirm, setShowForceConfirm] = useState(false);
   const [forcing, setForcing] = useState(false);
 
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-  }, [gameCode, navigate, playerName, playerId, isHost]);
-
   const handleVote = () => {
     if (!selected || viewState !== "voting") return;
 
     setViewState("sealing");
     setHasVoted(true);
     setVotedForId(selected);
-    socket.emit(SOCKET_EVENTS.CLIENT.VOTE, { gameCode, playerId, votedPlayerId: selected });
+    gameActions.vote({ gameCode: gameCode!, playerId, votedPlayerId: selected });
 
     setTimeout(() => {
       setViewState("waiting");
@@ -53,13 +47,8 @@ function Vote() {
     if (forcing) return;
     setForcing(true);
     setShowForceConfirm(false);
-    socket.emit(SOCKET_EVENTS.CLIENT.FORCE_VOTES, { gameCode, playerId }, (response?: { success: boolean; error?: string }) => {
-      if (response && !response.success) {
-        console.error("Force votes failed:", response.error);
-        setForcing(false);
-      }
-      // On success, gameEnded event will fire and navigate us away
-    });
+    gameActions.forceVotes({ gameCode: gameCode!, playerId });
+    setTimeout(() => setForcing(false), 3000);
   }, [forcing, gameCode, playerId]);
 
   const others = storePlayers.filter((p) => p.id !== playerId);

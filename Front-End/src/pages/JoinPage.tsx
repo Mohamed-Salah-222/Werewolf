@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS } from "@werewolf/shared";
-import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
-import { gameActions } from "../store/sockets";
+import { connectAndJoin } from "../store/sockets";
 import "./JoinPage.css";
 
 // ===== COMPONENT =====
@@ -14,66 +12,30 @@ function JoinPage() {
   const { gameCode: urlCode } = useParams<{ gameCode: string }>();
   const navigate = useNavigate();
 
-  const playerId = useGameStore((s) => s.playerId);
-  const gameCode = useGameStore((s) => s.gameCode);
-
   const code = urlCode?.toLowerCase() || "";
   const isValidCode = code.length === 6;
 
   const [status, setStatus] = useState<PageStatus>("loading");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const resolvedRef = useRef(false);
-
-  // ── Single effect: attach listeners, connect, emit, timeout ──────────────
+  // ── Connect socket, emit join, timeout on failure ────────────────────────
   useEffect(() => {
     if (!isValidCode) return;
 
-    resolvedRef.current = false;
-
-    const onError = (data: { message: string }) => {
-      if (resolvedRef.current) return;
-      const msg = (data?.message || "").toLowerCase();
-
-      if (msg.includes("already started") || msg.includes("not in waiting")) {
-        resolvedRef.current = true;
-        setStatus("started");
-        return;
-      }
-
-      resolvedRef.current = true;
-      setStatus("error");
-      setErrorMsg(data?.message || "Failed to join game.");
-    };
-
-    socket.on(SOCKET_EVENTS.SERVER.ERROR, onError);
-
-    const doJoin = () => {
-      if (resolvedRef.current) return;
-      const savedName = sessionStorage.getItem("werewolf_playerName");
-      const playerName = savedName && savedName.trim().length >= 2 ? savedName.trim() : "";
-      gameActions.joinGame({ gameCode: code, playerName });
-    };
-
-    socket.on("connect", doJoin);
-    if (socket.connected) {
-      doJoin();
-    } else {
-      socket.connect();
-    }
+    const savedName = sessionStorage.getItem("werewolf_playerName");
+    const playerName = savedName && savedName.trim().length >= 2 ? savedName.trim() : "";
+    const cancelJoin = connectAndJoin({ gameCode: code, playerName });
 
     const timeout = setTimeout(() => {
-      if (!resolvedRef.current) {
-        resolvedRef.current = true;
+      const { gameCode: storeCode } = useGameStore.getState();
+      if (storeCode !== code) {
         setStatus("error");
-        setErrorMsg("Connection timed out. The game might not exist.");
+        setErrorMsg("Could not join game. It may not exist or has already started.");
       }
     }, 10000);
 
     return () => {
-      resolvedRef.current = true;
-      socket.off(SOCKET_EVENTS.SERVER.ERROR, onError);
-      socket.off("connect", doJoin);
+      cancelJoin();
       clearTimeout(timeout);
     };
   }, [code, isValidCode]);

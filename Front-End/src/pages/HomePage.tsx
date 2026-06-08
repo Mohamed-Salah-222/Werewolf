@@ -6,7 +6,7 @@ import { characters, type CharacterData } from "../characters";
 import "./HomePage.css";
 import HowToPlay from "../components/HowToPlay";
 import { Team } from "@werewolf/shared";
-import { gameActions } from "../store/sockets";
+import { gameActions, connectSocket } from "../store/sockets";
 
 // ===== HELPERS =====
 
@@ -129,6 +129,7 @@ function HomePage() {
         return;
       }
       const code = data.data.code;
+      connectSocket();
       gameActions.joinGame({ gameCode: code, playerName: playerName.trim() });
       setShowCreateModal(false);
     } catch {
@@ -153,6 +154,7 @@ function HomePage() {
     try {
       const code = gameCode.trim().toLowerCase();
       const name = playerName.trim();
+      connectSocket();
       gameActions.joinGame({ gameCode: code, playerName: name });
       setShowJoinModal(false);
     } catch {

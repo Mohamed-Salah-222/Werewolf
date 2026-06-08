@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS } from "@werewolf/shared";
-import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
 import { allCards, backCardImage } from "../characters";
@@ -29,9 +27,7 @@ function RoleReveal() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
-  const isHost = useGameStore((s) => s.isHost);
   const storeRoleName = useGameStore((s) => s.roleName);
   const storeRoleTeam = useGameStore((s) => s.roleTeam);
   const storeRoleDescription = useGameStore((s) => s.roleDescription);
@@ -39,19 +35,16 @@ function RoleReveal() {
   const roleRevealEndsAt = useGameStore((s) => s.roleRevealEndsAt);
   const storePlayers = useGameStore((s) => s.players);
   const setHasConfirmedRole = useGameStore((s) => s.setHasConfirmedRole);
-  const setRoleInfo = useGameStore((s) => s.setRoleInfo);
-  const setPhase = useGameStore((s) => s.setPhase);
-  const setNightData = useGameStore((s) => s.setNightData);
 
   const [flipped, setFlipped] = useState(() => !!storeRoleName);
   const [confirmed, setConfirmed] = useState(hasConfirmedRoleStore);
-  const [role, setRole] = useState<RoleInfo | null>(() => {
+  const [role] = useState<RoleInfo | null>(() => {
     return storeRoleName
       ? {
-          roleName: storeRoleName,
-          roleTeam: storeRoleTeam || "",
-          roleDescription: storeRoleDescription || "",
-        }
+        roleName: storeRoleName,
+        roleTeam: storeRoleTeam || "",
+        roleDescription: storeRoleDescription || "",
+      }
       : null;
   });
 
@@ -62,11 +55,6 @@ function RoleReveal() {
 
   // Refs to avoid stale closures and unnecessary effect re-runs
   const roleNameRef = useRef(role?.roleName ?? null);
-  const pendingActiveRoleRef = useRef<string | null>(null);
-  const pendingGroundCardsRef = useRef<Array<{
-    id: string;
-    label: string;
-  }> | null>(null);
 
   // Keep roleNameRef in sync
   useEffect(() => {
@@ -105,7 +93,7 @@ function RoleReveal() {
     setConfirmed(true);
     setHasConfirmedRole(true);
     setPlayerStatuses((prev) => prev.map((p) => (p.id === playerId ? { ...p, confirmed: true } : p)));
-    socket.emit(SOCKET_EVENTS.CLIENT.CONFIRM_ROLE_REVEAL, { gameCode, playerId });
+    gameActions.confirmRoleReveal({ gameCode: gameCode!, playerId });
   }, [gameCode, playerId, setHasConfirmedRole]);
 
   // Derived counts

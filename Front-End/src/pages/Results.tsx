@@ -1,7 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS } from "@werewolf/shared";
-import socket from "../socket";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
 
@@ -41,20 +39,15 @@ function Results() {
   const votes = useGameStore((s) => s.votes);
   const playerRoles = useGameStore((s) => s.playerRoles);
   const actionHistory = useGameStore((s) => s.actionHistory);
-  const setPhase = useGameStore((s) => s.setPhase);
   const reset = useGameStore((s) => s.reset);
 
   const [showVotes, setShowVotes] = useState(false);
   const [showSequence, setShowSequence] = useState(false);
   const [restarting, setRestarting] = useState(false);
 
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-  });
-
   const handleRestart = () => {
     setRestarting(true);
-    socket.emit(SOCKET_EVENTS.CLIENT.RESTART_GAME, { gameCode });
+    gameActions.restartGame({ gameCode: gameCode!, playerId });
   };
 
   const isNoWerewolfVote = !isDraw && !eliminatedPlayerId;

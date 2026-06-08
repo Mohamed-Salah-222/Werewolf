@@ -64,7 +64,6 @@ export interface GameStore {
   // Actions
   setSession: (data: { gameCode: string; playerId: string; playerName: string; isHost: boolean }) => void;
   setIsHost: (isHost: boolean) => void;
-  setPhase: (phase: GameStore["phase"]) => void;
   setRoleInfo: (data: { roleName: string; roleTeam: string; roleDescription?: string }) => void;
   setHasConfirmedRole: (value: boolean) => void;
   setNightData: (data: Partial<Pick<GameStore, "roleQueue" | "groundCards" | "initialActiveRole" | "hasPerformedAction" | "lastActionResult">>) => void;
@@ -126,7 +125,6 @@ export const useGameStore = create<GameStore>()(
 
       setIsHost: (isHost) => set({ isHost }),
 
-      setPhase: (phase) => set({ phase }),
 
       setRoleInfo: (data) =>
         set({

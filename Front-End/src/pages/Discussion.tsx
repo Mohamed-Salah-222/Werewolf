@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { SOCKET_EVENTS, Team } from "@werewolf/shared";
-import socket from "../socket";
+import { Team } from "@werewolf/shared";
 // import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
@@ -103,10 +102,6 @@ function Discussion() {
     };
   }, [startedAt, totalSeconds]);
 
-  useEffect(() => {
-    if (!socket.connected) socket.connect();
-  }, [gameCode, navigate, playerName, playerId, isHost]);
-
   const skipToVote = useCallback(() => {
     if (skipping) return;
     setSkipping(true);
@@ -115,7 +110,7 @@ function Discussion() {
       intervalRef.current = null;
     }
     setSecondsLeft(0);
-    socket.emit(SOCKET_EVENTS.CLIENT.SKIP_TO_VOTE, { gameCode, playerId });
+    gameActions.skipToVote({ gameCode: gameCode!, playerId });
   }, [skipping, gameCode, playerId]);
 
   // Derived
