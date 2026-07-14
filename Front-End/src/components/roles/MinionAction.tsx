@@ -139,8 +139,8 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
         {showNoWolves && (
           <div className="role-center-message">
             <span className="role-no-result-icon">☽</span>
-            <span className="role-no-result-text">NO WEREWOLVES</span>
-            <span className="role-no-result-sub">You're on your own</span>
+            <span className="role-no-result-text">WOLVES ON GROUND</span>
+            <span className="role-no-result-sub">No Werewolves among players</span>
           </div>
         )}
 

@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { Manager } from "./entities/Manager";
 import { initializeSocketHandlers } from "./socket/socketHandlers";
 import type { ClientToServerEvents, ServerToClientEvents } from "@werewolf/shared";
+import { resolveCorsOrigin } from "./config/cors";
 
 dotenv.config();
 
@@ -15,7 +16,7 @@ const server = http.createServer(app);
 
 const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents>(server, {
   cors: {
-    origin: process.env.NODE_ENV === "production" ? process.env.FRONTEND_URL : ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
+    origin: resolveCorsOrigin,
     methods: ["GET", "POST"],
     credentials: true,
   },

@@ -5,9 +5,9 @@ import CardModal from "../CardModal";
 import "../roles/shared/RoleShared.css";
 import "./JokerAction.css";
 
-// ===== TYPES =====
-
 interface JokerResult {
+  targetRoleId?: string;
+  targetGroundIndex?: number;
   groundRole: string;
   message?: string;
 }
@@ -21,15 +21,12 @@ interface Props {
   actionResult?: JokerResult | null;
 }
 
-// ===== COMPONENT =====
-
-function JokerAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
+function JokerAction({ locked = false, playerId, players, groundCards, actionResult }: Props) {
   const isRejoin = !!actionResult;
+  const initialGroundIndex = typeof actionResult?.targetGroundIndex === "number" ? actionResult.targetGroundIndex : null;
 
-  const [manuallySubmitted, setManuallySubmitted] = useState(false);
-  const [selectedGroundId, setSelectedGroundId] = useState<string | null>(null);
+  const [selectedGroundIndex, setSelectedGroundIndex] = useState<number | null>(initialGroundIndex);
   const [revealedRole, setRevealedRole] = useState<string>(isRejoin ? actionResult?.groundRole || "" : "");
-  const submitted = manuallySubmitted || !!actionResult;
   const hasProcessedResult = useRef(isRejoin);
   const hasAutoModalFired = useRef(false);
 
@@ -42,39 +39,24 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
   const positions = getCirclePositions(players.length, selfIndex);
 
   const visibleGround = groundCards.slice(0, 3);
+  const submitted = !!actionResult;
+  const resolvedGroundIndex = selectedGroundIndex ?? -1;
 
-  // On rejoin, pick a random ground card to show as selected
-  useEffect(() => {
-    if (isRejoin && !selectedGroundId && visibleGround.length > 0) {
-      const t = setTimeout(() => {
-        const randomGround = visibleGround[Math.floor(Math.random() * visibleGround.length)];
-        if (randomGround) {
-          setSelectedGroundId(randomGround.id);
-        }
-      }, 0);
-      return () => clearTimeout(t);
-    }
-  }, [isRejoin, selectedGroundId, visibleGround]);
-
-  // Process result — handles auto-action (AFK) and manual action result arriving
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
 
-    const isAutoAction = !manuallySubmitted;
+    const resultGroundIndex =
+      typeof actionResult.targetGroundIndex === "number"
+        ? actionResult.targetGroundIndex
+        : actionResult.targetRoleId
+          ? visibleGround.findIndex((gc) => gc.id === actionResult.targetRoleId)
+          : -1;
 
-    // Auto-action: pick a random ground card visually
-    if (isAutoAction && visibleGround.length > 0) {
-      setTimeout(() => {
-        const randomGround = visibleGround[Math.floor(Math.random() * visibleGround.length)];
-        if (randomGround) {
-          setSelectedGroundId(randomGround.id);
-        }
-      }, 0);
-      // no return cleanup here — the rest of the effect still needs to run
+    if (resultGroundIndex >= 0 && resultGroundIndex < visibleGround.length) {
+      setTimeout(() => setSelectedGroundIndex(resultGroundIndex), 0);
     }
 
-    // Reveal after a short delay for the flip animation
     if (actionResult.groundRole) {
       setTimeout(() => {
         setRevealedRole(actionResult.groundRole);
@@ -89,15 +71,7 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
         setModalOpen(true);
       }, 1200);
     }
-  }, [actionResult, manuallySubmitted, visibleGround]);
-
-  const handleGroundClick = (groundId: string) => {
-    if (locked || submitted) return;
-
-    setSelectedGroundId(groundId);
-    setManuallySubmitted(true);
-    onAction({ type: "joker", targetRoleId: groundId });
-  };
+  }, [actionResult, visibleGround]);
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
@@ -109,8 +83,6 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
   const closeModal = useCallback(() => {
     setModalOpen(false);
   }, []);
-
-  const isClickable = !locked && !submitted;
 
   return (
     <div className="role-action">
@@ -138,13 +110,12 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
         })}
 
         <div className="role-ground">
-          {visibleGround.map((gc) => {
-            const isSelected = gc.id === selectedGroundId;
+          {visibleGround.map((gc, idx) => {
+            const isSelected = idx === resolvedGroundIndex;
             const isRevealed = isSelected && !!revealedRole;
-            const canClick = isClickable;
 
             return (
-              <div key={gc.id} className={`role-ground-card ${canClick ? "role-ground-card--clickable jk-ground-card--clickable" : ""} ${isRevealed ? "role-ground-card--revealed" : ""}`} onClick={() => canClick && handleGroundClick(gc.id)}>
+              <div key={`${gc.id}-${idx}`} className={`role-ground-card ${isRevealed ? "role-ground-card--revealed" : ""}`}>
                 <div
                   className={`role-flip role-flip--ground ${isRevealed ? "role-flip--up" : ""}${isRevealed ? " role-flip--tappable" : ""}`}
                   onClick={
@@ -172,7 +143,7 @@ function JokerAction({ onAction, locked = false, playerId, players, groundCards,
 
         {!submitted && !locked && (
           <div className="role-center-hint">
-            <span className="role-hint-text">PEEK AT A GROUND CARD</span>
+            <span className="role-hint-text">THE JOKE PICKS A CARD</span>
           </div>
         )}
         {submitted && !revealedRole && (

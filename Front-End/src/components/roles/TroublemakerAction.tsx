@@ -8,7 +8,9 @@ import "./TroublemakerAction.css";
 // ===== TYPES =====
 
 interface TroublemakerResult {
+  player1Id?: string;
   player1Name: string;
+  player2Id?: string;
   player2Name: string;
   message?: string;
 }
@@ -45,8 +47,8 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
   // Resolve targets on rejoin
   useEffect(() => {
     if (!isRejoin || !actionResult) return;
-    const p1 = players.find((p) => p.name === actionResult.player1Name);
-    const p2 = players.find((p) => p.name === actionResult.player2Name);
+    const p1 = players.find((p) => p.id === actionResult.player1Id) || players.find((p) => p.name === actionResult.player1Name);
+    const p2 = players.find((p) => p.id === actionResult.player2Id) || players.find((p) => p.name === actionResult.player2Name);
     setTimeout(() => {
       if (p1) setTarget1Id(p1.id);
       if (p2) setTarget2Id(p2.id);
@@ -62,14 +64,14 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
     let t1Id = target1Id;
     let t2Id = target2Id;
 
-    if (!t1Id && actionResult.player1Name) {
-      const p = players.find((pl) => pl.name === actionResult.player1Name);
+    if (!t1Id && (actionResult.player1Id || actionResult.player1Name)) {
+      const p = players.find((pl) => pl.id === actionResult.player1Id) || players.find((pl) => pl.name === actionResult.player1Name);
       if (p) {
         t1Id = p.id;
       }
     }
-    if (!t2Id && actionResult.player2Name) {
-      const p = players.find((pl) => pl.name === actionResult.player2Name);
+    if (!t2Id && (actionResult.player2Id || actionResult.player2Name)) {
+      const p = players.find((pl) => pl.id === actionResult.player2Id) || players.find((pl) => pl.name === actionResult.player2Name);
       if (p) {
         t2Id = p.id;
       }

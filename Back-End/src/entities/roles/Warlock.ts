@@ -57,7 +57,10 @@ export class Warlock implements Role {
       game.groundRoles[groundIndex] = targetCurrentRole;
 
       return {
+        targetPlayerId: targetPlayer.id,
         targetName: targetPlayer.name,
+        targetRoleId: groundRole.id,
+        targetGroundIndex: groundIndex,
         message: `You swapped ${targetPlayer.name}'s role with a random ground card`,
       };
     };

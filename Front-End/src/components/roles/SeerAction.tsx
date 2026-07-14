@@ -9,10 +9,13 @@ import "./SeerAction.css";
 
 interface SeerResult {
   actionType: "player" | "ground";
+  targetPlayerId?: string;
   playerName?: string;
   role?: string;
   team?: string;
+  groundRole1Id?: string;
   groundRole1?: string;
+  groundRole2Id?: string;
   groundRole2?: string;
   message?: string;
 }
@@ -58,13 +61,29 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
 
   // Lock clicks immediately when result arrives
 
+  useEffect(() => {
+    if (!groundModalOpen) return;
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setGroundModalOpen(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [groundModalOpen]);
+
   // Process result animation
   useEffect(() => {
     if (!actionResult || hasProcessedResult.current) return;
     hasProcessedResult.current = true;
 
     if (actionResult.actionType === "player" && actionResult.role) {
-      const target = players.find((p) => p.name === actionResult.playerName);
+      const target = players.find((p) => p.id === actionResult.targetPlayerId) || players.find((p) => p.name === actionResult.playerName);
       setTimeout(() => {
         setMode("player");
         setRevealedPlayerRole(actionResult.role!);
@@ -85,6 +104,9 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
       }
     } else if (actionResult.actionType === "ground") {
       let groundIds = selectedGroundIds;
+      if (actionResult.groundRole1Id && actionResult.groundRole2Id) {
+        groundIds = [actionResult.groundRole1Id, actionResult.groundRole2Id];
+      }
       if (groundIds.length === 0 && groundCards.length >= 2) {
         groundIds = [groundCards[0].id, groundCards[1].id];
       }
@@ -286,20 +308,19 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
       <CardModal isOpen={modalOpen} onClose={closeModal} cardImage={modalImage} cardName={modalName} subtitle={modalSubtitle} />
 
       {groundModalOpen && (
-        <div className="role-pack-overlay" onClick={() => setGroundModalOpen(false)}>
-          <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="role-pack-title role-pack-title--green">GROUND CARDS</span>
-            <div className="role-pack-cards">
-              {groundModalCards.map((card, i) => (
-                <div key={i} className="role-pack-card">
-                  <img src={card.image} alt={card.name} className="role-pack-img role-pack-img--green" />
-                  <span className="role-pack-name">{card.name}</span>
+        <div className="card-modal-backdrop sr-ground-modal-backdrop" onClick={() => setGroundModalOpen(false)}>
+          <div className="sr-ground-modal-pair" onClick={(e) => e.stopPropagation()}>
+            {groundModalCards.map((card, i) => (
+              <div key={`${card.name}-${i}`} className="card-modal-content sr-ground-modal-card">
+                <div className="card-modal-header">
+                  <span className="card-modal-name">Ground Card {i + 1}</span>
                 </div>
-              ))}
-            </div>
-            <button className="role-pack-close" onClick={() => setGroundModalOpen(false)}>
-              CLOSE
-            </button>
+                <img src={card.image} alt={card.name} className="card-modal-img" draggable={false} />
+                <button className="card-modal-close" onClick={() => setGroundModalOpen(false)}>
+                  CLOSE
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       )}

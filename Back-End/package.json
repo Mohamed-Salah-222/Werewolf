@@ -18,7 +18,8 @@
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "@werewolf/shared": "file:../packages/shared"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

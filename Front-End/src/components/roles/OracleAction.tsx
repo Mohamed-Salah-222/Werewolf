@@ -32,22 +32,11 @@ function OracleAction({ onAction, locked = false, actionResult, autoSubmitted }:
   const validResult = isValidOracleResult(actionResult) ? actionResult : null;
   const isRejoin = !!validResult;
 
-  const [submitted, setSubmitted] = useState(isRejoin || !!autoSubmitted);
+  void onAction;
+
+  const submitted = isRejoin || !!autoSubmitted || !locked;
   const [showVision, setShowVision] = useState(isRejoin);
   const hasProcessedResult = useRef(isRejoin);
-  const hasAutoSubmitted = useRef(isRejoin || !!autoSubmitted);
-
-  // Auto-submit the moment it's our turn (not locked, not already submitted)
-  // Skip if autoSubmitted — Clone-Oracle handles submission via backend
-  useEffect(() => {
-    if (autoSubmitted || locked || hasAutoSubmitted.current) return;
-    hasAutoSubmitted.current = true;
-    const t = setTimeout(() => {
-      setSubmitted(true);
-      onAction({ type: "oracle" });
-    }, 0);
-    return () => clearTimeout(t);
-  }, [locked, onAction, autoSubmitted]);
 
   // Show vision when a VALID oracle result arrives
   useEffect(() => {

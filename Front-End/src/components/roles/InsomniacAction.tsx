@@ -2,8 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { allCards, backCardImage } from "../../characters";
 import "./InsomaniacAction.css";
 
-// ===== TYPES =====
-
 interface InsomniacResult {
   originalRole: string;
   currentRole: string;
@@ -18,18 +16,13 @@ interface Props {
   autoSubmitted?: boolean;
 }
 
-// ===== HELPERS =====
-
 function getFullCardImage(roleName: string | undefined): string {
   if (!roleName) return backCardImage;
   const card = allCards.find((c) => c.name && c.name.toLowerCase() === roleName.toLowerCase());
   return card?.image || backCardImage;
 }
 
-// ===== PHASES =====
 type Phase = "asleep" | "submitted" | "reveal" | "done";
-
-// ===== COMPONENT =====
 
 function isValidResult(r: unknown): r is InsomniacResult {
   if (!r || typeof r !== "object") return false;
@@ -37,7 +30,7 @@ function isValidResult(r: unknown): r is InsomniacResult {
   return typeof obj.currentRole === "string" && typeof obj.hasChanged === "boolean";
 }
 
-function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted }: Props) {
+function InsomniacAction({ locked = false, actionResult, autoSubmitted }: Props) {
   const validResult = isValidResult(actionResult) ? actionResult : null;
   const isRejoin = !!validResult;
 
@@ -59,12 +52,6 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
     return () => clearTimeout(timer);
   }, [actionResult]);
 
-  const handleWakeUp = () => {
-    if (phase !== "asleep") return;
-    setPhase("submitted");
-    onAction({ type: "insomniac" });
-  };
-
   const currentRole = result?.currentRole || "Insomniac";
   const hasChanged = result?.hasChanged || false;
   const cardImage = result ? getFullCardImage(result.currentRole) : getFullCardImage("insomniac");
@@ -72,7 +59,6 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
 
   return (
     <div className="in-action">
-      {/* Card */}
       <div className="in-card-area">
         <div className={`in-card ${showFace ? "in-card--revealed" : ""} ${phase === "reveal" ? "in-card--flipping" : ""}`}>
           <div className="in-card-inner">
@@ -84,25 +70,10 @@ function InsomniacAction({ onAction, locked = false, actionResult, autoSubmitted
             </div>
           </div>
         </div>
-
-        {/* {showFace && !hasChanged && <div className="in-glow in-glow--green" />}
-        {showFace && hasChanged && <div className="in-glow in-glow--red" />} */}
       </div>
 
-      {/* Status */}
       <div className="in-status">
-        {phase === "asleep" &&
-          (locked ? (
-            <span className="in-status-text in-status-text--pulse">WAITING FOR YOUR TURN...</span>
-          ) : (
-            <>
-              <p className="in-flavor">You stir awake one last time...</p>
-              <button className="in-btn" onClick={handleWakeUp}>
-                <span className="in-btn-icon">👁</span>
-                <span className="in-btn-text">WAKE UP</span>
-              </button>
-            </>
-          ))}
+        {phase === "asleep" && <span className="in-status-text in-status-text--pulse">{locked ? "WAITING FOR YOUR TURN..." : "CHECKING..."}</span>}
         {phase === "submitted" && <span className="in-status-text in-status-text--pulse">{autoSubmitted ? "WAITING TO WAKE..." : "CHECKING..."}</span>}
         {phase === "reveal" && !hasChanged && <span className="in-status-text in-status-text--green">STILL INSOMNIAC</span>}
         {phase === "reveal" && hasChanged && <span className="in-status-text in-status-text--red">ROLE CHANGED!</span>}

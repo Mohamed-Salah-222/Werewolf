@@ -353,6 +353,8 @@ export class Game {
     console.log(
       `✅ ${player.name} (${roleName}) performed action. Remaining for ${roleName}: ${remaining}`,
     );
+
+    this.emit();
   }
 
   nextAction(): any {
@@ -508,6 +510,8 @@ export class Game {
       // HUH ? where does this come from ? wtf ? 
       // // NOTE : look into this
       (player as any)._wasClone = undefined;
+      (player as any)._clonedRoleName = undefined;
+      (player as any)._clonedRole = undefined;
       (player as any)._cloneAwaitingSecondAction = undefined;
       (player as any)._cloneFirstResult = undefined;
     }

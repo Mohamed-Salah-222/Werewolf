@@ -28,6 +28,61 @@ function getRoleTeam(role: string): Team {
   return Team.Village;
 }
 
+function getString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0 ? value : null;
+}
+
+function getNestedResult(result: Record<string, unknown> | null, key: string): Record<string, unknown> | null {
+  const nested = result?.[key];
+  return nested && typeof nested === "object" && !Array.isArray(nested) ? (nested as Record<string, unknown>) : null;
+}
+
+function getDiscussionRecapRole({
+  originalRole,
+  currentRole,
+  hydratedRole,
+  actionResult,
+}: {
+  originalRole: string;
+  currentRole: string;
+  hydratedRole: string;
+  actionResult: Record<string, unknown> | null;
+}): string {
+  const knownOriginalRole = originalRole || hydratedRole || currentRole;
+  const originalRoleLower = knownOriginalRole.toLowerCase();
+
+  if (originalRoleLower === "robber") {
+    return getString(actionResult?.newRole) ?? knownOriginalRole;
+  }
+
+  if (originalRoleLower === "insomniac") {
+    return getString(actionResult?.currentRole) ?? knownOriginalRole;
+  }
+
+  if (originalRoleLower === "clone") {
+    const clonedRole = getString(actionResult?.clonedRole);
+    const clonedRoleLower = clonedRole?.toLowerCase();
+
+    if (!clonedRole || !clonedRoleLower) {
+      return knownOriginalRole;
+    }
+
+    if (clonedRoleLower === "robber") {
+      const secondActionResult = getNestedResult(actionResult, "secondActionResult");
+      return getString(secondActionResult?.newRole) ?? clonedRole;
+    }
+
+    if (clonedRoleLower === "insomniac") {
+      const insomniacResult = getNestedResult(actionResult, "insomniacResult");
+      return getString(insomniacResult?.currentRole) ?? clonedRole;
+    }
+
+    return clonedRole;
+  }
+
+  return knownOriginalRole;
+}
+
 // SVG circle math
 const RING_RADIUS = 70;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -38,13 +93,14 @@ function Discussion() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
   const totalSeconds = useGameStore((s) => s.timerSeconds) || 360;
   const storeStartedAt = useGameStore((s) => s.startedAt);
   const roleName = useGameStore((s) => s.roleName) || "";
-  const actionResult = useGameStore((s) => s.lastActionResult) as { message?: string } | null;
+  const originalRoleName = useGameStore((s) => s.originalRoleName) || "";
+  const currentRoleName = useGameStore((s) => s.currentRoleName) || "";
+  const actionResult = useGameStore((s) => s.lastActionResult) as Record<string, unknown> | null;
 
   // FIX #2: Validate startedAt — useState initializer runs once,
   // so Date.now() is only called on mount, not on re-renders.
@@ -117,7 +173,14 @@ function Discussion() {
   const timerState = getTimerState(secondsLeft);
   const progress = totalSeconds > 0 ? secondsLeft / totalSeconds : 0;
   const dashOffset = RING_CIRCUMFERENCE - progress * RING_CIRCUMFERENCE;
-  const roleTeam = roleName ? getRoleTeam(roleName) : Team.Village;
+  const recapRoleName = getDiscussionRecapRole({
+    originalRole: originalRoleName,
+    currentRole: currentRoleName,
+    hydratedRole: roleName,
+    actionResult,
+  });
+  const recapMessage = getString(actionResult?.message);
+  const roleTeam = recapRoleName ? getRoleTeam(recapRoleName) : Team.Village;
 
   return (
     <div className="disc-page">
@@ -148,7 +211,7 @@ function Discussion() {
         </div>
 
         {/* Night recap */}
-        {roleName && (
+        {recapRoleName && (
           <div className="disc-recap">
             <button className="disc-recap-toggle" onClick={() => setShowResult(!showResult)}>
               <span>{showResult ? "HIDE" : "SHOW"} NIGHT RECAP</span>
@@ -159,12 +222,12 @@ function Discussion() {
               <div className="disc-recap-content">
                 <div className="disc-recap-role">
                   <span className="disc-recap-label">YOUR ROLE</span>
-                  <span className={`disc-recap-role-name disc-recap-role-name--${roleTeam}`}>{roleName}</span>
+                  <span className={`disc-recap-role-name disc-recap-role-name--${roleTeam}`}>{recapRoleName}</span>
                 </div>
-                {actionResult?.message && (
+                {recapMessage && (
                   <div>
                     <span className="disc-recap-label">WHAT HAPPENED</span>
-                    <p className="disc-recap-message">{actionResult.message}</p>
+                    <p className="disc-recap-message">{recapMessage}</p>
                   </div>
                 )}
               </div>

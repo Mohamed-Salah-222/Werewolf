@@ -39,6 +39,22 @@
   box-shadow: 0 0 10px rgba(42, 138, 74, 0.15);
 }
 
+.sr-ground-modal-backdrop {
+  align-items: center;
+}
+
+.sr-ground-modal-pair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 4vw, 44px);
+  width: min(92vw, 780px);
+}
+
+.sr-ground-modal-card .card-modal-img {
+  width: clamp(220px, 32vw, 320px);
+}
+
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {
   .sr-name--self {
@@ -47,5 +63,17 @@
 
   .sr-name--revealed {
     color: #6dd66d;
+  }
+
+  .sr-ground-modal-pair {
+    flex-direction: column;
+    gap: 22px;
+    max-height: 92vh;
+    overflow-y: auto;
+    padding: 24px 0;
+  }
+
+  .sr-ground-modal-card .card-modal-img {
+    width: clamp(220px, 68vw, 300px);
   }
 }

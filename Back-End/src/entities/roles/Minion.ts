@@ -31,7 +31,7 @@ export class Minion implements Role {
 
       return {
         werewolves: werewolves.map((w) => ({ id: w.id, name: w.name })),
-        message: werewolves.length > 0 ? `The Werewolves are: ${werewolves.map((w) => w.name).join(", ")}` : "There are no Werewolves in play",
+        message: werewolves.length > 0 ? `The Werewolves are: ${werewolves.map((w) => w.name).join(", ")}` : "There are no Werewolves among the players. All Werewolves are on the ground.",
       };
     };
   }

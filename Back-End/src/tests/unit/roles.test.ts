@@ -22,6 +22,10 @@ import {
   Clone,
   createCloneAction,
   createWerewolfAction,
+  Warlock,
+  createWarlockAction,
+  Oracle,
+  createOracleAction,
 } from "../../entities/roles";
 
 // Mock logger for testing
@@ -32,11 +36,17 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
+const mockIo = {
+  sockets: {
+    sockets: new Map(),
+  },
+};
+
 describe("Role Tests", () => {
   let game: Game;
 
   beforeEach(() => {
-    game = new Game(mockLogger as any);
+    game = new Game(mockLogger as any, mockIo as any);
     game.phase = Phase.Night;
     // Don't pre-populate players - tests will add them as needed
     game.players = [];
@@ -85,7 +95,7 @@ describe("Role Tests", () => {
       const result = werewolf.performAction()(game, player1, action);
 
       expect(result.isAlone).toBe(true);
-      expect(result.groundCard).toBe("Drunk");
+      expect(["Drunk", "Seer", "Robber"]).toContain(result.groundCard);
     });
 
     it("should throw on invalid action", () => {
@@ -117,6 +127,7 @@ describe("Role Tests", () => {
       const action = createSeerAction.seePlayer(player2);
       const result = seer.performAction()(game, player1, action);
 
+      expect(result.targetPlayerId).toBe(player2.id);
       expect(result.playerName).toBe("Player2");
       expect(result.role).toBe("Werewolf");
       expect(result.message).toContain("Player2");
@@ -135,7 +146,9 @@ describe("Role Tests", () => {
       const action = createSeerAction.seeGround(groundRole1, groundRole2);
       const result = seer.performAction()(game, player1, action);
 
+      expect(result.groundRole1Id).toBe(groundRole1.id);
       expect(result.groundRole1).toBe("Minion");
+      expect(result.groundRole2Id).toBe(groundRole2.id);
       expect(result.groundRole2).toBe("Mason");
     });
 
@@ -200,7 +213,7 @@ describe("Role Tests", () => {
       const result = minion.performAction()(game, player1, action);
 
       expect(result.werewolves).toHaveLength(0);
-      expect(result.message).toContain("no Werewolves");
+      expect(result.message).toContain("All Werewolves are on the ground");
     });
 
     it("should throw on invalid action", () => {
@@ -232,8 +245,28 @@ describe("Role Tests", () => {
       const result = drunk.performAction()(game, player1, action);
 
       expect(result.success).toBe(true);
+      expect(result.targetRoleId).toBe(groundRole.id);
+      expect(result.targetGroundIndex).toBe(0);
       expect(player1.getRole().name).toBe("Werewolf");
       expect(game.groundRoles[0].name).toBe("Drunk");
+    });
+
+    it("should swap with a random ground card when no target is supplied", () => {
+      const player1 = new Player("Player1");
+      const drunk = new Drunk();
+
+      game.players = [player1];
+      player1.AddRole(drunk);
+      game.groundRoles = [new Werewolf(), new Mason(), new Minion()];
+
+      const result = drunk.performAction()(game, player1, { type: "drunk" });
+
+      expect(result.success).toBe(true);
+      expect(result.targetRoleId).toBeTruthy();
+      expect(result.targetGroundIndex).toBeGreaterThanOrEqual(0);
+      expect(result.targetGroundIndex).toBeLessThan(3);
+      expect(game.groundRoles[result.targetGroundIndex].name).toBe("Drunk");
+      expect(player1.getRole().name).not.toBe("Drunk");
     });
 
     it("should throw on invalid ground role id", () => {
@@ -284,6 +317,29 @@ describe("Role Tests", () => {
       expect(player2.getRole().name).toBe("Robber");
     });
 
+    it("should steal a clone's current copied role, not the clone card", () => {
+      const robberPlayer = new Player("Robber");
+      const clonePlayer = new Player("Clone");
+      const seerPlayer = new Player("Seer");
+      const robber = new Robber();
+      const clone = new Clone();
+      const seer = new Seer();
+
+      game.players = [robberPlayer, clonePlayer, seerPlayer];
+      robberPlayer.AddRole(robber);
+      clonePlayer.AddRole(clone);
+      seerPlayer.AddRole(seer);
+      game.groundRoles = [new Mason(), new Drunk(), new Minion()];
+
+      clone.performAction()(game, clonePlayer, createCloneAction(seerPlayer));
+
+      const result = robber.performAction()(game, robberPlayer, createRobberAction(clonePlayer));
+
+      expect(result.newRole).toBe("Seer");
+      expect(robberPlayer.getRole().name).toBe("Seer");
+      expect(clonePlayer.getRole().name).toBe("Robber");
+    });
+
     it("should throw on invalid action", () => {
       const player1 = new Player("Player1");
       const robber = new Robber();
@@ -316,7 +372,9 @@ describe("Role Tests", () => {
       const action = createTroublemakerAction(player2, player3);
       const result = troublemaker.performAction()(game, player1, action);
 
+      expect(result.player1Id).toBe(player2.id);
       expect(result.player1Name).toBe("Player2");
+      expect(result.player2Id).toBe(player3.id);
       expect(result.player2Name).toBe("Player3");
       expect(player2.getRole().name).toBe("Seer");
       expect(player3.getRole().name).toBe("Werewolf");
@@ -379,6 +437,28 @@ describe("Role Tests", () => {
       expect(result.message).toContain("only Mason");
     });
 
+    it("should see a clone who copied Mason as a fellow Mason", () => {
+      const masonPlayer = new Player("Mason");
+      const clonePlayer = new Player("Clone");
+      const targetMasonPlayer = new Player("Target Mason");
+      const mason = new Mason();
+      const clone = new Clone();
+
+      game.players = [masonPlayer, clonePlayer, targetMasonPlayer];
+      masonPlayer.AddRole(mason);
+      clonePlayer.AddRole(clone);
+      targetMasonPlayer.AddRole(new Mason());
+      game.groundRoles = [new Drunk(), new Minion(), new Werewolf()];
+      game.getPlayerById = (id: string) => game.players.find((p) => p.id === id);
+
+      clone.performAction()(game, clonePlayer, createCloneAction(targetMasonPlayer));
+
+      const result = mason.performAction()(game, masonPlayer, { type: "mason" });
+
+      expect(result.masons.map((m: { name: string }) => m.name)).toContain("Clone");
+      expect(result.masons.map((m: { name: string }) => m.name)).toContain("Target Mason");
+    });
+
     it("should throw on invalid action", () => {
       const player1 = new Player("Player1");
       const mason = new Mason();
@@ -406,8 +486,26 @@ describe("Role Tests", () => {
       const action = createJokerAction(groundRole.id);
       const result = joker.performAction()(game, player1, action);
 
+      expect(result.targetRoleId).toBe(groundRole.id);
+      expect(result.targetGroundIndex).toBe(0);
       expect(result.groundRole).toBe("Werewolf");
       expect(result.message).toContain("Werewolf");
+    });
+
+    it("should look at a random ground card when no target is supplied", () => {
+      const player1 = new Player("Player1");
+      const joker = new Joker();
+
+      game.players = [player1];
+      player1.AddRole(joker);
+      game.groundRoles = [new Werewolf(), new Mason(), new Drunk()];
+
+      const result = joker.performAction()(game, player1, { type: "joker" });
+
+      expect(result.targetRoleId).toBeTruthy();
+      expect(result.targetGroundIndex).toBeGreaterThanOrEqual(0);
+      expect(result.targetGroundIndex).toBeLessThan(3);
+      expect(["Werewolf", "Mason", "Drunk"]).toContain(result.groundRole);
     });
 
     it("should throw on invalid ground role id", () => {
@@ -489,6 +587,80 @@ describe("Role Tests", () => {
     });
   });
 
+  describe("Warlock", () => {
+    it("should swap a target player's role with a random ground card and report the exact target", () => {
+      const player1 = new Player("Player1");
+      const player2 = new Player("Player2");
+      const player3 = new Player("Player3");
+      const warlock = new Warlock();
+      const targetRole = new Werewolf();
+      const selectedGroundRole = new Seer();
+
+      game.players = [player1, player2, player3];
+      player1.AddRole(warlock);
+      player2.AddRole(targetRole);
+      player3.AddRole(new Mason());
+      game.groundRoles = [new Drunk(), selectedGroundRole, new Minion()];
+
+      const randomSpy = jest.spyOn(Math, "random").mockReturnValue(0.4);
+      const result = warlock.performAction()(game, player1, createWarlockAction(player2));
+      randomSpy.mockRestore();
+
+      expect(result.targetPlayerId).toBe(player2.id);
+      expect(result.targetName).toBe("Player2");
+      expect(result.targetRoleId).toBe(selectedGroundRole.id);
+      expect(result.targetGroundIndex).toBe(1);
+      expect(player2.getRole().name).toBe("Seer");
+      expect(game.groundRoles[1].name).toBe("Werewolf");
+    });
+
+    it("should throw when targeting themselves", () => {
+      const player1 = new Player("Player1");
+      const warlock = new Warlock();
+
+      game.players = [player1];
+      player1.AddRole(warlock);
+      game.groundRoles = [new Drunk(), new Seer(), new Minion()];
+
+      expect(() => {
+        warlock.performAction()(game, player1, createWarlockAction(player1));
+      }).toThrow("Warlock cannot target themselves");
+    });
+  });
+
+  describe("Oracle", () => {
+    it("should receive a message from a random previous player action result", () => {
+      const oraclePlayer = new Player("Oracle");
+      const robberPlayer = new Player("Robber");
+      const oracle = new Oracle();
+
+      game.players = [oraclePlayer, robberPlayer];
+      oraclePlayer.AddRole(oracle);
+      robberPlayer.AddRole(new Robber());
+      robberPlayer.lastActionResult = { newRole: "Werewolf", message: "Robber stole a role" };
+
+      const result = oracle.performAction()(game, oraclePlayer, createOracleAction());
+
+      expect(result.hasVision).toBe(true);
+      expect(result.sourceRole).toBe("Robber");
+      expect(result.vision).toBe("The Robber stole a Werewolf.");
+      expect(result.message).toBe(result.vision);
+    });
+
+    it("should return a silent message when no previous action results exist", () => {
+      const oraclePlayer = new Player("Oracle");
+      const oracle = new Oracle();
+
+      game.players = [oraclePlayer];
+      oraclePlayer.AddRole(oracle);
+
+      const result = oracle.performAction()(game, oraclePlayer, createOracleAction());
+
+      expect(result.hasVision).toBe(false);
+      expect(result.message).toContain("spirits are silent");
+    });
+  });
+
   describe("Clone", () => {
     // Helper function to setup clone test
     const setupCloneTest = (targetRole: any, otherRoles: any[] = []) => {
@@ -546,7 +718,8 @@ describe("Role Tests", () => {
         expect(result.clonedRole).toBe("Mason");
         expect(result.needsSecondAction).toBe(false);
         expect(clonePlayer.getRole().name).toBe("Mason");
-        expect(result.autoResult.masons).toHaveLength(1);
+        expect(result.delayedWake).toBe(true);
+        expect(result.autoResult.message).toContain("wake with the Masons");
         expect(result.message).toContain("Mason");
       });
 
@@ -559,6 +732,8 @@ describe("Role Tests", () => {
         expect(result.clonedRole).toBe("Insomniac");
         expect(result.needsSecondAction).toBe(false);
         expect(clonePlayer.getRole().name).toBe("Insomniac");
+        expect(clonePlayer.getOriginalRole().name).toBe("Clone");
+        expect((clonePlayer as any)._clonedRoleName).toBe("insomniac");
         expect(result.message).toContain("Insomniac");
       });
 
@@ -571,7 +746,8 @@ describe("Role Tests", () => {
         expect(result.clonedRole).toBe("Joker");
         expect(result.needsSecondAction).toBe(false);
         expect(clonePlayer.getRole().name).toBe("Joker");
-        expect(result.message).toContain("Joker");
+        expect(result.autoResult.groundRole).toBeTruthy();
+        expect(result.autoResult.targetGroundIndex).toBeGreaterThanOrEqual(0);
       });
     });
 
@@ -616,17 +792,16 @@ describe("Role Tests", () => {
         expect(result.message).toContain("perform their action");
       });
 
-      it("should clone Drunk and indicate second action needed", () => {
+      it("should clone Drunk and immediately swap with a random ground card", () => {
         const { clonePlayer, targetPlayer, clone } = setupCloneTest(new Drunk());
 
         const action = createCloneAction(targetPlayer);
         const result = clone.performAction()(game, clonePlayer, action);
 
         expect(result.clonedRole).toBe("Drunk");
-        expect(result.needsSecondAction).toBe(true);
-        expect(clonePlayer.getRole().name).toBe("Drunk");
-        expect(result.groundCards).toBeDefined();
-        expect(result.message).toContain("perform their action");
+        expect(result.needsSecondAction).toBe(false);
+        expect(result.autoResult.success).toBe(true);
+        expect(result.autoResult.targetGroundIndex).toBeGreaterThanOrEqual(0);
       });
     });
 

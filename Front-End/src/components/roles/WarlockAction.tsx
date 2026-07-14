@@ -8,7 +8,10 @@ import "./WarlockAction.css";
 // ===== TYPES =====
 
 interface WarlockResult {
+  targetPlayerId?: string;
   targetName?: string;
+  targetRoleId?: string;
+  targetGroundIndex?: number;
   message?: string;
 }
 
@@ -28,9 +31,18 @@ type Phase = "idle" | "submitted" | "swap" | "done";
 function WarlockAction({ onAction, locked = false, playerId, players, groundCards, actionResult }: Props) {
   const isRejoin = !!actionResult;
 
+  const initialTargetId =
+    actionResult?.targetPlayerId ?? (actionResult?.targetName ? players.find((p) => p.name === actionResult.targetName)?.id : null) ?? null;
+  const initialGroundIndex =
+    typeof actionResult?.targetGroundIndex === "number"
+      ? actionResult.targetGroundIndex
+      : actionResult?.targetRoleId
+        ? groundCards.slice(0, 3).findIndex((gc) => gc.id === actionResult.targetRoleId)
+        : null;
+
   const [phase, setPhase] = useState<Phase>(isRejoin ? "done" : "idle");
-  const [targetId, setTargetId] = useState<string | null>(null);
-  const [swapGroundIdx, setSwapGroundIdx] = useState<number | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(initialTargetId);
+  const [swapGroundIdx, setSwapGroundIdx] = useState<number | null>(initialGroundIndex !== null && initialGroundIndex >= 0 ? initialGroundIndex : null);
   const hasProcessedResult = useRef(isRejoin);
 
   // Modal state
@@ -57,13 +69,20 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
     hasProcessedResult.current = true;
 
     const t0 = setTimeout(() => {
-      const target = players.find((p) => p.name === actionResult.targetName);
-      const randomGroundIdx = Math.floor(Math.random() * Math.max(visibleGround.length, 1));
+      const target = actionResult.targetPlayerId ? players.find((p) => p.id === actionResult.targetPlayerId) : players.find((p) => p.name === actionResult.targetName);
+      const resultGroundIdx =
+        typeof actionResult.targetGroundIndex === "number"
+          ? actionResult.targetGroundIndex
+          : actionResult.targetRoleId
+            ? visibleGround.findIndex((gc) => gc.id === actionResult.targetRoleId)
+            : -1;
 
       if (target) {
         setTargetId(target.id);
       }
-      setSwapGroundIdx(randomGroundIdx);
+      if (resultGroundIdx >= 0 && resultGroundIdx < visibleGround.length) {
+        setSwapGroundIdx(resultGroundIdx);
+      }
       setPhase("submitted");
 
       setTimeout(() => {
@@ -82,22 +101,12 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
     (clickedId: string) => {
       if (phase !== "idle" || locked || clickedId === playerId) return;
 
-      const randomGroundIdx = Math.floor(Math.random() * visibleGround.length);
-
       setTargetId(clickedId);
-      setSwapGroundIdx(randomGroundIdx);
       setPhase("submitted");
 
       onAction({ type: "warlock", targetPlayer: { id: clickedId } });
-
-      setTimeout(() => {
-        setPhase("swap");
-        setTimeout(() => {
-          setPhase("done");
-        }, 1000);
-      }, 400);
     },
-    [phase, locked, playerId, visibleGround.length, onAction],
+    [phase, locked, playerId, onAction],
   );
 
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {

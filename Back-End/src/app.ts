@@ -3,6 +3,7 @@ import cors from "cors";
 import { error, timeStamp } from "node:console";
 
 import gameRoutes from "./routes/gameRoutes";
+import { resolveCorsOrigin } from "./config/cors";
 // import { errorHandler } from './utils/errorHandler';
 // import Logger from './utils/Logger';
 
@@ -13,7 +14,7 @@ const app: Application = express();
 
 app.use(
   cors({
-    origin: process.env.NODE_ENV === "production" ? process.env.FRONTEND_URL : ["http://localhost:5173", process.env.FRONTEND_URL].filter(Boolean),
+    origin: resolveCorsOrigin,
     credentials: true,
   }),
 );

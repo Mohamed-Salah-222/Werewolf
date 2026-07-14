@@ -32,11 +32,17 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
+const mockIo = {
+  sockets: {
+    sockets: new Map(),
+  },
+};
+
 describe("Game Night Phase Feature Tests", () => {
   let game: Game;
 
   beforeEach(() => {
-    game = new Game(mockLogger as any);
+    game = new Game(mockLogger as any, mockIo as any);
     game.phase = Phase.Night;
   });
 
@@ -244,8 +250,9 @@ describe("Game Night Phase Feature Tests", () => {
       const cloneResult = clone.performAction()(game, clonePlayer, cloneAction);
 
       expect(cloneResult.clonedRole).toBe("Drunk");
-      expect(cloneResult.needsSecondAction).toBe(true); // Drunk is active
-      expect(clonePlayer.getRole().name).toBe("Drunk");
+      expect(cloneResult.needsSecondAction).toBe(false);
+      expect(cloneResult.autoResult.success).toBe(true);
+      expect(cloneResult.autoResult.targetGroundIndex).toBeGreaterThanOrEqual(0);
     });
 
     it("should handle clone copying Robber and swapping roles", () => {
@@ -352,7 +359,8 @@ describe("Game Night Phase Feature Tests", () => {
       expect(cloneResult.clonedRole).toBe("Joker");
       expect(cloneResult.needsSecondAction).toBe(false); // Joker is passive
       expect(clonePlayer.getRole().name).toBe("Joker");
-      expect(cloneResult.autoResult.message).toContain("Joker");
+      expect(cloneResult.autoResult.groundRole).toBeTruthy();
+      expect(cloneResult.autoResult.targetGroundIndex).toBeGreaterThanOrEqual(0);
     });
 
     it("should handle clone copying Mason and seeing other masons", () => {
@@ -380,7 +388,8 @@ describe("Game Night Phase Feature Tests", () => {
       expect(cloneResult.clonedRole).toBe("Mason");
       expect(cloneResult.needsSecondAction).toBe(false); // Mason is passive
       expect(clonePlayer.getRole().name).toBe("Mason");
-      expect(cloneResult.autoResult.masons).toHaveLength(2); // sees target and otherMason
+      expect(cloneResult.delayedWake).toBe(true);
+      expect(cloneResult.autoResult.message).toContain("wake with the Masons");
     });
   });
 

@@ -1,7 +1,11 @@
 import { Role } from "./Role";
-import { Team, CLONE_ACTIVE_ROLES as ACTIVE_ROLES } from "@werewolf/shared";
+import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
+
+const CLONE_FOLLOW_UP_ROLES = ["seer", "robber", "troublemaker", "warlock"];
+const CLONE_AUTO_ACTION_ROLES = ["drunk", "joker"];
+const CLONE_DELAYED_WAKE_ROLES = ["mason", "insomniac", "oracle"];
 
 export interface CloneAction {
   type: "clone";
@@ -38,76 +42,69 @@ export class Clone implements Role {
       }
 
       const targetPlayer = game.getPlayerById(action.targetPlayer.id);
-
       const clonedRole = targetPlayer.getOriginalRole();
       const clonedRoleName = clonedRole.name.toLowerCase();
 
-      // Set the clone's role to the copied role
       player.setRole(clonedRole);
-      (player as any).originalRole = clonedRole;
       (player as any)._wasClone = true;
+      (player as any)._clonedRoleName = clonedRoleName;
+      (player as any)._clonedRole = clonedRole;
 
-      // Determine if the clone needs a second action
-      const needsSecondAction = ACTIVE_ROLES.includes(clonedRoleName);
-
-      // For passive roles, auto-perform the action and return the result
+      const needsSecondAction = CLONE_FOLLOW_UP_ROLES.includes(clonedRoleName);
       let autoResult: any = null;
-      if (!needsSecondAction) {
-        try {
-          switch (clonedRoleName) {
-            case "werewolf": {
-              autoResult = {
-                message: `You cloned ${targetPlayer.name} and became a Werewolf. You are now on the Villain team.`,
-              };
-              break;
-            }
-            case "minion": {
-              autoResult = {
-                message: `You cloned ${targetPlayer.name} and became a Minion. You are now on the Villain team.`,
-              };
-              break;
-            }
-            case "mason": {
-              const otherMasons = game.players.filter((p) => p.getOriginalRole().name.toLowerCase() === "mason" && p.id !== player.id);
-              autoResult = {
-                masons: otherMasons.map((m) => ({ id: m.id, name: m.name })),
-                message: otherMasons.length > 0 ? `You cloned ${targetPlayer.name} and became a Mason. Fellow Mason(s): ${otherMasons.map((m) => m.name).join(", ")}` : `You cloned ${targetPlayer.name} and became a Mason. You are the only Mason.`,
-              };
-              break;
-            }
-            case "insomniac": {
-              autoResult = {
-                message: `You cloned ${targetPlayer.name} and became an Insomniac. You will check your role at the end of the night.`,
-              };
-              break;
-            }
-            default: {
-              autoResult = {
-                message: `You cloned ${targetPlayer.name} and became a ${clonedRole.name}.`,
-              };
-              break;
-            }
-          }
-        } catch (error: any) {
-          console.error(`Error auto-performing cloned action:`, error.message);
-          autoResult = { message: `You became a ${clonedRole.name}` };
+
+      if (CLONE_AUTO_ACTION_ROLES.includes(clonedRoleName)) {
+        autoResult = clonedRole.performAction()(game, player, { type: clonedRoleName });
+      } else if (!needsSecondAction) {
+        switch (clonedRoleName) {
+          case "werewolf":
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became a Werewolf. You are now on the Villain team.`,
+            };
+            break;
+
+          case "minion":
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became a Minion. You are now on the Villain team.`,
+            };
+            break;
+
+          case "mason":
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became a Mason. You will wake with the Masons.`,
+            };
+            break;
+
+          case "insomniac":
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became an Insomniac. You will check your role at the end of the night.`,
+            };
+            break;
+
+          case "oracle":
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became an Oracle. You will receive a vision at the end of the night.`,
+            };
+            break;
+
+          default:
+            autoResult = {
+              message: `You cloned ${targetPlayer.name} and became a ${clonedRole.name}.`,
+            };
+            break;
         }
       }
 
-      // FIX: Build ground cards for all active roles that need them
-      // (Seer, Drunk, AND Joker — Joker peeks at a ground card)
-      let groundCards: any = null;
-      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "drunk" || clonedRoleName === "joker")) {
+      let groundCards: Array<{ id: string; label: string }> | null = null;
+      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "warlock")) {
         groundCards = game.groundRoles.map((r, index) => ({
           id: r.id,
           label: `Ground Card ${index + 1}`,
         }));
       }
 
-      // FIX: Build player list for all active roles that need it
-      // (Seer, Robber, Troublemaker — Joker doesn't need players)
-      let otherPlayers: any = null;
-      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "robber" || clonedRoleName === "troublemaker")) {
+      let otherPlayers: Array<{ id: string; name: string }> | null = null;
+      if (needsSecondAction && (clonedRoleName === "seer" || clonedRoleName === "robber" || clonedRoleName === "troublemaker" || clonedRoleName === "warlock")) {
         otherPlayers = game.players.filter((p) => p.id !== player.id).map((p) => ({ id: p.id, name: p.name }));
       }
 
@@ -118,6 +115,7 @@ export class Clone implements Role {
         autoResult,
         groundCards,
         otherPlayers,
+        delayedWake: CLONE_DELAYED_WAKE_ROLES.includes(clonedRoleName),
         message: needsSecondAction ? `You cloned ${targetPlayer.name} and became a ${clonedRole.name}. Now perform their action!` : autoResult?.message || `You became a ${clonedRole.name}`,
       };
     };

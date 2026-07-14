@@ -2,7 +2,7 @@ export const MAX_PLAYERS = 12;
 export const MIN_PLAYERS = 6;
 export const NUMBER_OF_GROUND_ROLES = 3;
 
-export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "drunk", "warlock"];
+export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "warlock"];
 
 export const ROLE_NAMES = {
   WEREWOLF: "Werewolf",

@@ -106,6 +106,8 @@ export function registerGameHandlers(ctx: SocketContext): void {
     if (isCloneFirstAction && actionResult.needsSecondAction) {
       (player as any)._cloneAwaitingSecondAction = true;
       (player as any)._cloneFirstResult = actionResult;
+      (player as any).lastActionResult = actionResult;
+      game.emit();
       return;
     }
 

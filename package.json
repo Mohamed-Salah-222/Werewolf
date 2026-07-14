@@ -1,6 +1,10 @@
 {
   "private": true,
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*",
+    "Front-End",
+    "Back-End"
+  ],
   "devDependencies": {
     "@types/node": "^25.2.1"
   },

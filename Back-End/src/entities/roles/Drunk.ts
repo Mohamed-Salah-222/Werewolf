@@ -5,7 +5,7 @@ import { Player } from "../Player";
 
 export interface DrunkAction {
   type: "drunk";
-  targetRoleId: string;
+  targetRoleId?: string;
 }
 
 export const createDrunkAction = (targetRoleId: string): DrunkAction => ({
@@ -29,7 +29,13 @@ export class Drunk implements Role {
         throw new Error(`Invalid action for Drunk. Expected 'drunk', received '${action.type}'.`);
       }
 
-      const groundRoleIndex = game.groundRoles.findIndex((r) => r.id === action.targetRoleId);
+      if (game.groundRoles.length === 0) {
+        throw new Error("No ground roles available");
+      }
+
+      const groundRoleIndex = action.targetRoleId
+        ? game.groundRoles.findIndex((r) => r.id === action.targetRoleId)
+        : Math.floor(Math.random() * game.groundRoles.length);
 
       if (groundRoleIndex === -1) {
         throw new Error("Ground role not found");
@@ -43,6 +49,8 @@ export class Drunk implements Role {
 
       return {
         success: true,
+        targetRoleId: groundRole.id,
+        targetGroundIndex: groundRoleIndex,
         message: "You swapped your role with a ground card",
         // Drunk doesn't know what they became
       };

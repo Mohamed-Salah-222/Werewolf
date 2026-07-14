@@ -27,6 +27,8 @@ export interface GameStore {
 
   // Role info
   roleName: string | null;
+  originalRoleName: string | null;
+  currentRoleName: string | null;
   roleTeam: string | null;
   roleDescription: string | null;
   hasConfirmedRole: boolean;
@@ -86,6 +88,8 @@ const initialState = {
   isHost: false,
   phase: "home" as const,
   roleName: null,
+  originalRoleName: null,
+  currentRoleName: null,
   roleTeam: null,
   roleDescription: null,
   hasConfirmedRole: false,
@@ -182,6 +186,8 @@ export const useGameStore = create<GameStore>()(
             phase: snapshot.phase === "endGame" ? "results" : snapshot.phase,
 
             roleName: priv?.currentRole ?? priv?.originalRole ?? null,
+            originalRoleName: priv?.originalRole ?? null,
+            currentRoleName: priv?.currentRole ?? null,
             roleTeam: priv?.roleTeam ?? null,
             roleDescription: priv?.roleDescription ?? null,
 

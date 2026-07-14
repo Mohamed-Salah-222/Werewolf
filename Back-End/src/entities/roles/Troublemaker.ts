@@ -55,7 +55,9 @@ export class Troublemaker implements Role {
       targetPlayer2.setRole(temp);
 
       return {
+        player1Id: targetPlayer1.id,
         player1Name: targetPlayer1.name,
+        player2Id: targetPlayer2.id,
         player2Name: targetPlayer2.name,
         message: `You swapped ${targetPlayer1.name} and ${targetPlayer2.name}'s roles`,
       };

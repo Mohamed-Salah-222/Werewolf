@@ -68,6 +68,7 @@ export class Seer implements Role {
 
         return {
           actionType: "player",
+          targetPlayerId: targetPlayer.id,
           playerName: targetPlayer.name,
           role: targetRole.name,
           team: targetRole.team,
@@ -87,7 +88,9 @@ export class Seer implements Role {
 
         return {
           actionType: "ground",
+          groundRole1Id: groundRole1.id,
           groundRole1: groundRole1.name,
+          groundRole2Id: groundRole2.id,
           groundRole2: groundRole2.name,
           message: `You saw ${groundRole1.name} and ${groundRole2.name} on the ground`,
         };

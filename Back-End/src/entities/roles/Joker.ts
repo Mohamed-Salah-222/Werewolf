@@ -5,7 +5,7 @@ import { Player } from "../Player";
 
 export interface JokerAction {
   type: "joker";
-  targetRoleId: string;
+  targetRoleId?: string;
 }
 
 export const createJokerAction = (targetRoleId: string): JokerAction => ({
@@ -29,13 +29,23 @@ export class Joker implements Role {
         throw new Error(`Invalid action for Joker. Expected 'joker', received '${action.type}'.`);
       }
 
-      const groundRole = game.groundRoles.find((r) => r.id === action.targetRoleId);
+      if (game.groundRoles.length === 0) {
+        throw new Error("No ground roles available");
+      }
 
-      if (!groundRole) {
+      const groundRoleIndex = action.targetRoleId
+        ? game.groundRoles.findIndex((r) => r.id === action.targetRoleId)
+        : Math.floor(Math.random() * game.groundRoles.length);
+
+      if (groundRoleIndex === -1) {
         throw new Error("Ground role not found");
       }
 
+      const groundRole = game.groundRoles[groundRoleIndex];
+
       return {
+        targetRoleId: groundRole.id,
+        targetGroundIndex: groundRoleIndex,
         groundRole: groundRole.name,
         message: `You saw a ${groundRole.name} on the ground`,
       };

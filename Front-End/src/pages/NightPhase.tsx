@@ -34,6 +34,10 @@ interface CloneResult {
   message: string;
 }
 
+function isCloneResult(result: unknown): result is CloneResult {
+  return !!result && typeof result === "object" && typeof (result as { clonedRole?: unknown }).clonedRole === "string";
+}
+
 // ===== ROLE ACTION COMPONENT MAP =====
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,7 +76,8 @@ function NightPhase() {
   const storeInitialActiveRole = useGameStore((s) => s.initialActiveRole);
   const currentActiveRoleStartedAt = useGameStore((s) => s.currentActiveRoleStartedAt);
   const storeLastActionResult = useGameStore((s) => s.lastActionResult);
-  const myRole = useGameStore((s) => s.roleName) || "";
+  const myCurrentRole = useGameStore((s) => s.roleName) || "";
+  const myNightRole = useGameStore((s) => s.originalRoleName) || myCurrentRole;
 
   const [showSplash, setShowSplash] = useState(!hasAlreadyActed);
   const [actionResult, setActionResult] = useState<Record<string, unknown> | null>(hasAlreadyActed ? storeLastActionResult : null);
@@ -106,7 +111,7 @@ function NightPhase() {
 
   // Derive isMyTurn from current state (no useState needed)
   const isMyTurn = !hasAlreadyActed &&
-    storeInitialActiveRole?.toLowerCase() === myRole.toLowerCase();
+    storeInitialActiveRole?.toLowerCase() === myNightRole.toLowerCase();
 
   // Sync ground cards from store
   useEffect(() => {
@@ -119,6 +124,15 @@ function NightPhase() {
       setActionResult(storeLastActionResult);
     }
   }, [hasAlreadyActed, storeLastActionResult]);
+
+  useEffect(() => {
+    if (myNightRole.toLowerCase() !== "clone") return;
+    if (!isCloneResult(storeLastActionResult)) return;
+
+    setCloneResult(storeLastActionResult);
+    setActionResult(storeLastActionResult);
+    awaitingCloneResultRef.current = false;
+  }, [myNightRole, storeLastActionResult]);
 
   // Per-role countdown timer from currentActiveRoleStartedAt
   useEffect(() => {
@@ -159,7 +173,7 @@ function NightPhase() {
   // ===== RENDER HELPERS =====
 
   const renderActionComponent = () => {
-    const roleLower = myRole.toLowerCase();
+    const roleLower = myNightRole.toLowerCase();
     const Component = ROLE_COMPONENTS[roleLower];
     if (!Component) return null;
 
@@ -201,7 +215,7 @@ function NightPhase() {
   const isUrgent = roleTimer <= 5;
 
   // Determine if this role uses a persistent action component (visual post-action state)
-  const roleLower = myRole.toLowerCase();
+  const roleLower = myNightRole.toLowerCase();
   const hasPersistentAction = ROLES_WITH_PERSISTENT_ACTION.has(roleLower);
 
   const showActionComponent = !showSplash && (isMyTurn || hasAlreadyActed || hasPersistentAction);
@@ -230,7 +244,7 @@ function NightPhase() {
             <div className="np-header-inner">
               <h1 className="np-phase-title">NIGHT PHASE</h1>
               <div className="np-header-divider" />
-              <p className="np-role-label">{myRole ? myRole.toUpperCase() : "UNKNOWN"}</p>
+              <p className="np-role-label">{myNightRole ? myNightRole.toUpperCase() : "UNKNOWN"}</p>
             </div>
             <button className="np-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
               !
@@ -254,7 +268,7 @@ function NightPhase() {
                 <div className="np-action-enter">{renderActionComponent()}</div>
                 {roleQueue.length > 0 && (
                   <div className="np-progress-below">
-                    <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />
+                    <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myNightRole} />
                   </div>
                 )}
               </div>
@@ -265,7 +279,7 @@ function NightPhase() {
                     <ActionComplete result={actionResult} />
                   </div>
                 )}
-                {roleQueue.length > 0 && <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myRole} />}
+                {roleQueue.length > 0 && <NightRoleProgress roleQueue={roleQueue} activeRole={activeRole} timer={queueTimer} myRole={myNightRole} />}
               </div>
             )}
           </div>

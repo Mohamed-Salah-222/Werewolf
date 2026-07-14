@@ -5,7 +5,6 @@ import "./CloneAction.css";
 import "../roles/shared/RoleShared.css";
 import { getCirclePositions } from "../../utils/roleHelpers";
 
-import WerewolfAction from "./WerewolfAction";
 import SeerAction from "./SeerAction";
 import MasonAction from "./MasonAction";
 import RobberAction from "./RobberAction";
@@ -16,8 +15,6 @@ import InsomniacAction from "./InsomniacAction";
 import WarlockAction from "./WarlockAction";
 import OracleAction from "./OracleAction";
 
-// ===== TYPES =====
-
 interface CloneResult {
   clonedRole: string;
   clonedRoleTeam: string;
@@ -25,6 +22,7 @@ interface CloneResult {
   autoResult: Record<string, unknown> | null;
   groundCards: Array<{ id: string; label: string }> | null;
   otherPlayers: Array<{ id: string; name: string }> | null;
+  delayedWake?: boolean;
   message: string;
 }
 
@@ -39,8 +37,6 @@ interface Props {
   actionResult?: Record<string, unknown> | null;
 }
 
-// ===== HELPERS =====
-
 function getSquareImage(roleName: string): string {
   const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
   return char?.square || backCardImage;
@@ -51,11 +47,9 @@ function getFullCardImage(roleName: string): string {
   return card?.image || backCardImage;
 }
 
-const ACTIVE_CLONE_ROLES = new Set(["seer", "robber", "troublemaker", "drunk", "joker", "warlock"]);
+const ACTIVE_CLONE_ROLES = new Set(["seer", "robber", "troublemaker", "warlock"]);
 
 type ClonePhase = "pick" | "cloning" | "morph" | "phase2";
-
-// ===== COMPONENT =====
 
 function CloneAction({ playerId, locked = false, players, groundCards, onAction, onCloneFirstAction, cloneResult, actionResult }: Props) {
   const [phase, setPhase] = useState<ClonePhase>(cloneResult ? "phase2" : "pick");
@@ -63,17 +57,14 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
   const clonedRoleName = cloneResult?.clonedRole || "";
   const hasProcessedCloneResult = useRef(!!cloneResult);
 
-  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalImage, setModalImage] = useState("");
   const [modalName, setModalName] = useState("");
   const [modalSubtitle, setModalSubtitle] = useState<string | undefined>();
 
-  // Auto-modal ref
   const hasAutoModalFired = useRef(false);
-
-  // Track mounted state to prevent setState on unmounted component
   const mountedRef = useRef(true);
+
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -84,7 +75,6 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
   const selfIndex = players.findIndex((p) => p.id === playerId);
   const positions = getCirclePositions(players.length, selfIndex);
 
-  // Process clone result — morph animation then transition to phase 2
   useEffect(() => {
     if (!cloneResult || hasProcessedCloneResult.current) return;
     hasProcessedCloneResult.current = true;
@@ -95,8 +85,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     }, 50);
 
     const modalTimer = setTimeout(() => {
-      if (!mountedRef.current) return;
-      if (hasAutoModalFired.current) return;
+      if (!mountedRef.current || hasAutoModalFired.current) return;
       hasAutoModalFired.current = true;
       setModalImage(getFullCardImage(cloneResult.clonedRole));
       setModalName(cloneResult.clonedRole);
@@ -124,7 +113,6 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     onCloneFirstAction({ type: "clone", targetPlayer: { id: clickedId } });
   };
 
-  // Modal handlers
   const openModal = useCallback((image: string, name: string, subtitle?: string) => {
     setModalImage(image);
     setModalName(name);
@@ -143,39 +131,43 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     const selfEntry = selfPlayer || { id: playerId, name: "Player" };
     const others = cloneResult?.otherPlayers || players.filter((p) => p.id !== playerId);
 
-    const hasId = others.some((p) => p.id === playerId);
-    if (hasId) return others;
+    if (others.some((p) => p.id === playerId)) return others;
     return [selfEntry, ...others];
   };
 
-  // ===== PHASE 2 RENDER =====
-
   if (phase === "phase2" && cloneResult) {
     const roleLower = cloneResult.clonedRole.toLowerCase();
-
     const phase2Players = buildPlayerListForPhase2();
     const secondaryGroundCards = cloneResult.groundCards || groundCards;
+
+    const secondActionResult = (actionResult as { secondActionResult?: Record<string, unknown> } | null)?.secondActionResult ?? null;
+    const masonResult = (actionResult as { masonResult?: Record<string, unknown> } | null)?.masonResult ?? null;
+    const insomniacResult = (actionResult as { insomniacResult?: Record<string, unknown> } | null)?.insomniacResult ?? null;
+    const oracleResult = (actionResult as { oracleResult?: Record<string, unknown> } | null)?.oracleResult ?? null;
 
     if (ACTIVE_CLONE_ROLES.has(roleLower)) {
       return (
         <div className="cl-phase2">
-          {roleLower === "seer" && <SeerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
-          {roleLower === "robber" && <RobberAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
-          {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={actionResult as never} />}
-          {roleLower === "drunk" && <DrunkAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
-          {roleLower === "joker" && <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={(actionResult && "groundRole" in actionResult ? actionResult : null) as never} />}
-          {roleLower === "warlock" && <WarlockAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={actionResult as never} />}
+          {roleLower === "seer" && <SeerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={secondActionResult as never} />}
+          {roleLower === "robber" && <RobberAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={secondActionResult as never} />}
+          {roleLower === "troublemaker" && <TroublemakerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} actionResult={secondActionResult as never} />}
+          {roleLower === "warlock" && <WarlockAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={secondaryGroundCards} actionResult={secondActionResult as never} />}
         </div>
       );
     }
 
-    if (roleLower === "werewolf") {
+    if (roleLower === "drunk") {
       return (
         <div className="cl-phase2">
-          <div className="cl-banner">
-            <span className="cl-banner-text">CLONED → WEREWOLF</span>
-          </div>
-          <WerewolfAction onAction={onAction} locked={locked} playerId={playerId} players={players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
+          <DrunkAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
+        </div>
+      );
+    }
+
+    if (roleLower === "joker") {
+      return (
+        <div className="cl-phase2">
+          <JokerAction onAction={onAction} locked={locked} playerId={playerId} players={phase2Players} groundCards={groundCards} actionResult={cloneResult.autoResult as never} />
         </div>
       );
     }
@@ -183,7 +175,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     if (roleLower === "mason") {
       return (
         <div className="cl-phase2">
-          <MasonAction onAction={onAction} locked={locked} playerId={playerId} players={players} actionResult={cloneResult.autoResult as never} />
+          <MasonAction onAction={onAction} locked={!masonResult} playerId={playerId} players={players} actionResult={masonResult as never} />
         </div>
       );
     }
@@ -191,7 +183,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     if (roleLower === "insomniac") {
       return (
         <div className="cl-phase2">
-          <InsomniacAction onAction={onAction} locked={locked} actionResult={actionResult as never} autoSubmitted />
+          <InsomniacAction onAction={onAction} locked={!insomniacResult} actionResult={insomniacResult as never} autoSubmitted />
         </div>
       );
     }
@@ -199,18 +191,17 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     if (roleLower === "oracle") {
       return (
         <div className="cl-phase2">
-          <OracleAction onAction={onAction} locked={locked} actionResult={actionResult as never} autoSubmitted />
+          <OracleAction onAction={onAction} locked={!oracleResult} actionResult={oracleResult as never} autoSubmitted />
         </div>
       );
     }
 
-    // Minion / other passive
     const autoMessage = cloneResult.autoResult ? (cloneResult.autoResult as { message?: string }).message || cloneResult.message : cloneResult.message;
 
     return (
       <div className="cl-phase2">
         <div className="cl-banner">
-          <span className="cl-banner-text">CLONED → {cloneResult.clonedRole.toUpperCase()}</span>
+          <span className="cl-banner-text">CLONED - {cloneResult.clonedRole.toUpperCase()}</span>
         </div>
         <div className="cl-passive-result">
           <div className="cl-passive-card cl-passive-card--tappable" onClick={() => openModal(getFullCardImage(cloneResult.clonedRole), cloneResult.clonedRole)}>
@@ -223,8 +214,6 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
     );
   }
 
-  // ===== PHASE 1 RENDER (pick / cloning / morph) =====
-
   return (
     <div className="role-action">
       <div className="role-circle-area">
@@ -232,9 +221,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
           const isSelf = player.id === playerId;
           const isTarget = player.id === targetId;
           const pos = positions[i];
-
           const showTargetFace = isTarget && (phase === "morph" || phase === "phase2") && !!clonedRoleName;
-
           const isMorphing = isSelf && phase === "morph";
           const isMorphed = isSelf && phase === "phase2";
 
@@ -298,7 +285,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
         )}
         {phase === "morph" && clonedRoleName && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--green">CLONED → {clonedRoleName.toUpperCase()}</span>
+            <span className="role-status-text role-status-text--green">CLONED - {clonedRoleName.toUpperCase()}</span>
           </div>
         )}
       </div>

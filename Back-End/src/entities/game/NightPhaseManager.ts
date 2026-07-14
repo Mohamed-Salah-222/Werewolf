@@ -122,14 +122,35 @@ export class NightPhaseManager {
     this.host.currentActiveRole = nextRole;
     this.host.currentActiveRoleStartedAt = Date.now();
 
-    // Handle Clone→Insomniac: when Insomniac slot fires, check clones who copied Insomniac
+    if (nextRole.toLowerCase() === "mason") {
+      this.handleCloneMason();
+    }
+
     if (nextRole.toLowerCase() === "insomniac") {
       this.handleCloneInsomniac();
     }
 
-    // Handle Clone→Oracle: when Oracle slot fires, run Oracle action for clones who copied Oracle
     if (nextRole.toLowerCase() === "oracle") {
       this.handleCloneOracle();
+    }
+
+    if (["werewolf", "minion", "mason", "drunk", "insomniac", "joker", "oracle"].includes(nextRole.toLowerCase())) {
+      playersWithRole.forEach((player) => {
+        if (this.host.confirmedPlayerPerformActions.includes(player.id)) return;
+
+        console.log(`Auto-performing immediate ${nextRole} action for ${player.name}`);
+        this.autoPerformAction(player);
+        this.host.confirmedPlayerPerformActions.push(player.id);
+
+        const remaining = (this.host.currentGameRolesMap.get(player.getOriginalRole().name) || 1) - 1;
+        this.host.currentGameRolesMap.set(player.getOriginalRole().name, remaining);
+      });
+
+      this.host.emit();
+      this.roleSlotTimer = setTimeout(() => {
+        this.advanceToNextRole();
+      }, timerSeconds * 1000);
+      return;
     }
 
     // Start server timer FIRST — before emitting to clients
@@ -206,17 +227,24 @@ export class NightPhaseManager {
 
         // ── Seer (two modes) ──
         case "seer": {
-          if (Math.random() > 0.5 && otherPlayers.length > 0) {
+          const canSeePlayer = otherPlayers.length > 0;
+          const canSeeGround = this.host.groundRoles.length >= 2;
+          const shouldSeePlayer = canSeePlayer && (!canSeeGround || Math.random() < 0.5);
+
+          if (shouldSeePlayer) {
             const target = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
             action = { type: "seer_player_role", targetPlayer: { id: target.id } };
-          } else if (this.host.groundRoles.length >= 2) {
+          } else if (canSeeGround) {
+            const shuffledGround = [...this.host.groundRoles].sort(() => Math.random() - 0.5);
             action = {
               type: "seer_ground_roles",
-              groundRole1: { id: this.host.groundRoles[0].id },
-              groundRole2: { id: this.host.groundRoles[1].id },
+              groundRole1: { id: shuffledGround[0].id },
+              groundRole2: { id: shuffledGround[1].id },
             };
-          } else {
+          } else if (canSeePlayer) {
             action = { type: "seer_player_role", targetPlayer: { id: otherPlayers[0].id } };
+          } else {
+            throw new Error("No valid Seer targets available");
           }
           result = player.performOriginalAction(this.host as never, action);
           break;
@@ -359,10 +387,44 @@ export class NightPhaseManager {
     }
   }
 
+  private handleCloneMason(): void {
+    const cloneMasons = this.host.players.filter((p) => {
+      return (p as any)._wasClone === true && (p as any)._clonedRoleName === "mason" && this.host.confirmedPlayerPerformActions.includes(p.id);
+    });
+
+    cloneMasons.forEach((player) => {
+      console.log(`Clone-Mason ${player.name} waking with the Masons`);
+      try {
+        const masons = this.host.players.filter((p) => {
+          if (p.id === player.id) return false;
+          const isOriginalMason = p.getOriginalRole().name.toLowerCase() === "mason";
+          const isCloneMason = (p as any)._wasClone === true && (p as any)._clonedRoleName === "mason";
+          return isOriginalMason || isCloneMason;
+        });
+
+        const result = {
+          masons: masons.map((m) => ({ id: m.id, name: m.name })),
+          message: masons.length > 0 ? `You see ${masons.map((m) => m.name).join(", ")} as fellow Mason(s)` : "You are the only Mason",
+        };
+
+        (player as any).lastActionResult = {
+          ...(player as any).lastActionResult,
+          masonResult: result,
+          message: result.message,
+        };
+
+        this.host.emit();
+      } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : "Unknown error";
+        console.error(`Error performing Clone-Mason check for ${player.name}:`, msg);
+      }
+    });
+  }
+
   private handleCloneInsomniac(): void {
     const cloneInsomniacs = this.host.players.filter((p) => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (p as any)._wasClone === true && p.getOriginalRole().name.toLowerCase() === "insomniac" && this.host.confirmedPlayerPerformActions.includes(p.id);
+      return (p as any)._wasClone === true && (p as any)._clonedRoleName === "insomniac" && this.host.confirmedPlayerPerformActions.includes(p.id);
     });
 
     cloneInsomniacs.forEach((player) => {
@@ -407,14 +469,14 @@ export class NightPhaseManager {
     );
 
     const cloneOracles = this.host.players.filter((p) => {
-      return (p as any)._wasClone === true && p.getRole().name.toLowerCase() === "oracle" && this.host.confirmedPlayerPerformActions.includes(p.id);
+      return (p as any)._wasClone === true && (p as any)._clonedRoleName === "oracle" && this.host.confirmedPlayerPerformActions.includes(p.id);
     });
 
     cloneOracles.forEach((player) => {
       console.log(`🧬🔮 Clone-Oracle ${player.name} receiving vision during Oracle slot`);
       try {
         // Run the Oracle action to get a vision
-        const oracleRole = player.getRole();
+        const oracleRole = (player as any)._clonedRole || player.getRole();
         const action = { type: "oracle" };
         const result = oracleRole.performAction()(this.host as never, player, action);
 

@@ -27,7 +27,12 @@ export class Mason implements Role {
         throw new Error(`Invalid action for Mason. Expected 'mason', received '${action.type}'.`);
       }
 
-      const otherMasons = game.players.filter((p) => p.getOriginalRole().name.toLowerCase() === "mason" && p.id !== player.id);
+      const otherMasons = game.players.filter((p) => {
+        if (p.id === player.id) return false;
+        const isOriginalMason = p.getOriginalRole().name.toLowerCase() === "mason";
+        const isCloneMason = (p as any)._wasClone === true && (p as any)._clonedRoleName === "mason";
+        return isOriginalMason || isCloneMason;
+      });
 
       return {
         masons: otherMasons.map((m) => ({ id: m.id, name: m.name })),

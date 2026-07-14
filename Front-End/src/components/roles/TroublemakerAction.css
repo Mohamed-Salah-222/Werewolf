@@ -15,6 +15,17 @@
   z-index: 4;
 }
 
+.tm-slot--selected .role-flip-face {
+  border-color: rgba(201, 168, 76, 0.75);
+  box-shadow:
+    0 0 0 1px rgba(201, 168, 76, 0.25),
+    0 0 18px rgba(201, 168, 76, 0.28);
+}
+
+.tm-slot--selected .role-flip-inner {
+  transform: translateY(-4px);
+}
+
 .tm-name--self {
   color: var(--color-village);
 }

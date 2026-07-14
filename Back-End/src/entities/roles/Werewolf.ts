@@ -36,7 +36,11 @@ export class Werewolf implements Role {
           message: `The other Werewolves are: ${otherWerewolves.map((w) => w.name).join(", ")}`,
         };
       } else {
-        const groundCard = game.groundRoles[0];
+        if (game.groundRoles.length === 0) {
+          throw new Error("No ground cards available");
+        }
+
+        const groundCard = game.groundRoles[Math.floor(Math.random() * game.groundRoles.length)];
 
         return {
           isAlone: true,
