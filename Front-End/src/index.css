@@ -6,6 +6,9 @@
 
 /* ===== CSS VARIABLES ===== */
 :root {
+  --app-phone-width: 430px;
+  --app-phone-height: 932px;
+  --app-phone-gutter: 32px;
   --color-gold: #c9a84c;
   --color-gold-light: #e8c84a;
   --color-gold-dark: #8a6d2e;
@@ -29,11 +32,30 @@
   --font-body: "Lexend", sans-serif;
 }
 
+html,
+body {
+  width: 100%;
+  min-height: 100dvh;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: #111;
+  background-color: #050505;
   color: #fff;
-  height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#root {
+  position: relative;
+  width: min(var(--app-phone-width), calc(100vw - var(--app-phone-gutter)), calc((100dvh - var(--app-phone-gutter)) * 430 / 932));
+  aspect-ratio: 430 / 932;
+  max-height: calc(100dvh - var(--app-phone-gutter));
+  overflow: hidden;
+  background-color: #000;
+  box-shadow: 0 0 36px rgba(0, 0, 0, 0.65);
 }
 
 button {
@@ -68,7 +90,17 @@ input {
 /* ===== MOBILE RESPONSIVE - HOME PAGE ===== */
 @media (max-height: 710px) {
   body {
-    overflow-y: auto;
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 480px) {
+  #root {
+    width: 100vw;
+    height: 100dvh;
+    max-height: none;
+    aspect-ratio: auto;
+    box-shadow: none;
   }
 }
 

@@ -1,17 +1,17 @@
 .join-page {
   position: relative;
-  min-height: 100vh;
-  min-height: 100dvh;
+  width: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: url("../assets/bg_waiting.webp") center top / cover no-repeat fixed;
+  background: url("../assets/bg_waiting.webp") center top / cover no-repeat;
   padding: 1rem;
   font-family: var(--font-body);
 }
 
 .join-vignette {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.6) 100%);

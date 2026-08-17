@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import type { PointerEvent } from "react";
 import { API_URL } from "../config";
 import { useGameStore } from "../store/gameStore";
 
@@ -7,6 +8,21 @@ import "./HomePage.css";
 import HowToPlay from "../components/HowToPlay";
 import { Team } from "@werewolf/shared";
 import { gameActions, connectSocket } from "../store/sockets";
+import settingsAsset from "../assets/settings.webp";
+import titleAsset from "../assets/logo.webp";
+import accountAsset from "../assets/account.webp";
+import buttonAsset from "../assets/button.webp";
+import characterAsset from "../assets/character.webp";
+import loreAsset from "../assets/lore.webp";
+import abilityAsset from "../assets/ability.webp";
+
+const homeCharacterImages = [characterAsset];
+
+const homeCharacterLores = [
+  "العصفورة قاعد وسط الناس في الحارة بيشوف كل واحد بيعمل ايه وبيامن الطريق للحرامية وبينقلهم الاخبار اول باول",
+];
+
+const homeCharacterAbilities = ["بينقل معلومة حد معين لواحد من الحرامية"];
 
 // ===== HELPERS =====
 
@@ -36,6 +52,8 @@ function HomePage() {
   const [gameCode, setGameCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [homeCharacterIndex, setHomeCharacterIndex] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
 
   // === ANIMATION STATE ===
   const [mounted, setMounted] = useState(false);
@@ -164,138 +182,263 @@ function HomePage() {
     }
   }, [playerName, gameCode]);
 
+  const activeHomeCharacterImage = homeCharacterImages[homeCharacterIndex];
+  const activeHomeCharacterLore = homeCharacterLores[homeCharacterIndex];
+  const activeHomeCharacterAbility = homeCharacterAbilities[homeCharacterIndex];
+
+  const handleHomeCharacterStep = useCallback((direction: 1 | -1) => {
+    setHomeCharacterIndex((currentIndex) => {
+      const itemCount = homeCharacterImages.length;
+      return (currentIndex + direction + itemCount) % itemCount;
+    });
+  }, []);
+
+  const handleHomeCharacterPointerDown = useCallback((event: PointerEvent<HTMLDivElement>) => {
+    touchStartXRef.current = event.clientX;
+  }, []);
+
+  const handleHomeCharacterPointerUp = useCallback(
+    (event: PointerEvent<HTMLDivElement>) => {
+      if (touchStartXRef.current === null) return;
+
+      const swipeDistance = event.clientX - touchStartXRef.current;
+      touchStartXRef.current = null;
+
+      if (Math.abs(swipeDistance) < 36) return;
+      handleHomeCharacterStep(swipeDistance < 0 ? 1 : -1);
+    },
+    [handleHomeCharacterStep],
+  );
+
   return (
     <div className={`home-page ${mounted ? "home-page--mounted" : ""}`}>
-      <div className="home-vignette" />
-
-      {/* ===== TOP: TITLE + BUTTONS ===== */}
-      <div className="home-topbar">
-        <h1 className="home-title anim-title">{`WEREWOLF`}</h1>
-        <div className="home-button-row">
+        <div className="home-header">
+          <button className="home-header-icon" type="button" aria-label="Settings">
+            <img src={settingsAsset} alt="" className="home-header-img home-header-img--settings" />
+          </button>
+          <img src={titleAsset} alt="Werewolf" className="home-header-title-img" />
+          <button className="home-header-icon" type="button" aria-label="Account">
+            <img src={accountAsset} alt="" className="home-header-img home-header-img--account" />
+          </button>
+        </div>
+        <div className="home-header-separator" />
+        <div className="home-action-row">
           <button
-            className="action-btn anim-btn anim-btn--1"
+            className="home-action-asset-btn"
+            type="button"
             onClick={() => {
               closeModals();
               setShowCreateModal(true);
             }}
           >
-            CREATE GAME
+            <img src={buttonAsset} alt="" className="home-action-asset-img" />
+            <span className="home-action-asset-text">ابدا لعب</span>
           </button>
           <button
-            className="action-btn anim-btn anim-btn--2"
+            className="home-action-asset-btn"
+            type="button"
             onClick={() => {
               closeModals();
               setShowJoinModal(true);
             }}
           >
-            JOIN GAME
+            <img src={buttonAsset} alt="" className="home-action-asset-img" />
+            <span className="home-action-asset-text">خش الحارة</span>
           </button>
-          <button
-            className="action-btn anim-btn anim-btn--3"
-            onClick={() => {
-              closeModals();
-              setShowHowToPlay(true);
-            }}
-          >
-            HOW TO PLAY
+          <button className="home-action-asset-btn" type="button">
+            <img src={buttonAsset} alt="" className="home-action-asset-img" />
+            <span className="home-action-asset-text">ازاي تلعب</span>
           </button>
         </div>
-      </div>
+        <div className="home-action-separator" />
+        <div
+          className="home-character-panel"
+          onPointerDown={handleHomeCharacterPointerDown}
+          onPointerUp={handleHomeCharacterPointerUp}
+        >
+          <img src={activeHomeCharacterImage} alt="" className="home-character-img" />
+        </div>
+        <div className="home-character-separator" />
+        <div className="home-lore-panel">
+          <img src={loreAsset} alt="" className="home-lore-img" />
+          <p className="home-panel-text home-lore-text">{activeHomeCharacterLore}</p>
+        </div>
+        <div className="home-lore-separator" />
+        <div className="home-ability-panel">
+          <img src={abilityAsset} alt="" className="home-ability-img" />
+          <p className="home-panel-text home-ability-text-new">{activeHomeCharacterAbility}</p>
+        </div>
 
-      {/* ===== MIDDLE: CHARACTER SHOWCASE ===== */}
-      <div className="home-showcase">
-        <div className={`home-char-display anim-char-display ${charSwitching ? "char-exit" : "char-enter"}`}>
-          {displayedChar.fullBody ? (
-            <img src={displayedChar.fullBody} alt={displayedChar.name} className="home-fullbody-img" />
-          ) : (
-            <div className="home-placeholder-body">
-              <span className="home-placeholder-icon">?</span>
-              <span className="home-placeholder-text">COMING SOON</span>
+      <div className="home-visuals home-visuals--hidden">
+        <div className="home-vignette" />
+
+        {/* ===== TOP: TITLE + BUTTONS ===== */}
+        <div className="home-topbar">
+          <h1 className="home-title anim-title">{`WEREWOLF`}</h1>
+          <div className="home-button-row">
+            <button
+              className="action-btn anim-btn anim-btn--1"
+              onClick={() => {
+                closeModals();
+                setShowCreateModal(true);
+              }}
+            >
+              CREATE GAME
+            </button>
+            <button
+              className="action-btn anim-btn anim-btn--2"
+              onClick={() => {
+                closeModals();
+                setShowJoinModal(true);
+              }}
+            >
+              JOIN GAME
+            </button>
+            <button
+              className="action-btn anim-btn anim-btn--3"
+              onClick={() => {
+                closeModals();
+                setShowHowToPlay(true);
+              }}
+            >
+              HOW TO PLAY
+            </button>
+          </div>
+        </div>
+
+        {/* ===== MIDDLE: CHARACTER SHOWCASE ===== */}
+        <div className="home-showcase">
+          <div className={`home-char-display anim-char-display ${charSwitching ? "char-exit" : "char-enter"}`}>
+            {displayedChar.fullBody ? (
+              <img src={displayedChar.fullBody} alt={displayedChar.name} className="home-fullbody-img" />
+            ) : (
+              <div className="home-placeholder-body">
+                <span className="home-placeholder-icon">?</span>
+                <span className="home-placeholder-text">COMING SOON</span>
+              </div>
+            )}
+          </div>
+
+          <div className={`home-info-panel anim-info-panel ${charSwitching ? "info-exit" : "info-enter"}`}>
+            <div className={`home-team-badge home-team-badge--${displayedChar.team}`}>{teamLabel(displayedChar.team)}</div>
+            <h2 className="home-char-name">{displayedChar.name.toUpperCase()}</h2>
+            <p className="home-char-title">{displayedChar.title}</p>
+            <div className="home-divider" />
+            <p className="home-char-desc">{displayedChar.description}</p>
+            <div className="home-ability-box">
+              <span className="home-ability-label">ABILITY</span>
+              <p className="home-ability-text">{displayedChar.ability}</p>
             </div>
-          )}
-        </div>
-
-        <div className={`home-info-panel anim-info-panel ${charSwitching ? "info-exit" : "info-enter"}`}>
-          <div className={`home-team-badge home-team-badge--${displayedChar.team}`}>{teamLabel(displayedChar.team)}</div>
-          <h2 className="home-char-name">{displayedChar.name.toUpperCase()}</h2>
-          <p className="home-char-title">{displayedChar.title}</p>
-          <div className="home-divider" />
-          <p className="home-char-desc">{displayedChar.description}</p>
-          <div className="home-ability-box">
-            <span className="home-ability-label">ABILITY</span>
-            <p className="home-ability-text">{displayedChar.ability}</p>
           </div>
         </div>
-      </div>
 
-      {/* ===== BOTTOM: CHARACTER CAROUSEL ===== */}
-      <div className="home-selectbar anim-selectbar">
-        <button
-          className="carousel-arrow carousel-arrow--left"
-          onClick={() => {
-            // FIX #2: Use ref instead of document.querySelector
-            gridRef.current?.scrollBy({ left: -200, behavior: "smooth" });
-          }}
-          aria-label="Scroll left"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
+        {/* ===== BOTTOM: CHARACTER CAROUSEL ===== */}
+        <div className="home-selectbar anim-selectbar">
+          <button
+            className="carousel-arrow carousel-arrow--left"
+            onClick={() => {
+              // FIX #2: Use ref instead of document.querySelector
+              gridRef.current?.scrollBy({ left: -200, behavior: "smooth" });
+            }}
+            aria-label="Scroll left"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
 
-        <div className="carousel-mask">
-          {/* FIX #2: Attach ref to the grid element */}
-          <div className="home-select-grid" ref={gridRef}>
-            {characters.map((char, index) => {
-              const isActive = selectedChar.id === char.id;
-              const color = teamColor(char.team);
-              return (
-                <button
-                  key={char.id}
-                  className={`home-grid-slot anim-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
-                  style={
-                    {
-                      "--slot-index": index,
-                      ...(isActive
-                        ? {
-                          borderColor: color,
-                          boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
-                        }
-                        : undefined),
-                    } as React.CSSProperties
-                  }
-                  onClick={() => handleCharSwitch(char)}
-                >
-                  {char.square ? (
-                    <img src={char.square} alt={char.name} className="home-grid-img" />
-                  ) : (
-                    <div className="home-grid-placeholder">
-                      <span className="home-grid-placeholder-text">{char.name.charAt(0)}</span>
-                    </div>
-                  )}
-                  <span className="home-grid-label" style={{ color: isActive ? color : "#666" }}>
-                    {char.name}
-                  </span>
+          <div className="carousel-mask">
+            {/* FIX #2: Attach ref to the grid element */}
+            <div className="home-select-grid" ref={gridRef}>
+              {characters.map((char, index) => {
+                const isActive = selectedChar.id === char.id;
+                const color = teamColor(char.team);
+                return (
+                  <button
+                    key={char.id}
+                    className={`home-grid-slot anim-grid-slot ${isActive ? "home-grid-slot--active" : ""}`}
+                    style={
+                      {
+                        "--slot-index": index,
+                        ...(isActive
+                          ? {
+                            borderColor: color,
+                            boxShadow: `0 0 20px ${color}60, inset 0 0 15px ${color}20`,
+                          }
+                          : undefined),
+                      } as React.CSSProperties
+                    }
+                    onClick={() => handleCharSwitch(char)}
+                  >
+                    {char.square ? (
+                      <img src={char.square} alt={char.name} className="home-grid-img" />
+                    ) : (
+                      <div className="home-grid-placeholder">
+                        <span className="home-grid-placeholder-text">{char.name.charAt(0)}</span>
+                      </div>
+                    )}
+                    <span className="home-grid-label" style={{ color: isActive ? color : "#666" }}>
+                      {char.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            className="carousel-arrow carousel-arrow--right"
+            onClick={() => {
+              // FIX #2: Use ref instead of document.querySelector
+              gridRef.current?.scrollBy({ left: 200, behavior: "smooth" });
+            }}
+            aria-label="Scroll right"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 6 15 12 9 18" />
+            </svg>
+          </button>
+        </div>
+        {/* ===== CREATE MODAL ===== */}
+        {showCreateModal && (
+          <div className="home-overlay" onClick={closeModals}>
+            <div className="home-modal" onClick={(e) => e.stopPropagation()}>
+              <h2 className="home-modal-title">CREATE GAME</h2>
+              <input className="home-input" type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleCreateGame()} autoFocus />
+              {error && <p className="home-error">{error}</p>}
+              <div className="home-modal-buttons">
+                <button className="home-cancel-btn" onClick={closeModals}>
+                  CANCEL
                 </button>
-              );
-            })}
+                <button className="home-confirm-btn" onClick={handleCreateGame} disabled={loading}>
+                  {loading ? "CREATING..." : "CREATE"}
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
-        <button
-          className="carousel-arrow carousel-arrow--right"
-          onClick={() => {
-            // FIX #2: Use ref instead of document.querySelector
-            gridRef.current?.scrollBy({ left: 200, behavior: "smooth" });
-          }}
-          aria-label="Scroll right"
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 6 15 12 9 18" />
-          </svg>
-        </button>
+        {/* ===== JOIN MODAL ===== */}
+        {showJoinModal && (
+          <div className="home-overlay" onClick={closeModals}>
+            <div className="home-modal" onClick={(e) => e.stopPropagation()}>
+              <h2 className="home-modal-title">JOIN GAME</h2>
+              <input className="home-input" type="text" placeholder="Game Code" value={gameCode} onChange={(e) => setGameCode(e.target.value)} maxLength={6} autoFocus />
+              <input className="home-input" type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleJoinGame()} />
+              {error && <p className="home-error">{error}</p>}
+              <div className="home-modal-buttons">
+                <button className="home-cancel-btn" onClick={closeModals}>
+                  CANCEL
+                </button>
+                <button className="home-confirm-btn" onClick={handleJoinGame} disabled={loading}>
+                  {loading ? "JOINING..." : "JOIN"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
       </div>
-      {/* ===== CREATE MODAL ===== */}
       {showCreateModal && (
         <div className="home-overlay" onClick={closeModals}>
           <div className="home-modal" onClick={(e) => e.stopPropagation()}>
@@ -314,7 +457,6 @@ function HomePage() {
         </div>
       )}
 
-      {/* ===== JOIN MODAL ===== */}
       {showJoinModal && (
         <div className="home-overlay" onClick={closeModals}>
           <div className="home-modal" onClick={(e) => e.stopPropagation()}>
@@ -333,7 +475,6 @@ function HomePage() {
           </div>
         </div>
       )}
-      {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
     </div>
   );
 }
