@@ -17,9 +17,9 @@ export const createTroublemakerAction = (player1: Player, player2: Player): Trou
 
 export class Troublemaker implements Role {
   public id: string;
-  public name: string = "Troublemaker";
+  public name: string = "الشقية";
   public team: Team = Team.Village;
-  public description: string = "Swaps two other players' roles without looking at them";
+  public description: string = "يبادل دورين لاعبين من غير ما يشوف";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -59,7 +59,7 @@ export class Troublemaker implements Role {
         player1Name: targetPlayer1.name,
         player2Id: targetPlayer2.id,
         player2Name: targetPlayer2.name,
-        message: `You swapped ${targetPlayer1.name} and ${targetPlayer2.name}'s roles`,
+        message: `بدلت بين ${targetPlayer1.name} و${targetPlayer2.name}`,
       };
     };
   }

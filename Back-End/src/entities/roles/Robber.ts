@@ -15,9 +15,9 @@ export const createRobberAction = (targetPlayer: Player): RobberAction => ({
 
 export class Robber implements Role {
   public id: string;
-  public name: string = "Robber";
+  public name: string = "الحرامي";
   public team: Team = Team.Village;
-  public description: string = "Steals another player's role and looks at their new role";
+  public description: string = "يسرق دور لاعب تاني ويشوف دوره الجديد";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -54,7 +54,7 @@ export class Robber implements Role {
         newTeam: stolenRole.team,
         targetPlayerId: targetPlayer.id,
         targetPlayerName: targetPlayer.name,
-        message: `You stole the ${stolenRole.name} role`,
+        message: `سرقت دور ${stolenRole.name}`,
       };
     };
   }

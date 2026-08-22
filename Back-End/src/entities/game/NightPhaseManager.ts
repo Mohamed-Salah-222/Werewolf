@@ -1,5 +1,6 @@
 import { Player } from "../Player";
 import { Game } from "../game/Game";
+import { roleIdOf } from "../roles/roleId";
 
 
 /**
@@ -9,18 +10,18 @@ import { Game } from "../game/Game";
 
 export class NightPhaseManager {
   private roleTimers: Map<string, number> = new Map([
-    ["Werewolf", 10],
-    ["Minion", 10],
-    ["Clone", 20],
-    ["Seer", 20],
-    ["Mason", 10],
-    ["Robber", 20],
-    ["Troublemaker", 20],
-    ["Drunk", 10],
-    ["Warlock", 20],
-    ["Insomniac", 10],
-    ["Joker", 10],
-    ["Oracle", 10],
+    ["العفريت", 10],
+    ["التابع", 10],
+    ["الشبيه", 20],
+    ["الرمال", 20],
+    ["البناي", 10],
+    ["الحرامي", 20],
+    ["الشقية", 20],
+    ["الليم", 10],
+    ["الساحر", 20],
+    ["الساهر", 10],
+    ["الجوكر", 10],
+    ["الكاهن", 10],
   ]);
 
   private nightMainTimer: ReturnType<typeof setTimeout> | null = null;
@@ -117,24 +118,24 @@ export class NightPhaseManager {
     }
 
     const timerSeconds = this.roleTimers.get(nextRole) || 10;
-    const playersWithRole = this.host.players.filter((p) => p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase());
+    const playersWithRole = this.host.players.filter((p) => roleIdOf(p.getOriginalRole().name) === roleIdOf(nextRole));
 
     this.host.currentActiveRole = nextRole;
     this.host.currentActiveRoleStartedAt = Date.now();
 
-    if (nextRole.toLowerCase() === "mason") {
+    if (roleIdOf(nextRole) === "mason") {
       this.handleCloneMason();
     }
 
-    if (nextRole.toLowerCase() === "insomniac") {
+    if (roleIdOf(nextRole) === "insomniac") {
       this.handleCloneInsomniac();
     }
 
-    if (nextRole.toLowerCase() === "oracle") {
+    if (roleIdOf(nextRole) === "oracle") {
       this.handleCloneOracle();
     }
 
-    if (["werewolf", "minion", "mason", "drunk", "insomniac", "joker", "oracle"].includes(nextRole.toLowerCase())) {
+    if (["werewolf", "minion", "mason", "drunk", "insomniac", "joker", "oracle"].includes(roleIdOf(nextRole))) {
       playersWithRole.forEach((player) => {
         if (this.host.confirmedPlayerPerformActions.includes(player.id)) return;
 
@@ -189,7 +190,7 @@ export class NightPhaseManager {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   autoPerformAction(player: Player): any {
-    const roleName = player.getOriginalRole().name.toLowerCase();
+    const roleName = roleIdOf(player.getOriginalRole().name);
     const otherPlayers = this.host.players.filter((p) => p.id !== player.id);
 
     try {
@@ -312,7 +313,7 @@ export class NightPhaseManager {
         }
 
         default:
-          result = { message: "No action performed" };
+          result = { message: "مفيش حركة اتعملت" };
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -323,8 +324,8 @@ export class NightPhaseManager {
       const msg = error instanceof Error ? error.message : "Unknown error";
       console.error(`Error auto-performing action for ${player.name}:`, msg);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (player as any).lastActionResult = { message: "Action was auto-performed" };
-      return { message: "Action was auto-performed" };
+      (player as any).lastActionResult = { message: "الحركة اتعملت أوتوماتيك" };
+      return { message: "الحركة اتعملت أوتوماتيك" };
     }
   }
 
@@ -397,14 +398,14 @@ export class NightPhaseManager {
       try {
         const masons = this.host.players.filter((p) => {
           if (p.id === player.id) return false;
-          const isOriginalMason = p.getOriginalRole().name.toLowerCase() === "mason";
+          const isOriginalMason = roleIdOf(p.getOriginalRole().name) === "mason";
           const isCloneMason = (p as any)._wasClone === true && (p as any)._clonedRoleName === "mason";
           return isOriginalMason || isCloneMason;
         });
 
         const result = {
           masons: masons.map((m) => ({ id: m.id, name: m.name })),
-          message: masons.length > 0 ? `You see ${masons.map((m) => m.name).join(", ")} as fellow Mason(s)` : "You are the only Mason",
+          message: masons.length > 0 ? `إخوتك البنايين: ${masons.map((m) => m.name).join("، ")}` : "انت البناي الوحيد",
         };
 
         (player as any).lastActionResult = {
@@ -431,12 +432,12 @@ export class NightPhaseManager {
       console.log(`🧬💤 Clone-Insomniac ${player.name} checking role during Insomniac slot`);
       try {
         const currentRole = player.getRole();
-        const hasChanged = currentRole.name.toLowerCase() !== "insomniac";
+        const hasChanged = roleIdOf(currentRole.name) !== "insomniac";
         const result = {
-          originalRole: "Insomniac",
+          originalRole: "الساهر",
           currentRole: currentRole.name,
           hasChanged,
-          message: hasChanged ? `Your role changed from Insomniac to ${currentRole.name}!` : "Your role is still Insomniac — no one swapped you.",
+          message: hasChanged ? `دورك اتغير من الساهر لـ${currentRole.name}!` : "دورك لسه الساهر… محدش لمسك.",
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

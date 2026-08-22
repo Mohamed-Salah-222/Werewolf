@@ -2,6 +2,7 @@ import { Team } from "@werewolf/shared";
 import type { PlayerId, Vote } from "@werewolf/shared";
 import { Player } from "../Player";
 import { Logger } from "../../utils/Logger";
+import { roleIdOf } from "../roles/roleId";
 
 export class VoteResolver {
   constructor(private logger: Logger) {}
@@ -40,7 +41,7 @@ export class VoteResolver {
         tiedPlayerIds.length > 0 &&
         tiedPlayerIds.every((id) => {
           const player = getPlayerById(id);
-          return player.getRole().name === "Werewolf";
+          return roleIdOf(player.getRole().name) === "werewolf";
         });
 
       if (allWerewolves) {
@@ -66,7 +67,7 @@ export class VoteResolver {
 
     if (voted === "noWerewolf") {
       for (const player of players) {
-        if (player.getRole().name === "Werewolf") {
+        if (roleIdOf(player.getRole().name) === "werewolf") {
           winners = Team.Villain;
           return { winners, isDraw: false, eliminatedPlayerId: null, winningTeam: winners };
         }
@@ -79,7 +80,7 @@ export class VoteResolver {
 
     if (votedPlayerRole.team === Team.Neutral) {
       winners = Team.Neutral;
-    } else if (votedPlayerRole.name === "Minion") {
+    } else if (roleIdOf(votedPlayerRole.name) === "minion") {
       winners = Team.Villain;
     } else if (votedPlayerRole.team === Team.Villain) {
       winners = Team.Village;
@@ -91,7 +92,7 @@ export class VoteResolver {
   }
 
   buildActionHistory(players: Player[]): Array<{ role: string; playerName: string; description: string }> {
-    const roleOrder = ["Werewolf", "Minion", "Clone", "Seer", "Mason", "Robber", "Troublemaker", "Drunk", "Insomniac", "Joker"];
+    const roleOrder = ["العفريت", "التابع", "الشبيه", "الرمال", "البناي", "الحرامي", "الشقية", "الليم", "الساهر", "الجوكر"];
     const actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
 
     for (const roleName of roleOrder) {

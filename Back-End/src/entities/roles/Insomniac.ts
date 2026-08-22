@@ -13,9 +13,9 @@ export const createInsomniacAction = (): InsomniacAction => ({
 
 export class Insomniac implements Role {
   public id: string;
-  public name: string = "Insomniac";
+  public name: string = "الساهر";
   public team: Team = Team.Village;
-  public description: string = "Wakes up at the end of the night to check if their role has changed";
+  public description: string = "يصحى آخر الليل يتأكد دوره اتغير ولا لأ";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -35,7 +35,7 @@ export class Insomniac implements Role {
         originalRole: originalRole.name,
         currentRole: currentRole.name,
         hasChanged: hasChanged,
-        message: hasChanged ? `Your role changed from ${originalRole.name} to ${currentRole.name}` : `Your role is still ${currentRole.name}`,
+        message: hasChanged ? `دورك اتغير من ${originalRole.name} لـ${currentRole.name}` : `دورك لسه ${currentRole.name}`,
       };
     };
   }

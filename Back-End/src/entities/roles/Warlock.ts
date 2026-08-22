@@ -15,9 +15,9 @@ export const createWarlockAction = (targetPlayer: { id: string }): WarlockAction
 
 export class Warlock implements Role {
   public id: string;
-  public name: string = "Warlock";
+  public name: string = "الساحر";
   public team: Team = Team.Village;
-  public description: string = "Swaps a player's role with a random ground card without looking";
+  public description: string = "يبدل دور لاعب بكارت أرض عشوائي من غير ما يبص";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

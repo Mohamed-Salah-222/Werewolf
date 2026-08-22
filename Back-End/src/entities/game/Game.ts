@@ -184,7 +184,7 @@ export class Game {
     this.io.sockets.sockets.forEach((socket: PlayerSocket) => {
       if (socket.playerId === kickedPlayerId) {
         socket.emit(SOCKET_EVENTS.SERVER.KICKED, {
-          message: "You have been removed from the game",
+          message: "اتشيلت من اللعبة",
         });
         socket.disconnect(true);
       }
@@ -239,7 +239,7 @@ export class Game {
             if (socket.playerId === firstConnected.id) {
               const oldName = oldHost?.name ?? "The previous host";
               socket.emit(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, {
-                message: `${oldName} disconnected. You are now the host!`,
+                message: `${oldName} خرج… انت المضيف دلوقتي!`,
               });
             }
           });

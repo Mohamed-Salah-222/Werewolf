@@ -37,16 +37,16 @@ export class RoleAssigner {
 
   createRoles(): Role[] {
     let roles: Role[] = [];
-    const roleNames = ["Werewolf", "Mason", "Seer", "Drunk", "Troublemaker", "Robber", "Minion"];
+    const roleNames = ["werewolf", "mason", "seer", "drunk", "troublemaker", "robber", "minion"];
 
     for (let i = 0; i < roleNames.length; i++) {
       let role: Role;
 
-      if (roleNames[i] === "Mason") {
+      if (roleNames[i] === "mason") {
         continue;
       }
 
-      if (roleNames[i] === "Werewolf") {
+      if (roleNames[i] === "werewolf") {
         for (let j = 0; j < this.numberOfWerewolf; j++) {
           role = new RoleClasses[roleNames[0].toLowerCase()]();
           roles.push(role);
@@ -66,7 +66,7 @@ export class RoleAssigner {
   }
 
   addRoles(availableRoles: Role[], playerCount: number): void {
-    const extraRolesInOrder = ["Clone", "Insomniac", "Joker", "Werewolf", "Warlock", "Oracle"];
+    const extraRolesInOrder = ["clone", "insomniac", "joker", "werewolf", "warlock", "oracle"];
     const needed = playerCount + this.numberOfGroundRoles - availableRoles.length;
 
     for (let i = 0; i < needed && i < extraRolesInOrder.length; i++) {

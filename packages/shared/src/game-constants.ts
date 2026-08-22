@@ -5,18 +5,18 @@ export const NUMBER_OF_GROUND_ROLES = 3;
 export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "warlock"];
 
 export const ROLE_NAMES = {
-  WEREWOLF: "Werewolf",
-  MINION: "Minion",
-  CLONE: "Clone",
-  SEER: "Seer",
-  MASON: "Mason",
-  ROBBER: "Robber",
-  TROUBLEMAKER: "Troublemaker",
-  DRUNK: "Drunk",
-  INSOMNIAC: "Insomniac",
-  JOKER: "Joker",
-  WARLOCK: "Warlock",
-  ORACLE: "Oracle",
+  WEREWOLF: "العفريت",
+  MINION: "التابع",
+  CLONE: "الشبيه",
+  SEER: "الرمال",
+  MASON: "البناي",
+  ROBBER: "الحرامي",
+  TROUBLEMAKER: "الشقية",
+  DRUNK: "الليم",
+  INSOMNIAC: "الساهر",
+  JOKER: "الجوكر",
+  WARLOCK: "الساحر",
+  ORACLE: "الكاهن",
 } as const;
 
 export const VALIDATION = {

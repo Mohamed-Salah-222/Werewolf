@@ -9,13 +9,13 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
   socket.on(SOCKET_EVENTS.CLIENT.VOICE_JOIN, ({ gameCode, playerId }) => {
     const game = manager.getGameByCode(gameCode);
     if (!game) {
-      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Game not found" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "اللعبة مش موجودة" });
       return;
     }
 
     const player = game.getPlayerById(playerId);
     if (!player) {
-      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Player not found in this game" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "اللاعب مش في اللعبة دي" });
       return;
     }
 
@@ -27,7 +27,7 @@ export function registerVoiceHandlers(ctx: SocketContext): void {
     }
 
     if (room.players.size >= 14) {
-      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "Voice chat is full (max 14 players)" });
+      socket.emit(SOCKET_EVENTS.SERVER.ERROR, { message: "غرفة الصوت مليانة (14 حد كحد أقصى)" });
       return;
     }
 

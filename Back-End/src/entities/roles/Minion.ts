@@ -2,6 +2,7 @@ import { Role } from "./Role";
 import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
+import { roleIdOf } from "./roleId";
 
 export interface MinionAction {
   type: "minion";
@@ -13,9 +14,9 @@ export const createMinionAction = (): MinionAction => ({
 
 export class Minion implements Role {
   public id: string;
-  public name: string = "Minion";
+  public name: string = "التابع";
   public team: Team = Team.Villain;
-  public description: string = "Sees who the Werewolves are. Wins if voted out and Werewolves win";
+  public description: string = "يشوف مين العفاريت. يكسب لو اتطرد والعفاريت يكسبوا";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -27,11 +28,11 @@ export class Minion implements Role {
         throw new Error(`Invalid action for Minion. Expected 'minion', received '${action.type}'.`);
       }
 
-      const werewolves = game.players.filter((p) => p.getRole().name.toLowerCase() === "werewolf");
+      const werewolves = game.players.filter((p) => roleIdOf(p.getRole().name) === "werewolf");
 
       return {
         werewolves: werewolves.map((w) => ({ id: w.id, name: w.name })),
-        message: werewolves.length > 0 ? `The Werewolves are: ${werewolves.map((w) => w.name).join(", ")}` : "There are no Werewolves among the players. All Werewolves are on the ground.",
+        message: werewolves.length > 0 ? `العفاريت هم: ${werewolves.map((w) => w.name).join("، ")}` : "مفيش عفاريت بين اللاعبين… كلهم على الأرض.",
       };
     };
   }

@@ -35,9 +35,9 @@ export const createSeerAction = {
 
 export class Seer implements Role {
   public id: string;
-  public name: string = "Seer";
+  public name: string = "الرمال";
   public team: Team = Team.Village;
-  public description: string = "Looks at one player's role OR two ground cards";
+  public description: string = "يشوف دور لاعب واحد أو كارتين أرض";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -72,7 +72,7 @@ export class Seer implements Role {
           playerName: targetPlayer.name,
           role: targetRole.name,
           team: targetRole.team,
-          message: `${targetPlayer.name} is a ${targetRole.name}`,
+          message: `${targetPlayer.name} هو ${targetRole.name}`,
         };
       } else {
         const groundRole1 = game.groundRoles.find((r) => r.id === action.groundRole1.id);
@@ -92,7 +92,7 @@ export class Seer implements Role {
           groundRole1: groundRole1.name,
           groundRole2Id: groundRole2.id,
           groundRole2: groundRole2.name,
-          message: `You saw ${groundRole1.name} and ${groundRole2.name} on the ground`,
+          message: `شفت ${groundRole1.name} و${groundRole2.name} على الأرض`,
         };
       }
     };

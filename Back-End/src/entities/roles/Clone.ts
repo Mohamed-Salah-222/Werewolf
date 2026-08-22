@@ -2,6 +2,7 @@ import { Role } from "./Role";
 import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
+import { roleIdOf } from "./roleId";
 
 const CLONE_FOLLOW_UP_ROLES = ["seer", "robber", "troublemaker", "warlock"];
 const CLONE_AUTO_ACTION_ROLES = ["drunk", "joker"];
@@ -19,9 +20,9 @@ export const createCloneAction = (targetPlayer: Player): CloneAction => ({
 
 export class Clone implements Role {
   public id: string;
-  public name: string = "Clone";
+  public name: string = "الشبيه";
   public team: Team = Team.Village;
-  public description: string = "Copies another player's role and performs their action immediately";
+  public description: string = "ياخد دور لاعب تاني ويعمل حركته على طول";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -43,7 +44,7 @@ export class Clone implements Role {
 
       const targetPlayer = game.getPlayerById(action.targetPlayer.id);
       const clonedRole = targetPlayer.getOriginalRole();
-      const clonedRoleName = clonedRole.name.toLowerCase();
+      const clonedRoleName = roleIdOf(clonedRole.name);
 
       player.setRole(clonedRole);
       (player as any)._wasClone = true;
@@ -59,31 +60,31 @@ export class Clone implements Role {
         switch (clonedRoleName) {
           case "werewolf":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Werewolf. You are now on the Villain team.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت عفريت… انت في فريق الشر دلوقتي.`,
             };
             break;
 
           case "minion":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Minion. You are now on the Villain team.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت التابع… انت في فريق الشر دلوقتي.`,
             };
             break;
 
           case "mason":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Mason. You will wake with the Masons.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت بنّاي… هتصحى مع البنايين.`,
             };
             break;
 
           case "insomniac":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became an Insomniac. You will check your role at the end of the night.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت الساهر… هتشيك على دورك آخر الليل.`,
             };
             break;
 
           case "oracle":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became an Oracle. You will receive a vision at the end of the night.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت الكاهن… هتيجيك رؤية آخر الليل.`,
             };
             break;
 
@@ -116,7 +117,7 @@ export class Clone implements Role {
         groundCards,
         otherPlayers,
         delayedWake: CLONE_DELAYED_WAKE_ROLES.includes(clonedRoleName),
-        message: needsSecondAction ? `You cloned ${targetPlayer.name} and became a ${clonedRole.name}. Now perform their action!` : autoResult?.message || `You became a ${clonedRole.name}`,
+        message: needsSecondAction ? `استنسخت ${targetPlayer.name} وبقيت ${clonedRole.name}… اعمل حركته دلوقتي!` : autoResult?.message || `بقيت ${clonedRole.name}`,
       };
     };
   }

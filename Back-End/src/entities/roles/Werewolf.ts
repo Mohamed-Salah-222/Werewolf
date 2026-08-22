@@ -2,6 +2,7 @@ import { Role } from "./Role";
 import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
+import { roleIdOf } from "./roleId";
 
 export interface WerewolfAction {
   type: "werewolf";
@@ -13,9 +14,9 @@ export const createWerewolfAction = (): WerewolfAction => ({
 
 export class Werewolf implements Role {
   public id: string;
-  public name: string = "Werewolf";
+  public name: string = "العفريت";
   public team: Team = Team.Villain;
-  public description: string = "Sees other Werewolves. If alone, sees one ground card";
+  public description: string = "يشوف باقي العفاريت. لو لوحده، يشوف كارت أرض واحدة";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -27,13 +28,13 @@ export class Werewolf implements Role {
         throw new Error(`Invalid action for Werewolf. Expected 'werewolf', received '${action.type}'.`);
       }
 
-      const otherWerewolves = game.players.filter((p) => p.getRole().name.toLowerCase() === "werewolf" && p.id !== player.id);
+      const otherWerewolves = game.players.filter((p) => roleIdOf(p.getRole().name) === "werewolf" && p.id !== player.id);
 
       if (otherWerewolves.length > 0) {
         return {
           isAlone: false,
           werewolves: otherWerewolves.map((w) => ({ id: w.id, name: w.name })),
-          message: `The other Werewolves are: ${otherWerewolves.map((w) => w.name).join(", ")}`,
+          message: `باقي الشلة: ${otherWerewolves.map((w) => w.name).join("، ")}`,
         };
       } else {
         if (game.groundRoles.length === 0) {
@@ -45,7 +46,7 @@ export class Werewolf implements Role {
         return {
           isAlone: true,
           groundCard: groundCard.name,
-          message: `You are alone. You saw a ${groundCard.name} on the ground`,
+          message: `انت لوحدك… شفت ${groundCard.name} على الأرض`,
         };
       }
     };

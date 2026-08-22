@@ -15,9 +15,9 @@ export const createDrunkAction = (targetRoleId: string): DrunkAction => ({
 
 export class Drunk implements Role {
   public id: string;
-  public name: string = "Drunk";
+  public name: string = "الليم";
   public team: Team = Team.Village;
-  public description: string = "Swaps their role with a random ground card without looking at it";
+  public description: string = "يبدل دوره بكارت أرض عشوائي من غير ما يبص";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -51,7 +51,7 @@ export class Drunk implements Role {
         success: true,
         targetRoleId: groundRole.id,
         targetGroundIndex: groundRoleIndex,
-        message: "You swapped your role with a ground card",
+        message: "بدلت دورك بكارت أرض",
         // Drunk doesn't know what they became
       };
     };

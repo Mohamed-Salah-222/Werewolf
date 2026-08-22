@@ -15,9 +15,9 @@ export const createJokerAction = (targetRoleId: string): JokerAction => ({
 
 export class Joker implements Role {
   public id: string;
-  public name: string = "Joker";
+  public name: string = "الجوكر";
   public team: Team = Team.Neutral;
-  public description: string = "Looks at one ground card. Wins alone if voted out";
+  public description: string = "يبص على كارت أرض. يكسب لوحدو لو اتصوّت عليه";
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -47,7 +47,7 @@ export class Joker implements Role {
         targetRoleId: groundRole.id,
         targetGroundIndex: groundRoleIndex,
         groundRole: groundRole.name,
-        message: `You saw a ${groundRole.name} on the ground`,
+        message: `شفت ${groundRole.name} على الأرض`,
       };
     };
   }
