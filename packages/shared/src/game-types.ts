@@ -1,28 +1,31 @@
 export type PlayerId = string;
 
-export enum TimerOption {
-  Short = 4,
-  Medium = 6,
-  Long = 8,
-  VeryLong = 10,
-}
+export const TimerOption = {
+  Short: 4,
+  Medium: 6,
+  Long: 8,
+  VeryLong: 10,
+} as const;
+export type TimerOption = (typeof TimerOption)[keyof typeof TimerOption];
 
-export const DEFAULT_TIMER = TimerOption.Medium;
+export const DEFAULT_TIMER: TimerOption = TimerOption.Medium;
 
-export enum Phase {
-  Waiting = "waiting",
-  Role = "role",
-  Night = "night",
-  Discussion = "discussion",
-  Vote = "vote",
-  EndGame = "endGame",
-}
+export const Phase = {
+  Waiting: "waiting",
+  Role: "role",
+  Night: "night",
+  Discussion: "discussion",
+  Vote: "vote",
+  EndGame: "endGame",
+} as const;
+export type Phase = (typeof Phase)[keyof typeof Phase];
 
-export enum Team {
-  Villain = "villain",
-  Village = "village",
-  Neutral = "neutral",
-}
+export const Team = {
+  Villain: "villain",
+  Village: "village",
+  Neutral: "neutral",
+} as const;
+export type Team = (typeof Team)[keyof typeof Team];
 
 export type Vote = {
   voter: PlayerId;

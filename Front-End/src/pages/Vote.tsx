@@ -11,7 +11,6 @@ function Vote() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
   const storePlayers = useGameStore((s) => s.players);

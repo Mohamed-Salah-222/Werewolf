@@ -2,10 +2,9 @@ import { SOCKET_EVENTS } from "@werewolf/shared";
 import type { UpdateGamePayload, JoinGameData, RejoinGameData } from "@werewolf/shared";
 import { useGameStore } from "./gameStore";
 import { io } from "socket.io-client";
-import type { ServerToClientEvents, ClientToServerEvents } from "@werewolf/shared";
 import { API_URL } from "../config";
 
-const socket = io<ServerToClientEvents, ClientToServerEvents>(API_URL, {
+const socket = io(API_URL, {
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 10,

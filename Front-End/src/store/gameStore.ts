@@ -183,7 +183,7 @@ export const useGameStore = create<GameStore>()(
             playerName: me?.name ?? state.playerName,
             isHost: me?.isHost ?? state.isHost,
 
-            phase: snapshot.phase === "endGame" ? "results" : snapshot.phase,
+            phase: (snapshot.phase === "endGame" ? "results" : snapshot.phase) as GameStore["phase"],
 
             roleName: priv?.currentRole ?? priv?.originalRole ?? null,
             originalRoleName: priv?.originalRole ?? null,

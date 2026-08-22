@@ -66,9 +66,7 @@ function NightPhase() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
-  const isHost = useGameStore((s) => s.isHost);
   const hasAlreadyActed = useGameStore((s) => s.hasPerformedAction);
   const roleQueue = useGameStore((s) => s.roleQueue);
   const storeGroundCards = useGameStore((s) => s.groundCards);
