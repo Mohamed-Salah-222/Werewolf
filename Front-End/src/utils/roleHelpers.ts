@@ -1,15 +1,13 @@
-import { characters, allCards, backCardImage } from "../characters";
+import { backCardImage, findCharacter, findCard } from "../characters";
 
 /** Get the square/thumbnail image for a role (used in circle layout) */
 export function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
+  return findCharacter(roleName)?.square || backCardImage;
 }
 
 /** Get the full card image for a role (used in modals) */
 export function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+  return findCard(roleName)?.image || backCardImage;
 }
 
 /**

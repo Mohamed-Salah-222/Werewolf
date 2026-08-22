@@ -26,6 +26,7 @@ import oracle2d from "./assets/oracle_2d.webp";
 
 export interface CharacterData {
   id: string;
+  en: string;
   name: string;
   team: Team;
   title: string;
@@ -35,148 +36,170 @@ export interface CharacterData {
   fullBody: string | null;
 }
 
+/** Find a character by any of its identifiers: stable id, English name, or Arabic display name */
+export function findCharacter(roleName: string): CharacterData | undefined {
+  const needle = roleName.trim().toLowerCase();
+  return characters.find(
+    (c) =>
+      c.id.toLowerCase() === needle ||
+      c.en.toLowerCase() === needle ||
+      c.name === roleName.trim(),
+  );
+}
+
 export const characters: CharacterData[] = [
   {
     id: "werewolf",
-    name: "Werewolf",
+    en: "Werewolf",
+    name: "العفريت",
     team: "villain",
-    title: "The Beast Among Us",
+    title: "الوحش اللي بينا",
     description:
-      "A creature of the night hiding in plain sight. When darkness falls, the beast awakens and hunts with its pack.",
+      "مخلوق الليل مستخبي وسط أهل البلد، شكله زي أي واحد منكم. أول ما تحلك الدنيا ويهجر النوم، بيصحى العفريت ويمشي مع شلته يصطاد.",
     ability:
-      "At night, Werewolves open eyes, see each other, if alone, you may peek one center card once.",
+      "بالليل العفاريت يفتحوا عنيهم ويشوفوا بعض. لو لقيت نفسك لوحدك، ممكن تبص على كارت من كروت الأرض مرة واحدة.",
     square: werewolfSquare,
     fullBody: werewolf2d,
   },
   {
     id: "minion",
-    name: "Minion",
+    en: "Minion",
+    name: "التابع",
     team: "villain",
-    title: "The Shadow Servant",
+    title: "خادم الظلام",
     description:
-      "A devoted servant sworn to the wolves. He knows their faces in the dark, yet remains unseen.",
+      "عبد مخلص للعفاريت، حلف له يموت وهو صامت. عارف وشوشهم في الضلمة كويس، بس هو نفسه مش متباني عليهم.",
     ability:
-      "You know the Werewolves, but they don't know you, if you die, their team just wins instantly.",
+      "انت عارف مين العفاريت بس هم مش يعرفوك. لو مت انت، الفريق بتاعهم بيكسب على طول.",
     square: minionSquare,
     fullBody: minion2d,
   },
   {
     id: "seer",
-    name: "Seer",
+    en: "Seer",
+    name: "الرمال",
     team: "village",
-    title: "The All-Seeing Eye",
+    title: "صاحب البصيرة",
     description:
-      "Gifted with visions beyond mortal sight. The Seer peers into hidden souls, seeking truth in whispers and shadows.",
+      "واخد عطا يشوف اللي مخبي ورا الستار. بيفرك الرمل بين إيديه وبيلمح في النفوس، بيتبع الحقيقة في الهمس والضلمة.",
     ability:
-      "You have two options either view one player's role or instead view two center cards.",
+      "قدامك اختيارين: يا إما تبص على دور لاعب من اللعبين، يا تشوف كارتين من كروت الأرض.",
     square: seerSquare,
     fullBody: seer2d,
   },
   {
     id: "robber",
-    name: "Robber",
+    en: "Robber",
+    name: "الحرامي",
     team: "village",
-    title: "The Night Thief",
+    title: "حرامي الليل",
     description:
-      "A sly thief who steals more than gold. In the silence of night, he trades identities and wakes unsure of the face he now wears.",
+      "حرامي شاطر بيسرق أكتر من الفلوس. في سكون الليل بيبادل هوياته مع غيره، ويصحى الصبح مش عارف هو اصلا مين.",
     ability:
-      "Steal a role from another player then look at it, you become that role for the rest of play.",
+      "اسرق دور من لاعب تاني وابص عليه، وبتفضل بدوره لباقي اللعبة.",
     square: robberSquare,
     fullBody: robber2d,
   },
   {
     id: "troublemaker",
-    name: "Troublemaker",
+    en: "Troublemaker",
+    name: "الشقية",
     team: "village",
-    title: "The Chaos Weaver",
+    title: "صانعة الفوضى",
     description:
-      "She thrives in confusion and delight. With careless hands she twists fate, swapping destinies while laughter echoes in the dark.",
+      "بتعيش على اللخبطة والهبل. بايدها الخفيفة بتلعب في القدر، بتبادل أقدار الناس وهي ضحكة في الضلمة.",
     ability:
-      "Swap two other players' roles at night without looking, their roles change, they won't know.",
+      "بدل دور لاعبين اتنين بالليل من غير ما تبص. أدوارهم بتتغير وهما مش هيحسوا بحاجة.",
     square: troublemakerSquare,
     fullBody: troublemaker2d,
   },
   {
     id: "mason",
-    name: "Mason",
+    en: "Mason",
+    name: "البناي",
     team: "village",
-    title: "The Sworn Brother",
+    title: "اخوة العهد",
     description:
-      "Bound by oath and silent trust, Masons recognize their own. In a village filled with lies, their shared loyalty never breaks.",
+      "متلزقين بعهد وصمت وثقة. البنايين بيعرفوا بعض وسط قرية مليانة كدب، والوفاء اللي بينهم عمره ما بيتكسر.",
     ability:
-      "Wake with the other Mason and recognize each other the mason bond can never break",
+      "تصحى مع البناي التاني وتتعرفوا على بعض. عهد البنايين عمره ما بيتكسر.",
     square: masonSquare,
     fullBody: mason2d,
   },
   {
     id: "drunk",
-    name: "Drunk",
+    en: "Drunk",
+    name: "الليم",
     team: "village",
-    title: "The Lost Soul",
+    title: "الروح التايهة",
     description:
-      "Lost in haze and heavy drink, the Drunk stumbles through fate. By morning, the role once held may be gone without notice.",
-    ability:
-      "At night, swap your role with a random ground card and do not look",
+      "تايه في سكرته ومداري، الليم بيهبط في قدره وهو مش واخد باله. بالصبح ممكن يكون ساب دوره من غير ما يحس.",
+    ability: "بالليل بدل دورك بكارت أرض عشوائي ومتبصش عليه.",
     square: drunkSquare,
     fullBody: drunk2d,
   },
   {
     id: "insomniac",
-    name: "Insomniac",
+    en: "Insomniac",
+    name: "الساهر",
     team: "village",
-    title: "The Sleepless Watcher",
+    title: "سهران لحد الفجر",
     description:
-      "Sleep never comes to this soul. While others scheme in darkness, the Insomniac waits to see what remains by dawn.",
+      "النوم عمره ما بيجيله. والناس بتدبر في الضلمة، الساهر قاعد يستنى الفجر يشوف اللي فاضل وإيه اللي راح.",
     ability:
-      "Wake last and check your current role card to see whether it changed during the night.",
+      "بتصحى آخر واحد وبتبص على كارتك الحالي عشان تشوف هل اتغير ولا لأ.",
     square: insomniacSquare,
     fullBody: insomniac2d,
   },
   {
     id: "clone",
-    name: "Clone",
+    en: "Clone",
+    name: "الشبيه",
     team: "village",
-    title: "The Mimic",
+    title: "مراية من غير وجه",
     description:
-      "A blank reflection seeking identity. The Clone mirrors another's fate, becoming what it sees and living that borrowed truth.",
+      "مراية فاضية بتدور على هويتها. الشبيه بينسخ قدر غيره، بيبقى اللي يشوفه ويعيش حياة مستعارة مش بتاعتو.",
     ability:
-      "At night, choose a player and copy their role, you become that role and do its night action.",
+      "بالليل اختار لاعب وانقل دوره. بتتحول لدوره وبتعمل حركته الليلية.",
     square: cloneSquare,
     fullBody: clone2d,
   },
   {
     id: "joker",
-    name: "Joker",
+    en: "Joker",
+    name: "الجوكر",
     team: "neutral",
-    title: "The Wild Card",
+    title: "الكارت المجنون",
     description:
-      "Madness wrapped in a grin. The Joker thrives on chaos, claiming victory only through chosen defeat.",
+      "جنون متلفف في ضحكة. الجوكر عايش على الفوضى، وكسبانه بس لما يختار خسارته بنفسه.",
     ability:
-      "You win if the village votes to eliminate you, act suspicious, but never admit your goal",
+      "انت تكسب لو القرية صوتت عليك تموت. اعمل شبهات، بس عمرك ما تقول هدفك لحد.",
     square: jokerSquare,
     fullBody: joker2d,
   },
   {
     id: "warlock",
-    name: "Warlock",
+    en: "Warlock",
+    name: "الساحر",
     team: "village",
-    title: "The Hex Caster",
+    title: "صاحب التعاويذ",
     description:
-      "A master of dark enchantments who twists fate from the shadows. With a flick of his wrist, he curses another's identity into the unknown.",
+      "أستاذ السحر الأسود، بيدبر في القدر من ورا الستار. بمجرد رفة إيد، بيرمي هوية حد في المجهول.",
     ability:
-      "Choose a playerbtheir role is swapped with a random ground card. You don't see what they become.",
+      "اختار لاعب، دوره هيتبدل بكارت أرض عشوائي. انت مش هتشوف بقى بقى مين.",
     square: warlockSquare,
     fullBody: warlock2d,
   },
   {
     id: "oracle",
-    name: "Oracle",
+    en: "Oracle",
+    name: "الكاهن",
     team: "village",
-    title: "The Whispering Seer",
+    title: "اللي بيسمع الهمس",
     description:
-      "Visions come unbidden to the Oracle. Fragments of the night's secrets echo through his mind a stolen role, a hidden wolf, a broken bond.",
+      "الرؤى بتيجيله من غير ما يطلب. كسر من أسرار الليل بيرن في دماغه: دور اتنسرق، عفريت مستخبي، عهد اتبكسر.",
     ability:
-      "At the end of night, receive a random vision from another player's action. It could change everything.",
+      "في آخر الليل بتيجيك رؤية عشوائية من حركة لاعب تاني. ممكن الرؤيا دي تغير كل حاجة.",
     square: oracleSquare,
     fullBody: oracle2d,
   },
@@ -253,11 +276,10 @@ export const cardStyleMap: Record<string, CardStyleData> = {
   },
 };
 
-/** Get full GameCard props for a role by name */
+/** Get full GameCard props for a role by name (matches id, English, or Arabic) */
 export function getGameCardData(roleName: string) {
-  const key = roleName.toLowerCase();
-  const char = characters.find((c) => c.id === key);
-  const style = cardStyleMap[key] || cardStyleMap["werewolf"];
+  const char = findCharacter(roleName);
+  const style = (char && cardStyleMap[char.id]) || cardStyleMap["werewolf"];
 
   return {
     name: char?.name || roleName,
@@ -300,6 +322,7 @@ import oracleCardSmall from "./assets/oracle_card_small.webp";
 
 export interface CardData {
   id: string;
+  en: string;
   name: string;
   image: string;
   small: string;
@@ -310,37 +333,52 @@ export const backCardImage = backCard;
 export const allCards: CardData[] = [
   {
     id: "werewolf",
-    name: "Werewolf",
+    en: "Werewolf",
+    name: "العفريت",
     image: werewolfCard,
     small: werewolfCardSmall,
   },
-  { id: "minion", name: "Minion", image: minionCard, small: minionCardSmall },
-  { id: "seer", name: "Seer", image: seerCard, small: seerCardSmall },
-  { id: "robber", name: "Robber", image: robberCard, small: robberCardSmall },
+  { id: "minion", en: "Minion", name: "التابع", image: minionCard, small: minionCardSmall },
+  { id: "seer", en: "Seer", name: "الرمال", image: seerCard, small: seerCardSmall },
+  { id: "robber", en: "Robber", name: "الحرامي", image: robberCard, small: robberCardSmall },
   {
     id: "troublemaker",
-    name: "Troublemaker",
+    en: "Troublemaker",
+    name: "الشقية",
     image: troublemakerCard,
     small: troublemakerCardSmall,
   },
-  { id: "mason", name: "Mason", image: masonCard, small: masonCardSmall },
-  { id: "drunk", name: "Drunk", image: drunkCard, small: drunkCardSmall },
+  { id: "mason", en: "Mason", name: "البناي", image: masonCard, small: masonCardSmall },
+  { id: "drunk", en: "Drunk", name: "الليم", image: drunkCard, small: drunkCardSmall },
   {
     id: "insomniac",
-    name: "Insomniac",
+    en: "Insomniac",
+    name: "الساهر",
     image: insomniacCard,
     small: insomniacCardSmall,
   },
-  { id: "clone", name: "Clone", image: cloneCard, small: cloneCardSmall },
-  { id: "joker", name: "Joker", image: jokerCard, small: jokerCardSmall },
+  { id: "clone", en: "Clone", name: "الشبيه", image: cloneCard, small: cloneCardSmall },
+  { id: "joker", en: "Joker", name: "الجوكر", image: jokerCard, small: jokerCardSmall },
   {
     id: "warlock",
-    name: "Warlock",
+    en: "Warlock",
+    name: "الساحر",
     image: warlockCard,
     small: warlockCardSmall,
   },
-  { id: "oracle", name: "Oracle", image: oracleCard, small: oracleCardSmall },
+  { id: "oracle", en: "Oracle", name: "الكاهن", image: oracleCard, small: oracleCardSmall },
 ];
+
+/** Find a card by any identifier: id, English name, or Arabic display name */
+export function findCard(roleName: string): CardData | undefined {
+  const needle = roleName.trim().toLowerCase();
+  return allCards.find(
+    (c) =>
+      c.id.toLowerCase() === needle ||
+      c.en.toLowerCase() === needle ||
+      c.name === roleName.trim(),
+  );
+}
 
 // ===== PRELOADING =====
 

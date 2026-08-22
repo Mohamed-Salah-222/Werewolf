@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { findCharacter, findCard, backCardImage } from "../../characters";
 import CardModal from "../CardModal";
 import "./NightRoleProgress.css";
 
@@ -20,13 +20,16 @@ interface Props {
 // ===== HELPERS =====
 
 function getSquareImage(roleName: string): string {
-  const char = characters.find((c) => c.id.toLowerCase() === roleName.toLowerCase());
-  return char?.square || backCardImage;
+  return findCharacter(roleName)?.square || backCardImage;
 }
 
 function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.id.toLowerCase() === roleName.toLowerCase());
-  return card?.image || backCardImage;
+  return findCard(roleName)?.image || backCardImage;
+}
+
+/** Arabic display label for any role identifier (English name, Arabic name, or id) */
+function roleLabel(roleName: string): string {
+  return findCharacter(roleName)?.name || roleName;
 }
 
 // ===== COMPONENT =====
@@ -94,7 +97,7 @@ function NightRoleProgress({ roleQueue, activeRole, timer, myRole }: Props) {
                 <img src={getSquareImage(item.roleName)} alt={item.roleName} className="nrp-thumb" draggable={false} />
               </div>
 
-              <span className={`nrp-label ${isActive ? "nrp-label--active" : ""} ${isMyRole && isActive ? "nrp-label--mine" : ""} ${isCompleted ? "nrp-label--completed" : ""}`}>{item.roleName}</span>
+              <span className={`nrp-label ${isActive ? "nrp-label--active" : ""} ${isMyRole && isActive ? "nrp-label--mine" : ""} ${isCompleted ? "nrp-label--completed" : ""}`}>{roleLabel(item.roleName)}</span>
 
               {isActive && timer > 0 && <span className={`nrp-timer-text ${isUrgent ? "nrp-timer-text--urgent" : ""}`}>{timer}s</span>}
             </div>
