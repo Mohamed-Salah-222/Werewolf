@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
-import { allCards, backCardImage } from "../characters";
+import { findCard, backCardImage } from "../characters";
 import "./RoleReveal.css";
 
 // ===== TYPES =====
@@ -16,9 +16,7 @@ interface RoleInfo {
 // ===== HELPER =====
 
 function getCardImage(roleName: string): string {
-  const key = roleName.toLowerCase();
-  const card = allCards.find((c) => c.id === key);
-  return card?.image || "";
+  return findCard(roleName)?.image || "";
 }
 
 // ===== COMPONENT =====
@@ -108,8 +106,8 @@ function RoleReveal() {
       <div className="rr-page">
         <div className="rr-vignette" />
         <div className="rr-loading">
-          <h1 className="rr-loading-title">ASSIGNING ROLES</h1>
-          <p className="rr-loading-text">The fates are being decided...</p>
+          <h1 className="rr-loading-title">بتقسم الأدوار</h1>
+          <p className="rr-loading-text">الأقدار بتتوزع…</p>
         </div>
       </div>
     );
@@ -126,7 +124,7 @@ function RoleReveal() {
         {/* Status bar */}
         <div className="rr-status-bar">
           <div className={`rr-status-line ${allReady ? "rr-status-line--all-ready" : ""}`}>
-            <span className="rr-status-label">Players</span>
+            <span className="rr-status-label">اللاعبين</span>
             <span className="rr-status-count">
               <span className="rr-status-ready">{readyCount}</span>
               <span className="rr-status-separator">/</span>
@@ -134,7 +132,7 @@ function RoleReveal() {
             </span>
           </div>
           {notReady.length > 0 && (
-            <button className="rr-info-btn rr-info-btn--slackers" onClick={() => setShowSlackers(true)} aria-label="Show unready players">
+            <button className="rr-info-btn rr-info-btn--slackers" onClick={() => setShowSlackers(true)} aria-label="مين لسه مش جاهز">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -143,15 +141,15 @@ function RoleReveal() {
               </svg>
             </button>
           )}
-          <button className="rr-info-btn rr-info-btn--hint" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+          <button className="rr-info-btn rr-info-btn--hint" onClick={() => setShowPhaseInfo(true)} aria-label="معلومات المرحلة">
             !
           </button>
         </div>
 
-        {!flipped && <p className="rr-sub-text">Tap to reveal your role</p>}
-        {flipped && !confirmed && <p className="rr-sub-text">Tap card again to hide it</p>}
+        {!flipped && <p className="rr-sub-text">دوس تكشف دورك</p>}
+        {flipped && !confirmed && <p className="rr-sub-text">دوس على الكارت تاني تخفيه</p>}
         {flipped && confirmed && (
-          <p className="rr-waiting-text">Waiting for other players ({countdown}s)</p>
+          <p className="rr-waiting-text">مستني باقي اللاعبين ({countdown} ثانية)</p>
         )}
 
         {/* Card with flip */}
@@ -159,7 +157,7 @@ function RoleReveal() {
           <div className={`rr-card-inner ${flipped ? "rr-card-inner--flipped" : ""}`}>
             {/* Front: card back */}
             <div className="rr-card-face rr-card-face--front">
-              <img src={backCardImage} alt="Card back" className="rr-card-img" />
+              <img src={backCardImage} alt="ضهر الكارت" className="rr-card-img" />
             </div>
             {/* Back: role card image */}
             <div className="rr-card-face rr-card-face--back">
@@ -171,7 +169,7 @@ function RoleReveal() {
         {/* Confirm button */}
         {flipped && !confirmed && (
           <button className="rr-confirm-btn" onClick={handleConfirm}>
-            I'M READY
+            أنا جاهز
           </button>
         )}
 
@@ -184,7 +182,7 @@ function RoleReveal() {
             navigate("/");
           }}
         >
-          LEAVE
+          خروج
         </button>
       </div>
 
@@ -194,8 +192,8 @@ function RoleReveal() {
           <div className="rr-modal" onClick={(e) => e.stopPropagation()}>
             <div className="rr-modal-header">
               <span className="rr-modal-icon">💀</span>
-              <h2 className="rr-modal-title">BRAIN DEAD</h2>
-              <p className="rr-modal-subtitle">Still loading their last brain cell</p>
+              <h2 className="rr-modal-title">مخه واقف</h2>
+              <p className="rr-modal-subtitle">لسه بيحمل آخر خلية مخ في دماغه</p>
             </div>
             <div className="rr-modal-list">
               {notReady.map((p) => (
@@ -206,7 +204,7 @@ function RoleReveal() {
               ))}
             </div>
             <button className="rr-modal-close" onClick={() => setShowSlackers(false)}>
-              DISMISS
+              تمام
             </button>
           </div>
         </div>
@@ -217,52 +215,52 @@ function RoleReveal() {
         <div className="rr-modal-overlay" onClick={() => setShowPhaseInfo(false)}>
           <div className="rr-phase-modal" onClick={(e) => e.stopPropagation()}>
             <div className="rr-phase-header">
-              <h2 className="rr-phase-title">ROLE REVEAL</h2>
+              <h2 className="rr-phase-title">كشف الأدوار</h2>
               <button className="rr-phase-close" onClick={() => setShowPhaseInfo(false)}>
                 ✕
               </button>
             </div>
             <div className="rr-phase-body">
-              <p className="rr-phase-flavor">Everyone secretly discovers who they are. Remember your role you'll need it.</p>
+              <p className="rr-phase-flavor">كل واحد بيكتشف دوره في السر. افتكر كويس إنت مين، هتحتاج دورك.</p>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title">REVEAL YOUR ROLE</span>
-                  <p className="rr-phase-item-desc">Tap the face-down card to flip it and see which role you've been assigned. This is your identity for the round.</p>
+                  <span className="rr-phase-item-title">اكشف دورك</span>
+                  <p className="rr-phase-item-desc">دوس على ضهر الكارت يقلب ويوريك الدور اللي جالك. ده هويتك للجولة دي.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title">HIDE YOUR CARD</span>
-                  <p className="rr-phase-item-desc">Tap the card again to flip it back face-down. Useful if someone nearby is peeking at your screen.</p>
+                  <span className="rr-phase-item-title">اخبي كارتك</span>
+                  <p className="rr-phase-item-desc">دوس على الكارت تاني يرجع ضهر. مفيدة لو حد جانبك بيبص في شاشتك.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title">CONFIRM READY</span>
-                  <p className="rr-phase-item-desc">Once you've memorized your role, hit the "I'M READY" button. The night phase begins when everyone confirms.</p>
+                  <span className="rr-phase-item-title">أكد إنك جاهز</span>
+                  <p className="rr-phase-item-desc">لما تحفظ دورك دوس «أنا جاهز». مرحلة الليل بتبدأ لما الكل يؤكد.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title">PLAYER COUNTER</span>
-                  <p className="rr-phase-item-desc">The status bar shows how many players have confirmed. The red button reveals who's still not ready.</p>
+                  <span className="rr-phase-item-title">عداد اللاعبين</span>
+                  <p className="rr-phase-item-desc">الشريط اللي فوق بيقول مين أكد. الزرار الأحمر بيوريك لسه مين مش جاهز.</p>
                 </div>
               </div>
 
               <div className="rr-phase-item">
                 <div>
-                  <span className="rr-phase-item-title">KEEP IT SECRET</span>
-                  <p className="rr-phase-item-desc">Don't tell anyone your role. Not yet. The lying, bluffing, and accusing comes later during discussion.</p>
+                  <span className="rr-phase-item-title">خليها سر</span>
+                  <p className="rr-phase-item-desc">متقولش لحد على دورك، لسه. الكدب والتمثيل والتهنيج ليها وقتها في النقاش.</p>
                 </div>
               </div>
             </div>
             <div className="rr-phase-footer">
               <button className="rr-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
-                GOT IT
+                فهمت
               </button>
             </div>
           </div>
