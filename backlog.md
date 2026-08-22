@@ -1,7 +1,7 @@
 # Backlog — الليلة دي كلها بتاعتك
 
 - [x] Audit current state: walk every route/page/component, list which UI strings are still English vs Arabic; write the inventory as a checklist section below.
-- [ ] `Front-End/index.html`: `lang="ar"`, Arabic `<title>` (e.g. «الذئب — حكاية قرية مصرية»), keep/verify Arabic webfont (Alyamama) actually loads and is applied.
+- [x] `Front-End/index.html`: `lang="ar"`, Arabic `<title>` (e.g. «الذئب — حكاية قرية مصرية»), keep/verify Arabic webfont (Alyamama) actually loads and is applied.
 - [ ] Landing page: full Egyptian Arabic copy + RTL polish + the حكاية (story) section written in Egyptian dialect framing an Egyptian village setting.
 - [ ] Role system: map every role to an Egyptianized identity (name in مصري, description, flavor line) in `packages/shared` + Front-End display; e.g. العفاريت / الرمّال / البواب / الحكيم — you decide final roster.
 - [ ] Character roster: Egyptian names/personalities for characters, reuse existing art assets, Arabic labels on cards/thumbnails.
@@ -18,8 +18,8 @@
 Baseline screenshot: `screenshots/01-audit-before-home-desktop.png`. Current state = **100% English UI**, zero Arabic strings, LTR everywhere.
 
 ### Global / shell
-- [ ] `index.html`: `lang="en"`, `<title>Werewolf</title>` — flip to `lang="ar" dir="rtl"` + Arabic title.
-- [ ] Fonts: Alyamama IS linked in `index.html` line 11 but **never used in any CSS** — `index.css:33` sets system fonts only. Must add Arabic font-family stack + verify rendering.
+- [ ] `index.html`: flip to `dir="rtl"` (done in cycle 2: `lang="ar"` ✅ + title «الذئب — حكاية قرية مصرية» ✅ + manifest name/short_name عربي ✅; `dir` deferred until Arabic copy lands so LTR pages don't mirror mid-flight).
+- [x] Fonts: Alyamama linked AND applied (cycle 2): `"Alyamama"` added to `body` stack and as fallback after Lexend in `--font-body`, so every Arabic glyph resolves to Alyamama regardless of which var a rule uses. Runtime-verified: `document.fonts.check('16px Alyamama', 'الذئب')` true, woff2 200s, no failed requests. Proof: `screenshots/02-shell-arabic-font-{mobile,desktop}.png`. Font links deduped to one css2 URL + preconnect.
 - [ ] No `dir="rtl"` anywhere; all page CSS assumes LTR (carousel arrows, progress bars, arrows ▲▼, `scrollBy({left:±200})`).
 - [ ] **Server→UI leak**: Back-End sends English strings rendered verbatim in FE: kick/host-transfer notices (`Game.ts:187,242`), all role result messages (`Back-End/src/entities/roles/*`), auto-perform messages (`NightPhaseManager.ts:315,326,407,439`), action-history descriptions shown in Results sequence. Needs translation strategy (translate in BE or map by code in FE).
 
@@ -96,6 +96,7 @@ Baseline screenshot: `screenshots/01-audit-before-home-desktop.png`. Current sta
   - Deleted dead voice-chat files (`VoiceConext.tsx`, `VoiceChat.*`) that imported the long-gone `../socket` module; feature was fully commented out.
 
 ### Follow-ups discovered (new tasks)
+- [ ] Hardcoded inline `fontFamily: 'Creepster'/'Trade Winds'` in `components/roles/ActionComplete.tsx` + `WaitingForTurn.tsx`: neither family is linked in index.html and both are Latin-only — remap to `var(--font-display)`/`var(--font-body)` when those components get Arabic copy, else Arabic renders in fallback there.
 - [ ] RTL sweep: after Arabic copy lands, fix directional CSS (carousel scroll direction/arrows, timeline dots, vote arrows ▲▼, `text-align`, letter-spacing on Arabic text — remove `letterSpacing` for Arabic, breaks ligatures).
 - [ ] Decide & implement translation strategy for server-sent strings (role results, kick/host messages, action history): prefer sending stable codes from BE and mapping to مصري copy in FE, so BE stays locale-free.
 - [ ] Arabic typography pass: apply Alyamama via CSS var stack, adjust sizes/line-height for Arabic legibility, verify webfont loads offline (self-host fallback if Google Fonts blocked).
