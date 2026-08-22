@@ -5,3 +5,7 @@ CODE_REVIEW.md
 Werewolf/.obsidian/workspace.json
 Werewolf/.obsidian/cache/
 
+
+# overnight loop artifacts
+night-loop.jsonl
+night-loop.log
