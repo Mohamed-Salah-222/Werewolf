@@ -8,15 +8,15 @@ function ActionComplete({ result }: ActionCompleteProps) {
       <div style={styles.iconWrapper}>
         <span style={styles.icon}>✦</span>
       </div>
-      <h2 style={styles.title}>ACTION COMPLETE</h2>
+      <h2 style={styles.title}>الحركة خلصت</h2>
       <div style={styles.divider} />
-      <p style={styles.text}>Your night action is done.</p>
+      <p style={styles.text}>حركتك الليلية خلصت.</p>
       {result?.message && (
         <div style={styles.resultBox}>
           <p style={styles.resultText}>{result.message}</p>
         </div>
       )}
-      <p style={styles.subtext}>Waiting for other players...</p>
+      <p style={styles.subtext}>مستني باقي اللاعبين…</p>
     </div>
   );
 }
@@ -40,7 +40,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     letterSpacing: "6px",
     color: "#2a8a4a",
     margin: "0 0 12px 0",
-    fontFamily: "'Creepster', cursive",
+    fontFamily: "var(--font-display)",
     textShadow: "0 0 20px rgba(42,138,74,0.2)",
   },
   divider: {
@@ -53,7 +53,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#8a7a60",
     fontSize: "14px",
     marginBottom: "20px",
-    fontFamily: "'Trade Winds', cursive",
+    fontFamily: "var(--font-body)",
   },
   resultBox: {
     backgroundColor: "rgba(201,168,76,0.05)",
@@ -67,13 +67,13 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontSize: "14px",
     lineHeight: "1.7",
     margin: 0,
-    fontFamily: "'Trade Winds', cursive",
+    fontFamily: "var(--font-body)",
   },
   subtext: {
     color: "#5a4a30",
     fontSize: "12px",
     fontStyle: "italic",
-    fontFamily: "'Trade Winds', cursive",
+    fontFamily: "var(--font-body)",
   },
 };
 

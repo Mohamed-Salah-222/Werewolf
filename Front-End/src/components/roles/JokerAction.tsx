@@ -98,10 +98,10 @@ function JokerAction({ locked = false, playerId, players, groundCards, actionRes
               <div className={`role-flip ${isSelf ? "role-flip--up" : ""}${isSelf ? " role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("joker"), "Joker", "You") : undefined}>
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
-                    <img src={isSelf ? getSquareImage("joker") : backCardImage} alt={isSelf ? "Joker" : "Card"} draggable={false} />
+                    <img src={isSelf ? getSquareImage("joker") : backCardImage} alt={isSelf ? "الجوكر" : "كارت"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -143,12 +143,12 @@ function JokerAction({ locked = false, playerId, players, groundCards, actionRes
 
         {!submitted && !locked && (
           <div className="role-center-hint">
-            <span className="role-hint-text">THE JOKE PICKS A CARD</span>
+            <span className="role-hint-text">الجوكر بيختار كارت</span>
           </div>
         )}
         {submitted && !revealedRole && (
           <div className="role-center-hint">
-            <span className="role-hint-text">PEEKING...</span>
+            <span className="role-hint-text">بيبص…</span>
           </div>
         )}
       </div>

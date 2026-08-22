@@ -122,7 +122,7 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
               <div className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("minion"), "Minion", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("werewolf"), "Werewolf", player.name) : undefined}>
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("minion") : isRevealed ? getSquareImage("werewolf") : backCardImage} alt={isSelf ? "Minion" : isRevealed ? "Werewolf" : "Card"} draggable={false} />
@@ -139,14 +139,14 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
         {showNoWolves && (
           <div className="role-center-message">
             <span className="role-no-result-icon">☽</span>
-            <span className="role-no-result-text">WOLVES ON GROUND</span>
-            <span className="role-no-result-sub">No Werewolves among players</span>
+            <span className="role-no-result-text">عفاريت على الأرض</span>
+            <span className="role-no-result-sub">مفيش عفاريت بين اللاعبين</span>
           </div>
         )}
 
         {revealedIds.size > 0 && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--red">YOUR MASTERS</span>
+            <span className="role-status-text role-status-text--red">ساداتك</span>
           </div>
         )}
       </div>
@@ -156,7 +156,7 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
       {packModalOpen && (
         <div className="role-pack-overlay" onClick={() => setPackModalOpen(false)}>
           <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="role-pack-title role-pack-title--red">YOUR MASTERS</span>
+            <span className="role-pack-title role-pack-title--red">ساداتك</span>
             <div className="role-pack-cards">
               {packWolves.map((wolf, i) => (
                 <div key={i} className="role-pack-card">
@@ -166,7 +166,7 @@ function MinionAction({ onAction, locked = false, playerId, players, actionResul
               ))}
             </div>
             <button className="role-pack-close" onClick={() => setPackModalOpen(false)}>
-              CLOSE
+              إغلاق
             </button>
           </div>
         </div>

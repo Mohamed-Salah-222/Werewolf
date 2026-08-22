@@ -14,15 +14,15 @@ function WaitingForTurn() {
       <div style={styles.iconWrapper}>
         <span style={styles.icon}>☽</span>
       </div>
-      <h2 style={styles.title}>THE NIGHT STIRS</h2>
+      <h2 style={styles.title}>الليل بيتمتم</h2>
       <div style={styles.divider} />
-      <p style={styles.text}>Someone is performing their action...</p>
+      <p style={styles.text}>حد بيعمل حركته دلوقتي…</p>
       <div style={styles.dots}>
         <span style={{ ...styles.dot, animationDelay: "0s" }}>•</span>
         <span style={{ ...styles.dot, animationDelay: "0.2s" }}>•</span>
         <span style={{ ...styles.dot, animationDelay: "0.4s" }}>•</span>
       </div>
-      <p style={styles.subtext}>Please wait for your turn</p>
+      <p style={styles.subtext}>استنى دورك بس</p>
     </div>
   );
 }
@@ -47,7 +47,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     letterSpacing: "6px",
     color: "#c9a84c",
     margin: "0 0 12px 0",
-    fontFamily: "'Creepster', cursive",
+    fontFamily: "var(--font-display)",
     textShadow: "0 0 20px rgba(201,168,76,0.15)",
   },
   divider: {
@@ -60,7 +60,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#8a7a60",
     fontSize: "14px",
     marginBottom: "16px",
-    fontFamily: "'Trade Winds', cursive",
+    fontFamily: "var(--font-body)",
   },
   dots: {
     display: "flex",
@@ -77,7 +77,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     color: "#5a4a30",
     fontSize: "12px",
     fontStyle: "italic",
-    fontFamily: "'Trade Winds', cursive",
+    fontFamily: "var(--font-body)",
   },
 };
 

@@ -213,22 +213,22 @@ function WarlockAction({ onAction, locked = false, playerId, players, groundCard
         {/* Center status text — above ground cards */}
         {phase === "idle" && !locked && (
           <div className="role-center-hint">
-            <span className="role-hint-text">PICK A PLAYER TO HEX</span>
+            <span className="role-hint-text">اختار لاعب ترمي عليه التعويذة</span>
           </div>
         )}
         {phase === "submitted" && (
           <div className="role-status-above wk-status">
-            <span className="role-status-text role-status-text--gold">HEXING...</span>
+            <span className="role-status-text role-status-text--gold">بيرمي التعويذة…</span>
           </div>
         )}
         {phase === "swap" && (
           <div className="role-status-above wk-status">
-            <span className="role-status-text role-status-text--gold">SWAPPING</span>
+            <span className="role-status-text role-status-text--gold">تبديل…</span>
           </div>
         )}
         {phase === "done" && (
           <div className="role-status-above wk-status">
-            <span className="role-status-text role-status-text--gold">CURSED</span>
+            <span className="role-status-text role-status-text--gold">اتسحرت</span>
           </div>
         )}
       </div>

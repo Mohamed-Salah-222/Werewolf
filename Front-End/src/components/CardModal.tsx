@@ -44,7 +44,7 @@ function CardModal({ isOpen, onClose, cardImage, cardName, subtitle }: CardModal
         <div className="card-modal-header">{subtitle && <span className="card-modal-name">{subtitle}</span>}</div>
         <img src={cardImage} alt={cardName} className="card-modal-img" draggable={false} />
         <button className="card-modal-close" onClick={onClose}>
-          CLOSE
+          إغلاق
         </button>
       </div>
     </div>

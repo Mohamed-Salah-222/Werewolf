@@ -237,7 +237,7 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
               >
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("seer") : isRevealed ? getSquareImage(revealedPlayerRole) : backCardImage} alt={isSelf ? "Seer" : isRevealed ? revealedPlayerRole : "Card"} draggable={false} />
@@ -288,20 +288,20 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
 
         {!submitted && mode === "ground" && selectedGroundIds.length === 1 && (
           <div className="role-center-hint">
-            <span className="role-hint-text">PICK ONE MORE</span>
+            <span className="role-hint-text">اختار واحدة كمان</span>
           </div>
         )}
       </div>
 
       <div className="role-bottom">
         {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">مستني دورك…</span>
         ) : !submitted ? (
-          <span className="role-bottom-hint">{mode === "ground" ? `${selectedGroundIds.length}/2 ground cards selected` : "Choose a player's card or two ground cards"}</span>
+          <span className="role-bottom-hint">{mode === "ground" ? `اخترت ${selectedGroundIds.length}/2 كارت أرض` : "اختار كارت لاعب أو كارتين أرض"}</span>
         ) : !actionResult ? (
-          <span className="role-bottom-status">REVEALING...</span>
+          <span className="role-bottom-status">بيكشف…</span>
         ) : (
-          <span className="role-bottom-status role-bottom-status--done">{actionResult.actionType === "player" ? `You saw ${actionResult.playerName}'s role` : "You peeked at the ground"}</span>
+          <span className="role-bottom-status role-bottom-status--done">{actionResult.actionType === "player" ? `شفت دور ${actionResult.playerName}` : "بصيت على الأرض"}</span>
         )}
       </div>
 
@@ -317,7 +317,7 @@ function SeerAction({ onAction, locked = false, playerId, players, groundCards, 
                 </div>
                 <img src={card.image} alt={card.name} className="card-modal-img" draggable={false} />
                 <button className="card-modal-close" onClick={() => setGroundModalOpen(false)}>
-                  CLOSE
+                  إغلاق
                 </button>
               </div>
             ))}

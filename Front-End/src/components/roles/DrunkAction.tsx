@@ -117,7 +117,7 @@ function DrunkAction({ locked = false, playerId, players, groundCards, actionRes
               <span className={`role-name ${isSelf ? "role-name--self dk-name--self" : ""}`}>{isSelf ? (shouldSwap ? "" : "YOU") : player.name}</span>
 
               <div className={`dk-card ${isSelf ? "dk-card--face dk-card--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("drunk"), "Drunk", "You") : undefined}>
-                <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "Drunk" : "Card back"} className="dk-card-img" draggable={false} />
+                <img src={isSelf ? getSquareImage("drunk") : backCardImage} alt={isSelf ? "الليم" : "ضهر الكارت"} className="dk-card-img" draggable={false} />
               </div>
             </div>
           );
@@ -140,17 +140,17 @@ function DrunkAction({ locked = false, playerId, players, groundCards, actionRes
 
         {phase === "idle" && !locked && (
           <div className="role-center-hint">
-            <span className="role-hint-text">A GROUND CARD CALLS</span>
+            <span className="role-hint-text">كارت الأرض بينادي</span>
           </div>
         )}
         {phase === "swap" && (
           <div className="role-center-message dk-center-message">
-            <span className="role-status-text role-status-text--gold">SWAPPING...</span>
+            <span className="role-status-text role-status-text--gold">بيتبادلوا…</span>
           </div>
         )}
         {phase === "done" && (
           <div className="role-center-message dk-center-message">
-            <span className="role-status-text role-status-text--gold">SWAPPED</span>
+            <span className="role-status-text role-status-text--gold">اتبادلت</span>
           </div>
         )}
       </div>

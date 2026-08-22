@@ -80,12 +80,12 @@ function OracleAction({ onAction, locked = false, actionResult, autoSubmitted }:
         {locked && !submitted && (
           <div className="oracle-idle">
             <span className="oracle-eye oracle-eye--dim">◉</span>
-            <span className="oracle-idle-text oracle-idle-text--dim">NOT YOUR TURN YET</span>
+            <span className="oracle-idle-text oracle-idle-text--dim">لسه مش دورك</span>
           </div>
         )}
       </div>
 
-      <div className="role-bottom">{locked && !submitted ? <span className="role-bottom-status">WAITING FOR YOUR TURN...</span> : !showVision ? <span className="role-bottom-status">THE SPIRITS WHISPER...</span> : <span className="role-bottom-status role-bottom-status--done">{hasVision ? "A vision has been revealed" : "The spirits were silent"}</span>}</div>
+      <div className="role-bottom">{locked && !submitted ? <span className="role-bottom-status">مستني دورك…</span> : !showVision ? <span className="role-bottom-status">الأرواح بتهمس…</span> : <span className="role-bottom-status role-bottom-status--done">{hasVision ? "A vision has been revealed" : "الأرواح سكتت"}</span>}</div>
     </div>
   );
 }

@@ -21,6 +21,12 @@ import "./NightPhase.css";
 
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
+import { findCharacter } from "../characters";
+
+/** Resolve any role identifier (English name, Arabic name, or id) to the stable component key */
+function roleIdOf(name: string): string {
+  return findCharacter(name)?.id ?? name.toLowerCase();
+}
 
 // ===== TYPES =====
 
@@ -109,7 +115,7 @@ function NightPhase() {
 
   // Derive isMyTurn from current state (no useState needed)
   const isMyTurn = !hasAlreadyActed &&
-    storeInitialActiveRole?.toLowerCase() === myNightRole.toLowerCase();
+    roleIdOf(storeInitialActiveRole || "") === roleIdOf(myNightRole);
 
   // Sync ground cards from store
   useEffect(() => {
@@ -124,7 +130,7 @@ function NightPhase() {
   }, [hasAlreadyActed, storeLastActionResult]);
 
   useEffect(() => {
-    if (myNightRole.toLowerCase() !== "clone") return;
+    if (roleIdOf(myNightRole) !== "clone") return;
     if (!isCloneResult(storeLastActionResult)) return;
 
     setCloneResult(storeLastActionResult);
@@ -171,7 +177,7 @@ function NightPhase() {
   // ===== RENDER HELPERS =====
 
   const renderActionComponent = () => {
-    const roleLower = myNightRole.toLowerCase();
+    const roleLower = roleIdOf(myNightRole);
     const Component = ROLE_COMPONENTS[roleLower];
     if (!Component) return null;
 
@@ -213,7 +219,7 @@ function NightPhase() {
   const isUrgent = roleTimer <= 5;
 
   // Determine if this role uses a persistent action component (visual post-action state)
-  const roleLower = myNightRole.toLowerCase();
+  const roleLower = roleIdOf(myNightRole);
   const hasPersistentAction = ROLES_WITH_PERSISTENT_ACTION.has(roleLower);
 
   const showActionComponent = !showSplash && (isMyTurn || hasAlreadyActed || hasPersistentAction);
@@ -229,7 +235,7 @@ function NightPhase() {
       {showSplash && (
         <div className="np-splash">
           <div className="np-splash-content">
-            <span className="np-splash-text">LET THE NIGHT BEGIN</span>
+            <span className="np-splash-text">الليل بدأ</span>
           </div>
         </div>
       )}
@@ -240,11 +246,11 @@ function NightPhase() {
           {/* Header — moon removed, divider kept */}
           <div className="np-header">
             <div className="np-header-inner">
-              <h1 className="np-phase-title">NIGHT PHASE</h1>
+              <h1 className="np-phase-title">مرحلة الليل</h1>
               <div className="np-header-divider" />
-              <p className="np-role-label">{myNightRole ? myNightRole.toUpperCase() : "UNKNOWN"}</p>
+              <p className="np-role-label">{myNightRole ? findCharacter(myNightRole)?.name || myNightRole : "مجهول"}</p>
             </div>
-            <button className="np-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+            <button className="np-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="معلومات المرحلة">
               !
             </button>
           </div>
@@ -289,52 +295,52 @@ function NightPhase() {
         <div className="np-phase-overlay" onClick={() => setShowPhaseInfo(false)}>
           <div className="np-phase-modal" onClick={(e) => e.stopPropagation()}>
             <div className="np-phase-header">
-              <h2 className="np-phase-title-modal">NIGHT PHASE</h2>
+              <h2 className="np-phase-title-modal">مرحلة الليل</h2>
               <button className="np-phase-close" onClick={() => setShowPhaseInfo(false)}>
                 ✕
               </button>
             </div>
             <div className="np-phase-body">
-              <p className="np-phase-flavor">The village sleeps. Roles wake one by one to perform their secret actions.</p>
+              <p className="np-phase-flavor">القرية نامت. الأدوار بتصحى ورا بعض تعمل حركتها في السر.</p>
 
               <div className="np-phase-item">
                 <div>
-                  <span className="np-phase-item-title">YOUR ACTION</span>
-                  <p className="np-phase-item-desc">When it's your turn, perform your role's unique ability. Each role has a limited time window to act before the game auto-performs for you.</p>
+                  <span className="np-phase-item-title">حركتك</span>
+                  <p className="np-phase-item-desc">لما ييجي دورك، اعمل القدرة بتاعة دورك. لكل دور وقت محدود قبل ما اللعبة تعمل الحركة مكانك أوتوماتيك.</p>
                 </div>
               </div>
 
               <div className="np-phase-item">
                 <div>
-                  <span className="np-phase-item-title">PLAYER CIRCLE</span>
-                  <p className="np-phase-item-desc">All other players' cards are spread around you face-down. Tap on them to interact based on your role's ability.</p>
+                  <span className="np-phase-item-title">دايرة اللاعبين</span>
+                  <p className="np-phase-item-desc">كروت باقي اللاعبين مفرودة حواليك على ضهرها. دوس عليها حسب قدرة دورك.</p>
                 </div>
               </div>
 
               <div className="np-phase-item">
                 <div>
-                  <span className="np-phase-item-title">ACTIVE ROLE TRACKER</span>
-                  <p className="np-phase-item-desc">The face-up card at the bottom shows which role is currently acting. Roles are called in a fixed order from Werewolf to Joker.</p>
+                  <span className="np-phase-item-title">مين بيشتغل دلوقتي</span>
+                  <p className="np-phase-item-desc">الكارت المفتوح تحت بيقورلك مين دوره نشط دلوقتي. الأدوار بتتصاحب بترتيب ثابت من العفريت للجوكر.</p>
                 </div>
               </div>
 
               <div className="np-phase-item">
                 <div>
-                  <span className="np-phase-item-title">ROLE DETAILS</span>
-                  <p className="np-phase-item-desc">Tap the face-up active role card to open a detail view and check what that role's ability does.</p>
+                  <span className="np-phase-item-title">تفاصيل الدور</span>
+                  <p className="np-phase-item-desc">دوس على كارت الدور النشط يفتحلك تفاصيل وقدرته.</p>
                 </div>
               </div>
 
               <div className="np-phase-item">
                 <div>
-                  <span className="np-phase-item-title">TIMER</span>
-                  <p className="np-phase-item-desc">When it's your turn a timer bar appears at the top. If time runs out, the game picks a random valid action for you.</p>
+                  <span className="np-phase-item-title">المؤقت</span>
+                  <p className="np-phase-item-desc">لما ييجي دورك شريط الوقت بيظهر فوق. لو الوقت خلص، اللعبة تختارلك حاجة عشوائية صالحة.</p>
                 </div>
               </div>
             </div>
             <div className="np-phase-footer">
               <button className="np-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
-                GOT IT
+                فهمت
               </button>
             </div>
           </div>
@@ -350,7 +356,7 @@ function NightPhase() {
           navigate("/");
         }}
       >
-        LEAVE
+        خروج
       </button>
     </div>
   );

@@ -193,7 +193,7 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
               >
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
                     <img src={isSelf ? getSquareImage("troublemaker") : backCardImage} alt={isSelf ? "Troublemaker" : "Card"} draggable={false} />
@@ -219,22 +219,22 @@ function TroublemakerAction({ onAction, locked = false, playerId, players, actio
 
         {phase === "picking" && selectedIds.length === 0 && (
           <div className="role-center-message">
-            <span className="role-hint-text">PICK TWO PLAYERS</span>
+            <span className="role-hint-text">اختار لاعبين اتنين</span>
           </div>
         )}
         {phase === "picking" && selectedIds.length === 1 && (
           <div className="role-center-message">
-            <span className="role-hint-text">PICK ONE MORE</span>
+            <span className="role-hint-text">اختار واحدة كمان</span>
           </div>
         )}
         {phase === "swap" && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--gold">SWAPPING...</span>
+            <span className="role-status-text role-status-text--gold">بيتبادلوا…</span>
           </div>
         )}
         {phase === "done" && hasTargets && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--gold">SWAPPED</span>
+            <span className="role-status-text role-status-text--gold">اتبادلت</span>
           </div>
         )}
       </div>

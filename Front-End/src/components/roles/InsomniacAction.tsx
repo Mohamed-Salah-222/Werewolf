@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { allCards, backCardImage } from "../../characters";
+import { findCard, backCardImage } from "../../characters";
 import "./InsomaniacAction.css";
 
 interface InsomniacResult {
@@ -18,7 +18,7 @@ interface Props {
 
 function getFullCardImage(roleName: string | undefined): string {
   if (!roleName) return backCardImage;
-  const card = allCards.find((c) => c.name && c.name.toLowerCase() === roleName.toLowerCase());
+  const card = findCard(roleName);
   return card?.image || backCardImage;
 }
 
@@ -63,7 +63,7 @@ function InsomniacAction({ locked = false, actionResult, autoSubmitted }: Props)
         <div className={`in-card ${showFace ? "in-card--revealed" : ""} ${phase === "reveal" ? "in-card--flipping" : ""}`}>
           <div className="in-card-inner">
             <div className="in-card-face in-card-face--back">
-              <img src={backCardImage} alt="Card back" draggable={false} />
+              <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
             </div>
             <div className="in-card-face in-card-face--front">
               <img src={cardImage} alt={currentRole} draggable={false} />
@@ -75,18 +75,18 @@ function InsomniacAction({ locked = false, actionResult, autoSubmitted }: Props)
       <div className="in-status">
         {phase === "asleep" && <span className="in-status-text in-status-text--pulse">{locked ? "WAITING FOR YOUR TURN..." : "CHECKING..."}</span>}
         {phase === "submitted" && <span className="in-status-text in-status-text--pulse">{autoSubmitted ? "WAITING TO WAKE..." : "CHECKING..."}</span>}
-        {phase === "reveal" && !hasChanged && <span className="in-status-text in-status-text--green">STILL INSOMNIAC</span>}
-        {phase === "reveal" && hasChanged && <span className="in-status-text in-status-text--red">ROLE CHANGED!</span>}
+        {phase === "reveal" && !hasChanged && <span className="in-status-text in-status-text--green">لسه الساهر</span>}
+        {phase === "reveal" && hasChanged && <span className="in-status-text in-status-text--red">الدور اتغير!</span>}
         {phase === "done" && !hasChanged && (
           <div className="in-done">
-            <span className="in-done-title in-done-title--green">STILL INSOMNIAC</span>
-            <span className="in-done-sub">Your role was not swapped</span>
+            <span className="in-done-title in-done-title--green">لسه الساهر</span>
+            <span className="in-done-sub">دورك ماتبادلش</span>
           </div>
         )}
         {phase === "done" && hasChanged && (
           <div className="in-done">
             <span className="in-done-title in-done-title--red">YOU ARE NOW {currentRole.toUpperCase()}</span>
-            <span className="in-done-sub">Someone swapped your role during the night</span>
+            <span className="in-done-sub">حد بدل دورك بالليل</span>
           </div>
         )}
       </div>

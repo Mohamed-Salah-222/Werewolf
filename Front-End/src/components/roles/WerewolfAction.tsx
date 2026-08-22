@@ -97,7 +97,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
 
         setModalImage(getFullCardImage(actionResult.groundCard!));
         setModalName(actionResult.groundCard!);
-        setModalSubtitle("You peeked at this ground card");
+        setModalSubtitle("ده كان كارت أرض");
         setModalOpen(true);
       }, 1400);
     }
@@ -146,7 +146,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
               <div className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("werewolf"), "Werewolf", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("werewolf"), "Werewolf", player.name) : undefined}>
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
                     <img src={isFaceUp ? getSquareImage("werewolf") : backCardImage} alt={isFaceUp ? "Werewolf" : "Card"} draggable={false} />
@@ -184,19 +184,19 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
 
         {actionResult?.isAlone && revealedGroundIdx !== null && (
           <div className="role-status-above">
-            <span className="role-status-text role-status-text--gold">LONE WOLF</span>
+            <span className="role-status-text role-status-text--gold">عفريت منفرد</span>
           </div>
         )}
         {!actionResult?.isAlone && revealedIds.size > 0 && (
           <div className="role-status-above">
-            <span className="role-status-text role-status-text--red">THE PACK</span>
+            <span className="role-status-text role-status-text--red">الشلة</span>
           </div>
         )}
       </div>
 
       {actionResult && (
         <div className="role-bottom">
-          <span className="role-bottom-status role-bottom-status--done">{actionResult.isAlone ? "You peeked at a ground card" : "You found your pack"}</span>
+          <span className="role-bottom-status role-bottom-status--done">{actionResult.isAlone ? "بصيت على كارت أرض" : "لقيت شلتك"}</span>
         </div>
       )}
 
@@ -205,7 +205,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
       {packModalOpen && (
         <div className="role-pack-overlay" onClick={() => setPackModalOpen(false)}>
           <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="role-pack-title role-pack-title--red">YOUR PACK</span>
+            <span className="role-pack-title role-pack-title--red">شلتك</span>
             <div className="role-pack-cards">
               {packWolves.map((wolf, i) => (
                 <div key={i} className="role-pack-card">
@@ -215,7 +215,7 @@ function WerewolfAction({ onAction, locked = false, playerId, players, groundCar
               ))}
             </div>
             <button className="role-pack-close" onClick={() => setPackModalOpen(false)}>
-              CLOSE
+              إغلاق
             </button>
           </div>
         </div>

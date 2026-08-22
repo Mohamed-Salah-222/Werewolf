@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { characters, allCards, backCardImage } from "../../characters";
+import { characters, findCard, backCardImage } from "../../characters";
 import CardModal from "../CardModal";
 import "./CloneAction.css";
 import "../roles/shared/RoleShared.css";
@@ -43,7 +43,7 @@ function getSquareImage(roleName: string): string {
 }
 
 function getFullCardImage(roleName: string): string {
-  const card = allCards.find((c) => c.name.toLowerCase() === roleName.toLowerCase());
+  const card = findCard(roleName);
   return card?.image || backCardImage;
 }
 
@@ -89,7 +89,7 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
       hasAutoModalFired.current = true;
       setModalImage(getFullCardImage(cloneResult.clonedRole));
       setModalName(cloneResult.clonedRole);
-      setModalSubtitle("You cloned this role");
+      setModalSubtitle("استنسخت الدور ده");
       setModalOpen(true);
     }, 1200);
 
@@ -261,10 +261,10 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
                 >
                   <div className="role-flip-inner">
                     <div className="role-flip-face role-flip-face--back">
-                      <img src={backCardImage} alt="Card back" draggable={false} />
+                      <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                     </div>
                     <div className="role-flip-face role-flip-face--front">
-                      <img src={showTargetFace ? getSquareImage(clonedRoleName) : backCardImage} alt={showTargetFace ? clonedRoleName : "Card"} draggable={false} />
+                      <img src={showTargetFace ? getSquareImage(clonedRoleName) : backCardImage} alt={showTargetFace ? clonedRoleName : "كارت"} draggable={false} />
                     </div>
                   </div>
                 </div>
@@ -275,12 +275,12 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
 
         {phase === "pick" && !locked && (
           <div className="role-center-hint">
-            <span className="role-hint-text">PICK A PLAYER TO CLONE</span>
+            <span className="role-hint-text">اختار لاعب تستنسخه</span>
           </div>
         )}
         {phase === "cloning" && (
           <div className="role-center-hint">
-            <span className="role-hint-text">CLONING...</span>
+            <span className="role-hint-text">بيستنسخ…</span>
           </div>
         )}
         {phase === "morph" && clonedRoleName && (
@@ -292,11 +292,11 @@ function CloneAction({ playerId, locked = false, players, groundCards, onAction,
 
       <div className="role-bottom">
         {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">مستني دورك…</span>
         ) : (
           <>
-            {phase === "pick" && <span className="role-bottom-hint">Tap a player to copy their role</span>}
-            {phase === "cloning" && <span className="role-bottom-status">CLONING...</span>}
+            {phase === "pick" && <span className="role-bottom-hint">دوس على لاعب تنقل دوره</span>}
+            {phase === "cloning" && <span className="role-bottom-status">بيستنسخ…</span>}
             {phase === "morph" && <span className="role-bottom-status cl-bottom-status--morph">Becoming {clonedRoleName}...</span>}
           </>
         )}

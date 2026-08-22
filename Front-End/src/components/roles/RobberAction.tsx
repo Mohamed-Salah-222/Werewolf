@@ -191,7 +191,7 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
               >
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
                     <img src={faceImage} alt={faceAlt} draggable={false} />
@@ -207,30 +207,30 @@ function RobberAction({ onAction, locked = false, playerId, players, actionResul
 
         {phase === "reveal" && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--gold">STEALING...</span>
+            <span className="role-status-text role-status-text--gold">بيسرق…</span>
           </div>
         )}
         {phase === "swap" && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--gold">SWAPPING</span>
+            <span className="role-status-text role-status-text--gold">تبديل…</span>
           </div>
         )}
         {phase === "done" && newRole && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--gold">STOLEN</span>
+            <span className="role-status-text role-status-text--gold">اتسرقت</span>
           </div>
         )}
       </div>
 
       <div className="role-bottom">
         {locked ? (
-          <span className="role-bottom-status">WAITING FOR YOUR TURN...</span>
+          <span className="role-bottom-status">مستني دورك…</span>
         ) : (
           <>
-            {phase === "idle" && <span className="role-bottom-hint">Tap a player's card to steal their role</span>}
-            {phase === "submitted" && <span className="role-bottom-status">REACHING OUT...</span>}
+            {phase === "idle" && <span className="role-bottom-hint">دوس على كارت لاعب تسرق دوره</span>}
+            {phase === "submitted" && <span className="role-bottom-status">بيمد إيده…</span>}
             {(phase === "reveal" || phase === "swap") && <span className="role-bottom-status">{phase === "reveal" ? "REVEALING..." : "SWAPPING..."}</span>}
-            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">{newRole ? `You are now the ${newRole}` : "Role stolen"}</span>}
+            {phase === "done" && <span className="role-bottom-status role-bottom-status--done">{newRole ? `بقيت ${newRole}` : "اتسرق الدور"}</span>}
           </>
         )}
       </div>

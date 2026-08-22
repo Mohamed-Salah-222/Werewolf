@@ -118,10 +118,10 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
               <div className={`role-flip ${isFaceUp ? "role-flip--up" : ""} ${isSelf || (isFaceUp && !locked) ? "role-flip--tappable" : ""}`} onClick={isSelf ? () => openModal(getFullCardImage("mason"), "Mason", "You") : isFaceUp && !locked ? () => openModal(getFullCardImage("mason"), "Mason", player.name) : undefined}>
                 <div className="role-flip-inner">
                   <div className="role-flip-face role-flip-face--back">
-                    <img src={backCardImage} alt="Card back" draggable={false} />
+                    <img src={backCardImage} alt="ضهر الكارت" draggable={false} />
                   </div>
                   <div className="role-flip-face role-flip-face--front">
-                    <img src={isFaceUp ? getSquareImage("mason") : backCardImage} alt={isFaceUp ? "Mason" : "Card"} draggable={false} />
+                    <img src={isFaceUp ? getSquareImage("mason") : backCardImage} alt={isFaceUp ? "البناي" : "كارت"} draggable={false} />
                   </div>
                 </div>
               </div>
@@ -143,14 +143,14 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
 
         {showAlone && (
           <div className="role-center-message">
-            <span className="ms-alone-text">LONE MASON</span>
-            <span className="ms-alone-sub">No brothers found</span>
+            <span className="ms-alone-text">بنّاي لوحدو</span>
+            <span className="ms-alone-sub">ملقيتش حد من الإخوة</span>
           </div>
         )}
 
         {revealedIds.size > 0 && (
           <div className="role-center-message">
-            <span className="role-status-text role-status-text--green">BROTHERHOOD</span>
+            <span className="role-status-text role-status-text--green">الأخوية</span>
           </div>
         )}
       </div>
@@ -160,7 +160,7 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
       {packModalOpen && (
         <div className="role-pack-overlay" onClick={() => setPackModalOpen(false)}>
           <div className="role-pack-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="role-pack-title role-pack-title--green">BROTHERHOOD</span>
+            <span className="role-pack-title role-pack-title--green">الأخوية</span>
             <div className="role-pack-cards">
               {packMasons.map((mason, i) => (
                 <div key={i} className="role-pack-card">
@@ -170,7 +170,7 @@ function MasonAction({ onAction, locked = false, playerId, players, actionResult
               ))}
             </div>
             <button className="role-pack-close" onClick={() => setPackModalOpen(false)}>
-              CLOSE
+              إغلاق
             </button>
           </div>
         </div>
