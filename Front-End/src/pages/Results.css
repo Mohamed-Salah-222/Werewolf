@@ -534,3 +534,11 @@
     letter-spacing: 2px;
   }
 }
+
+/* الحكايا — Egyptian ending flavor line */
+.res-story {
+  margin: clamp(4px, 0.8vw, 10px) 0 0;
+  font-size: clamp(11px, 1.2vw, 15px);
+  line-height: 1.7;
+  color: rgba(224, 191, 134, 0.65);
+}

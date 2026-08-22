@@ -2,14 +2,20 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
+import { findCharacter } from "../characters";
+
+/** Resolve any role identifier to its stable id */
+function roleIdOf(name: string): string {
+  return findCharacter(name)?.id ?? name.toLowerCase();
+}
 
 // import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
 
 function getTeam(role: string): string {
-  const villains = ["werewolf", "minion"];
-  if (villains.includes(role.toLowerCase())) return "werewolves";
-  if (role.toLowerCase() === "joker") return "joker";
+  const rid = roleIdOf(role);
+  if (rid === "werewolf" || rid === "minion") return "werewolves";
+  if (rid === "joker") return "joker";
   return "villagers";
 }
 
@@ -57,7 +63,7 @@ function Results() {
   const didIWin = () => {
     if (!myRole) return false;
     const myTeam = getTeam(myRole.role);
-    if (winners === "joker" && myRole.role.toLowerCase() === "joker") return true;
+    if (winners === "joker" && roleIdOf(myRole.role) === "joker") return true;
     if (winners === "werewolves" && myTeam === "werewolves") return true;
     if (winners === "villagers" && myTeam === "villagers") return true;
     return false;
@@ -66,18 +72,31 @@ function Results() {
   const winnerLabel = () => {
     switch (winners) {
       case "werewolves":
-        return "Werewolves Win";
+        return "العفاريت كسبت الليلة!";
       case "villagers":
-        return "Village Wins";
+        return "القرية كسبت!";
       case "joker":
-        return "Joker Wins";
+        return "الجوكر ضحك عليهم!";
       default:
         return winners;
     }
   };
 
+  const winnerStory = () => {
+    switch (winners) {
+      case "werewolves":
+        return "الليل خلص والعفاريت شبعت… والقرية فاضل منها حكاية بتتحكي على القهوة.";
+      case "villagers":
+        return "الفجر طلع وأهل البلد عرفوا مين المستخبي… النهار ليهم من يومها.";
+      case "joker":
+        return "صوتوا عليه بدمبردوبة وهو الضحكة الأخيرة… ده كان هدفه من الأول.";
+      default:
+        return "";
+    }
+  };
+
   const getPlayerName = (id: string) => {
-    if (id === "noWerewolf") return "No Werewolf";
+    if (id === "noWerewolf") return "مفيش عفريت";
     const p = playerRoles.find((pr) => pr.playerId === id);
     return p?.name || id;
   };
@@ -89,28 +108,29 @@ function Results() {
         {/* Winner banner */}
         <div className="res-banner">
           <h1 className={`res-winner-text ${getWinnerColorClass(winners)}`}>{winnerLabel()}</h1>
-          <p className="res-personal-result">{didIWin() ? "You won" : "You lost"}</p>
+          <p className="res-personal-result">{didIWin() ? "انت من الفايزين!" : "مش نصيبك الليلة دي"}</p>
+          <p className="res-story">{winnerStory()}</p>
         </div>
 
         {/* Eliminated / Draw / No Werewolf */}
         {isDraw ? (
           <div className="res-eliminated">
-            <p className="res-eliminated-label">VOTE RESULT</p>
-            <p className="res-eliminated-name">Draw</p>
-            <p className="res-eliminated-role res-color--neutral">No one was eliminated</p>
+            <p className="res-eliminated-label">نتيجة التصويت</p>
+            <p className="res-eliminated-name">تعادل</p>
+            <p className="res-eliminated-role res-color--neutral">محدش اتحكم فيه</p>
           </div>
         ) : isNoWerewolfVote ? (
           <div className="res-eliminated">
-            <p className="res-eliminated-label">VILLAGE DECISION</p>
-            <p className="res-eliminated-name">No Werewolf</p>
-            <p className="res-eliminated-role res-color--neutral">The village believes all werewolves are on the ground</p>
+            <p className="res-eliminated-label">قرار القرية</p>
+            <p className="res-eliminated-name">مفيش عفريت</p>
+            <p className="res-eliminated-role res-color--neutral">القرية مقتنعة إن كل العفاريت على الأرض خلاص</p>
           </div>
         ) : (
           mostVotedPlayer && (
             <div className="res-eliminated">
-              <p className="res-eliminated-label">ELIMINATED</p>
+              <p className="res-eliminated-label">اللي اتشال</p>
               <p className="res-eliminated-name">{mostVotedPlayer.name}</p>
-              <p className={`res-eliminated-role ${getColorClass(mostVotedPlayer.role)}`}>{mostVotedPlayer.role}</p>
+              <p className={`res-eliminated-role ${getColorClass(mostVotedPlayer.role)}`}>{findCharacter(mostVotedPlayer.role)?.name || mostVotedPlayer.role}</p>
             </div>
           )
         )}
@@ -121,7 +141,7 @@ function Results() {
             {playerRoles.map((p) => (
               <div key={p.playerId} className="res-role-row">
                 <span className="res-role-name">{p.name}</span>
-                <span className={`res-role-value ${getColorClass(p.role)}`}>{p.role}</span>
+                <span className={`res-role-value ${getColorClass(p.role)}`}>{findCharacter(p.role)?.name || p.role}</span>
               </div>
             ))}
           </div>
@@ -131,7 +151,7 @@ function Results() {
         {actionHistory.length > 0 && (
           <div className="res-section">
             <button className="res-toggle-btn" onClick={() => setShowSequence(!showSequence)}>
-              <span>{showSequence ? "HIDE" : "SHOW"} NIGHT SEQUENCE</span>
+              <span>{showSequence ? "اخفي" : "ورّيني"} تسلسل الليل</span>
               <span className="res-toggle-arrow">{showSequence ? "▲" : "▼"}</span>
             </button>
             {showSequence && (
@@ -144,7 +164,7 @@ function Results() {
                     </div>
                     <div className="res-sequence-body">
                       <div className="res-sequence-header">
-                        <span className={`res-sequence-role ${getColorClass(item.role)}`}>{item.role}</span>
+                        <span className={`res-sequence-role ${getColorClass(item.role)}`}>{findCharacter(item.role)?.name || item.role}</span>
                         <span className="res-sequence-separator">—</span>
                         <span className="res-sequence-player">{item.playerName}</span>
                       </div>
@@ -160,7 +180,7 @@ function Results() {
         {/* Vote breakdown */}
         <div className="res-section">
           <button className="res-toggle-btn" onClick={() => setShowVotes(!showVotes)}>
-            <span>{showVotes ? "HIDE" : "SHOW"} VOTE DETAILS</span>
+            <span>{showVotes ? "اخفي" : "ورّيني"} تفاصيل التصويت</span>
             <span className="res-toggle-arrow">{showVotes ? "▲" : "▼"}</span>
           </button>
           {showVotes && (
@@ -180,7 +200,7 @@ function Results() {
         <div className="res-actions">
           {isHost && (
             <button className="res-restart-btn" onClick={handleRestart} disabled={restarting}>
-              {restarting ? "RESTARTING..." : "PLAY AGAIN"}
+              {restarting ? "بنعيد…" : "العب تاني"}
             </button>
           )}
           <button
@@ -191,7 +211,7 @@ function Results() {
               navigate("/");
             }}
           >
-            BACK TO HOME
+            ارجع للبيت
           </button>
         </div>
       </div>
