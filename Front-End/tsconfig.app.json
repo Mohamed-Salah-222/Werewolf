@@ -20,7 +20,9 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
+    /* erasableSyntaxOnly removed — see docs/DECISIONS.md D-16. It arrived with the
+       Vite template and rejected the shared package's own enums; Vite bundles, so
+       type-stripping compatibility buys nothing here. */
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },

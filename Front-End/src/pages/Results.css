@@ -216,7 +216,7 @@
   color: #c9b896;
   font-weight: 400;
   flex: 1;
-  text-align: right;
+  text-align: end;
   font-family: var(--font-body);
 }
 

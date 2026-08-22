@@ -25,7 +25,11 @@ export interface ClientToServerEvents {
   playerReady: (data: { gameCode: string; playerId: PlayerId; ready: boolean }) => void;
   kickPlayer: (data: { gameCode: string; hostId: PlayerId; kickedPlayerId: PlayerId }) => void;
   settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
-  pingMeasure: (data: { gameCode: string; playerId: string }) => void;
+  // The ack is what makes the round-trip measurable — the client times how long it
+  // takes to come back. Declared here because the client has always passed one
+  // (`sockets.ts` measurePing); the type just never said so.
+  // NOTE: playerHandlers.ts:108 does not currently call this ack. See task 0.5 log.
+  pingMeasure: (data: { gameCode: string; playerId: string }, ack: () => void) => void;
   reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;
   forceVotes: (data: { gameCode: string; playerId: string }) => void;
   changeName: (data: { gameCode: string; playerId: string; newName: string }) => void;

@@ -1,6 +1,4 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
-// import { VoiceProvider } from "./contexts/VoiceConext";
-// import { useSocketRejoin } from "./hooks/useSocketRejoin";
 import HomePage from "./pages/HomePage";
 import WaitingRoom from "./pages/WaitingRoom";
 import RoleReveal from "./pages/RoleReveal";
@@ -46,9 +44,7 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      {/* <VoiceProvider> */}
       <AppRoutes />
-      {/* </VoiceProvider> */}
     </BrowserRouter>
   );
 }

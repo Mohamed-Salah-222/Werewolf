@@ -27,7 +27,10 @@ import oracle2d from "./assets/oracle_2d.webp";
 export interface CharacterData {
   id: string;
   name: string;
-  team: Team;
+  // `${Team}` is the union of the enum's string values ("villain" | "village" |
+  // "neutral"), so the plain string literals below type-check without needing
+  // `Team.Villain` at 12 call sites. This file is rewritten in task 0.5.4.
+  team: `${Team}`;
   title: string;
   description: string;
   ability: string;

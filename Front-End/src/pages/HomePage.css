@@ -15,10 +15,6 @@
   color: var(--color-text);
 }
 
-.home-visuals--hidden {
-  display: none;
-}
-
 /* ===== TOP HEADER ===== */
 .home-header {
   position: absolute;
@@ -105,7 +101,6 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: 82%;
-  direction: rtl;
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
@@ -218,7 +213,6 @@
   left: 50%;
   transform: translateX(-50%);
   width: 76%;
-  direction: rtl;
   font-family: var(--font-display);
   font-weight: 800;
   color: #ead8ad;
@@ -1048,7 +1042,7 @@
   .home-info-panel {
     flex: 1;
     max-width: none;
-    text-align: left;
+    text-align: start;
   }
 
   /* Also hide ability box in landscape phone */

@@ -1,11 +1,17 @@
 import { SOCKET_EVENTS } from "@werewolf/shared";
-import type { UpdateGamePayload, JoinGameData, RejoinGameData } from "@werewolf/shared";
+import type { UpdateGamePayload, JoinGameData, RejoinGameData, Settings } from "@werewolf/shared";
 import { useGameStore } from "./gameStore";
 import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
 import type { ServerToClientEvents, ClientToServerEvents } from "@werewolf/shared";
 import { API_URL } from "../config";
 
-const socket = io<ServerToClientEvents, ClientToServerEvents>(API_URL, {
+// `io()` is not generic in socket.io-client v4 — the events are typed on the Socket,
+// not on the factory call. Order is Socket<ListenEvents, EmitEvents>: the client
+// LISTENS to server→client and EMITS client→server. This is the mirror of the
+// backend's Server<ClientToServerEvents, ServerToClientEvents>, not a copy of it —
+// swapping these two silently inverts every payload type in this file.
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(API_URL, {
   autoConnect: false,
   reconnection: true,
   reconnectionAttempts: 10,
@@ -121,7 +127,7 @@ export const gameActions = {
   changeName: (data: { gameCode: string; playerId: string; newName: string }) =>
     socket.emit(SOCKET_EVENTS.CLIENT.CHANGE_NAME, data),
 
-  settingsUpdate: (data: { gameCode: string; playerId: string; settings: unknown }) =>
+  settingsUpdate: (data: { gameCode: string; playerId: string; settings: Settings }) =>
     socket.emit(SOCKET_EVENTS.CLIENT.SETTINGS_UPDATE, data),
 
   startGame: (data: { gameCode: string; playerId: string }) =>
@@ -144,25 +150,4 @@ export const gameActions = {
 
   restartGame: (data: { gameCode: string; playerId: string }) =>
     socket.emit(SOCKET_EVENTS.CLIENT.RESTART_GAME, data),
-
-  pingMeasure: (data: { gameCode: string; playerId: string }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.PING_MEASURE, data),
-
-  reportPing: (data: { gameCode: string; playerId: string; ping: number }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.REPORT_PING, data),
-
-  voiceJoin: (data: { gameCode: string; playerId: string }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_JOIN, data),
-
-  voiceOffer: (data: { to: string; offer: unknown }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_OFFER, data),
-
-  voiceAnswer: (data: { to: string; answer: unknown }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_ANSWER, data),
-
-  voiceIce: (data: { to: string; candidate: unknown }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_ICE, data),
-
-  voiceLeave: (data: { playerId: string }) =>
-    socket.emit(SOCKET_EVENTS.CLIENT.VOICE_LEAVE, data),
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Team } from "@werewolf/shared";
-// import VoiceChat from "../components/VoiceChat";
 import "./Discussion.css";
 
 import { useGameStore } from "../store/gameStore";
@@ -192,9 +191,6 @@ function Discussion() {
         </button>
 
         <h1 className="disc-title">DISCUSSION</h1>
-
-        {/* Voice Chat */}
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>{/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}</div>
 
         {/* Timer */}
         <div className="disc-timer-section">

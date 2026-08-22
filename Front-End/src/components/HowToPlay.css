@@ -205,7 +205,7 @@
   font-family: var(--font-display);
   font-size: 11px;
   letter-spacing: 1px;
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 
 .htp-win-team--village {
@@ -236,7 +236,7 @@
 
 .htp-order-num {
   width: 20px;
-  text-align: right;
+  text-align: end;
   font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
   letter-spacing: 1px;

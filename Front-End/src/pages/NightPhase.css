@@ -139,7 +139,7 @@
   letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
   min-width: 40px;
-  text-align: right;
+  text-align: end;
 }
 
 .np-timer-text--normal {

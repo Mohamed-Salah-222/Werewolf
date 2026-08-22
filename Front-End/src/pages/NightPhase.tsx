@@ -16,7 +16,6 @@ import JokerAction from "../components/roles/JokerAction";
 import WarlockAction from "../components/roles/WarlockAction";
 import OracleAction from "../components/roles/OracleAction";
 import NightRoleProgress from "../components/roles/NightRoleProgress";
-// import VoiceChat from "../components/VoiceChat";
 import "./NightPhase.css";
 
 import { useGameStore } from "../store/gameStore";
@@ -66,9 +65,7 @@ function NightPhase() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
-  const isHost = useGameStore((s) => s.isHost);
   const hasAlreadyActed = useGameStore((s) => s.hasPerformedAction);
   const roleQueue = useGameStore((s) => s.roleQueue);
   const storeGroundCards = useGameStore((s) => s.groundCards);

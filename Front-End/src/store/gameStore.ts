@@ -3,6 +3,21 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { UpdateGamePayload } from "@werewolf/shared";
 
+type StorePhase = GameStore["phase"];
+
+const STORE_PHASES: readonly string[] = ["home", "waiting", "role", "night", "discussion", "vote", "results"];
+
+/**
+ * The server types `phase` as a bare `string` (game-types.ts:50) and uses the wire
+ * name `endGame` where the store says `results`. Narrow rather than widen: an
+ * unrecognised phase falls back to the current one, because GlobalPhaseRouter
+ * switches on this field and an unknown value renders a blank screen.
+ */
+function toStorePhase(phase: string, fallback: StorePhase): StorePhase {
+  if (phase === "endGame") return "results";
+  return STORE_PHASES.includes(phase) ? (phase as StorePhase) : fallback;
+}
+
 export interface PlayerInfo {
   id: string;
   name: string;
@@ -183,7 +198,7 @@ export const useGameStore = create<GameStore>()(
             playerName: me?.name ?? state.playerName,
             isHost: me?.isHost ?? state.isHost,
 
-            phase: snapshot.phase === "endGame" ? "results" : snapshot.phase,
+            phase: toStorePhase(snapshot.phase, state.phase),
 
             roleName: priv?.currentRole ?? priv?.originalRole ?? null,
             originalRoleName: priv?.originalRole ?? null,

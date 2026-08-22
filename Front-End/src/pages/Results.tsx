@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
 
-// import VoiceChat from "../components/VoiceChat";
 import "./Results.css";
 
 function getTeam(role: string): string {

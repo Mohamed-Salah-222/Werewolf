@@ -249,18 +249,165 @@ hidden`. Task 0.8b formalises it and adds the surround.
 
 ---
 
+## D-15 — One canonical role registry in `packages/shared`. Copy stays on the client.
+
+**LOCKED · 2026-08-13**
+
+The role data is split in two, along the line of _what both halves must agree on_ vs
+_what a player reads_.
+
+### A. `packages/shared/src/roles.ts` — the registry
+
+One `as const` object, keyed by the frozen English role ID (D-01), holding only
+mechanical facts:
+
+```ts
+export const ROLES = {
+  Werewolf: {
+    id: "Werewolf",
+    actionType: "werewolf", // the existing display-free discriminator
+    team: "villain",
+    nightOrder: 1,
+    timerSeconds: 10,
+    entersAtPlayerCount: null, // base deck
+  },
+  // … 11 more
+} as const;
+
+export type RoleId = keyof typeof ROLES;
+```
+
+Every field is something the server and client genuinely both need. **No display
+strings, in any language.**
+
+This replaces **11 hand-synchronised duplicate lists**: `ROLE_NAMES`, `RoleClasses`,
+`roleTimers` (`NightPhaseManager.ts:11-24`), the two identical `roleOrder` arrays in
+`RoleAssigner.ts:102` and `:111`, `createRoles` (`:40`), `extraRolesInOrder` (`:69`),
+`VoteResolver.ts:94`, and the four lists in `HowToPlay.tsx:11-45`.
+
+_This is the fix for R7, and it fixes an existing bug on the way:_
+`VoteResolver.ts:94` currently lists only 10 of 12 roles — **Warlock and Oracle are
+missing, so their night actions never appear in the end-of-game recap.** Deriving that
+list from the registry makes the omission impossible to reintroduce.
+
+Each role class keeps its `name` field (D-01 — frozen, load-bearing) but the registry
+becomes the source for order, timing, and team.
+
+### B. `Front-End/src/content/roles.ts` — the copy
+
+Arabic name, title, lore, ability. Frontend-only. Never crosses the wire.
+
+```ts
+export const ROLE_COPY: Record<RoleId, RoleCopy> = { … };
+```
+
+Typing it as `Record<RoleId, …>` with `RoleId` imported from the registry means a
+missing or misspelled role is a **compile error**, not a blank card at runtime.
+
+### Why copy is not server-side
+
+The obvious-looking move is to put everything on the server and make the UI a dumb
+renderer. In this codebase specifically, that is wrong:
+
+1. **Games are in-memory only** (`Manager.games: Game[]`). Every backend deploy
+   destroys every live lobby, and the client surfaces no error at all
+   (`sockets.ts:98-100`) — players just freeze. Fixing a typo in a lore line must not
+   be a deploy that ejects everyone mid-game.
+2. **It re-couples language to game logic**, which is precisely what D-07 exists to
+   undo. Replacing English server prose with Arabic server prose is the same mistake
+   in a different language.
+3. **The client needs this before it connects.** How To Play and the home character
+   panel render with no game and no socket.
+4. **It would ship on every snapshot.** `Game.emit()` fires on every state change;
+   12 roles × 4 text fields resent dozens of times per game, unchanging.
+
+### Why TypeScript objects and not JSON
+
+JSON gives no compile-time guarantee that all 12 roles have all fields — a missing one
+surfaces as a blank card in a playtest. `as const` plus derived types makes it a build
+error. The data is edited in-repo by agents, not handed to an external translator, so
+the tooling argument for JSON does not apply. Revisit only if a non-technical
+translator ever joins.
+
+### Cost, stated plainly
+
+**A touches the backend.** It is mechanical and covered by the existing 61 tests, but
+it is no longer "frontend only". It is sequenced as Phase 0.5 — after the typecheck is
+green so the compiler catches the fallout, before any page is rebuilt on top of the
+old duplicates.
+
+---
+
+## D-16 — `erasableSyntaxOnly` is removed from the frontend config. The three shared enums stay enums.
+
+**LOCKED · 2026-08-17**
+
+`Front-End/tsconfig.app.json` set `erasableSyntaxOnly: true`, which rejected
+`TimerOption`, `Phase`, and `Team` in `packages/shared/src/game-types.ts:3,12,21` —
+the frontend's own config refusing its own shared package, 3 of the 20 blocking
+errors in D-13.
+
+**The flag is deleted. The enums are untouched.** The alternative — converting the
+three to `as const` objects with derived union types — is rejected for now.
+
+_Why the flag goes:_
+
+1. **It arrived with the Vite template, it was not a choice.** The identical
+   `/* Linting */` block — `strict`, `noUnusedLocals`, `noUnusedParameters`,
+   `erasableSyntaxOnly`, `noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports` —
+   appears verbatim in **both** `tsconfig.app.json` and `tsconfig.node.json`. That is
+   the stock `react-ts` template pair, not a considered stance on enums.
+2. **It buys nothing here.** The flag exists to keep source compatible with
+   type-stripping runtimes (Node `--experimental-strip-types`, `ts-blank-space`).
+   Nothing in this repo type-strips: the frontend is bundled by Vite/esbuild, which
+   compiles enums correctly, and `Back-End/tsconfig.json` does a real `tsc` emit to
+   CommonJS in `dist/`.
+3. **The shared package does not ask for it.** `packages/shared/tsconfig.json` sets no
+   such flag, so the package is valid by its own contract. Only the app config was
+   unilaterally stricter than the code it consumes.
+
+_Why the `as const` conversion is rejected — the concrete reason, not just cost:_
+
+`TimerOption` is a **numeric** enum, and `WaitingRoom.tsx:344` iterates it with
+`Object.entries(TimerOption)`. A numeric enum carries a reverse mapping at runtime, so
+that call yields **eight** entries, not four. An `as const` object yields four. The
+timer picker's rendered output would change the moment the enum was converted — and
+because `Object.entries` has the same static type either way, **`tsc` would not say a
+word.** That is exactly the silent-consumer hazard that makes the conversion risky, and
+it is real in this codebase today rather than hypothetical.
+
+(That call site is also buggy for the same reason — see the note in task 0.5. Fixing it
+is not this decision's job, but the conversion would have silently changed it while
+appearing to be a pure refactor.)
+
+_Consequence:_ zero runtime change, zero source change outside one config line.
+Frontend errors 20 → 17. The backend is untouched and unaffected: `tsc --noEmit` clean,
+61/61 tests pass.
+
+_Not superseded by D-15._ The Phase 0.5 role registry is still `as const` — that is a
+**new** object with no existing consumers, where `as const` is free. This entry is only
+about not retrofitting the three existing enums during a foundations phase. If the
+enums are ever converted, it must be its own task with `WaitingRoom.tsx:344` and every
+other runtime-semantics consumer audited by hand, not by the compiler.
+
+---
+
 # OPEN QUESTIONS
 
 ## Q-01 — Which team is each role on, per the code?
 
-**OPEN · blocks Phase 0 (task 0.4)**
+**OPEN · blocks Phase 0.5 (task 0.5.1)**
 
 `docs/CONTENT.md` has a team column filled from ONUW convention, but Clone, Warlock,
 and Oracle are ambiguous in this codebase. The answer is in the `team` field of each
 class in `Back-End/src/entities/roles/*.ts` and in `Front-End/src/characters.ts:42+`.
 
 **Read it from the code, do not assume.** Clone in particular may inherit the copied
-role's team at runtime.
+role's team at runtime — if so, the registry needs `team: 'inherited'` or similar
+rather than a fixed value.
+
+Once answered it is recorded in the shared registry (D-15) and everything else reads
+from there.
 
 ## Q-02 — Confirm the three Arabic team labels.
 

@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-// import VoiceChat from "../components/VoiceChat";
 import "./Vote.css";
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
@@ -11,7 +10,6 @@ function Vote() {
   const { gameCode } = useParams();
   const navigate = useNavigate();
 
-  const playerName = useGameStore((s) => s.playerName) || "Unknown";
   const playerId = useGameStore((s) => s.playerId) || "";
   const isHost = useGameStore((s) => s.isHost);
   const storePlayers = useGameStore((s) => s.players);
@@ -82,8 +80,6 @@ function Vote() {
         <p className="vote-count">
           {totalVoted} / {totalPlayers} voted
         </p>
-
-        <div className="vote-voice">{/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}</div>
 
         {/* ===== VOTING STATE ===== */}
         {viewState === "voting" && (
