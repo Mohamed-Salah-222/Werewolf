@@ -17,9 +17,9 @@ function teamColor(team: string): string {
 }
 
 function teamLabel(team: string): string {
-  if (team === Team.Villain) return "WEREWOLF TEAM";
-  if (team === Team.Neutral) return "NEUTRAL";
-  return "VILLAGE TEAM";
+  if (team === Team.Villain) return "فريق العفاريت";
+  if (team === Team.Neutral) return "مستقل";
+  return "فريق القرية";
 }
 
 // ===== COMPONENT =====
@@ -110,7 +110,7 @@ function HomePage() {
 
   const handleCreateGame = useCallback(async () => {
     if (playerName.trim().length < 2) {
-      setError("Name must be at least 2 characters");
+      setError("الاسم لازم يكون حرفين على الأقل");
       return;
     }
     sessionStorage.setItem("werewolf_playerName", playerName.trim());
@@ -124,7 +124,7 @@ function HomePage() {
       });
       const data = await res.json();
       if (!data.success) {
-        setError("Failed to create game");
+        setError("حصلت مشكلة في عمل اللعبة، جرب تاني");
         setLoading(false);
         return;
       }
@@ -133,7 +133,7 @@ function HomePage() {
       gameActions.joinGame({ gameCode: code, playerName: playerName.trim() });
       setShowCreateModal(false);
     } catch {
-      setError("Could not connect to server");
+      setError("مقدرش أوصل للسيرفر، اتأكد من النت");
     } finally {
       setLoading(false);
     }
@@ -141,11 +141,11 @@ function HomePage() {
 
   const handleJoinGame = useCallback(async () => {
     if (playerName.trim().length < 2) {
-      setError("Name must be at least 2 characters");
+      setError("الاسم لازم يكون حرفين على الأقل");
       return;
     }
     if (gameCode.trim().length !== 6) {
-      setError("Game code must be 6 characters");
+      setError("كود اللعبة لازم يكون 6 حروف");
       return;
     }
     sessionStorage.setItem("werewolf_playerName", playerName.trim());
@@ -158,7 +158,7 @@ function HomePage() {
       gameActions.joinGame({ gameCode: code, playerName: name });
       setShowJoinModal(false);
     } catch {
-      setError("Could not connect to server");
+      setError("مقدرش أوصل للسيرفر، اتأكد من النت");
     } finally {
       setLoading(false);
     }
@@ -170,7 +170,8 @@ function HomePage() {
 
       {/* ===== TOP: TITLE + BUTTONS ===== */}
       <div className="home-topbar">
-        <h1 className="home-title anim-title">{`WEREWOLF`}</h1>
+        <h1 className="home-title anim-title">الذئب</h1>
+        <p className="home-tagline anim-title">حكاية قرية مصرية… اللي بيخون بيتكشف قبل الفجر</p>
         <div className="home-button-row">
           <button
             className="action-btn anim-btn anim-btn--1"
@@ -179,7 +180,7 @@ function HomePage() {
               setShowCreateModal(true);
             }}
           >
-            CREATE GAME
+            اعمل لعبة
           </button>
           <button
             className="action-btn anim-btn anim-btn--2"
@@ -188,7 +189,7 @@ function HomePage() {
               setShowJoinModal(true);
             }}
           >
-            JOIN GAME
+            انضم للعبة
           </button>
           <button
             className="action-btn anim-btn anim-btn--3"
@@ -197,7 +198,7 @@ function HomePage() {
               setShowHowToPlay(true);
             }}
           >
-            HOW TO PLAY
+            إزاي بتتلعب؟
           </button>
         </div>
       </div>
@@ -209,23 +210,31 @@ function HomePage() {
             <img src={displayedChar.fullBody} alt={displayedChar.name} className="home-fullbody-img" />
           ) : (
             <div className="home-placeholder-body">
-              <span className="home-placeholder-icon">?</span>
-              <span className="home-placeholder-text">COMING SOON</span>
+              <span className="home-placeholder-icon">؟</span>
+              <span className="home-placeholder-text">على قريب</span>
             </div>
           )}
         </div>
 
         <div className={`home-info-panel anim-info-panel ${charSwitching ? "info-exit" : "info-enter"}`}>
           <div className={`home-team-badge home-team-badge--${displayedChar.team}`}>{teamLabel(displayedChar.team)}</div>
-          <h2 className="home-char-name">{displayedChar.name.toUpperCase()}</h2>
+          <h2 className="home-char-name">{displayedChar.name}</h2>
           <p className="home-char-title">{displayedChar.title}</p>
           <div className="home-divider" />
           <p className="home-char-desc">{displayedChar.description}</p>
           <div className="home-ability-box">
-            <span className="home-ability-label">ABILITY</span>
+            <span className="home-ability-label">القدرة</span>
             <p className="home-ability-text">{displayedChar.ability}</p>
           </div>
         </div>
+      </div>
+
+      {/* ===== الحكايا: STORY STRIP ===== */}
+      <div className="home-story anim-selectbar">
+        <p>
+          في قرية صغيرة على شط النيل، من ساعة ما القمر بيبقى مليان، الناس بتقول إن في عفاريت بتتجول بينهم بالليل
+          وبصحى الصباح حد منهم مفقود… القرية عايزة تعرف: مين المستخبي بينكم؟ الحقيقة بتظهر قبل الفجر.
+        </p>
       </div>
 
       {/* ===== BOTTOM: CHARACTER CAROUSEL ===== */}
@@ -236,7 +245,7 @@ function HomePage() {
             // FIX #2: Use ref instead of document.querySelector
             gridRef.current?.scrollBy({ left: -200, behavior: "smooth" });
           }}
-          aria-label="Scroll left"
+          aria-label="اتعريض يمين"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="15 18 9 12 15 6" />
@@ -288,7 +297,7 @@ function HomePage() {
             // FIX #2: Use ref instead of document.querySelector
             gridRef.current?.scrollBy({ left: 200, behavior: "smooth" });
           }}
-          aria-label="Scroll right"
+          aria-label="اتعرّض شمال"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="9 6 15 12 9 18" />
@@ -299,15 +308,15 @@ function HomePage() {
       {showCreateModal && (
         <div className="home-overlay" onClick={closeModals}>
           <div className="home-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="home-modal-title">CREATE GAME</h2>
-            <input className="home-input" type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleCreateGame()} autoFocus />
+            <h2 className="home-modal-title">اعمل لعبة</h2>
+            <input className="home-input" type="text" placeholder="اكتب اسمك" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleCreateGame()} autoFocus />
             {error && <p className="home-error">{error}</p>}
             <div className="home-modal-buttons">
               <button className="home-cancel-btn" onClick={closeModals}>
-                CANCEL
+                إلغاء
               </button>
               <button className="home-confirm-btn" onClick={handleCreateGame} disabled={loading}>
-                {loading ? "CREATING..." : "CREATE"}
+                {loading ? "بيجهز…" : "اعمل"}
               </button>
             </div>
           </div>
@@ -318,16 +327,16 @@ function HomePage() {
       {showJoinModal && (
         <div className="home-overlay" onClick={closeModals}>
           <div className="home-modal" onClick={(e) => e.stopPropagation()}>
-            <h2 className="home-modal-title">JOIN GAME</h2>
-            <input className="home-input" type="text" placeholder="Game Code" value={gameCode} onChange={(e) => setGameCode(e.target.value)} maxLength={6} autoFocus />
-            <input className="home-input" type="text" placeholder="Enter your name" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleJoinGame()} />
+            <h2 className="home-modal-title">انضم للعبة</h2>
+            <input className="home-input home-input-code" type="text" placeholder="كود اللعبة" value={gameCode} onChange={(e) => setGameCode(e.target.value)} maxLength={6} autoFocus />
+            <input className="home-input" type="text" placeholder="اكتب اسمك" value={playerName} onChange={(e) => setPlayerName(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleJoinGame()} />
             {error && <p className="home-error">{error}</p>}
             <div className="home-modal-buttons">
               <button className="home-cancel-btn" onClick={closeModals}>
-                CANCEL
+                إلغاء
               </button>
               <button className="home-confirm-btn" onClick={handleJoinGame} disabled={loading}>
-                {loading ? "JOINING..." : "JOIN"}
+                {loading ? "بيحاول…" : "انضم"}
               </button>
             </div>
           </div>
