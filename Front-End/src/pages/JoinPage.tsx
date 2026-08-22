@@ -30,7 +30,7 @@ function JoinPage() {
       const { gameCode: storeCode } = useGameStore.getState();
       if (storeCode !== code) {
         setStatus("error");
-        setErrorMsg("Could not join game. It may not exist or has already started.");
+        setErrorMsg("مقدرش ينضم للعبة. يمكن مش موجودة أو بدأت خلاص.");
       }
     }, 10000);
 
@@ -48,10 +48,10 @@ function JoinPage() {
         <div className="join-vignette" />
         <div className="join-card">
           <div className="join-spinner" />
-          <h2 className="join-title">INVALID LINK</h2>
-          <p className="join-subtitle">This game link isn't valid.</p>
+          <h2 className="join-title">اللينك مش صحيح</h2>
+          <p className="join-subtitle">لينك اللعبة ده مش شغال.</p>
           <button className="join-home-btn" onClick={() => navigate("/")}>
-            GO HOME
+            ارجع للبيت
           </button>
         </div>
       </div>
@@ -64,8 +64,8 @@ function JoinPage() {
         <div className="join-vignette" />
         <div className="join-card">
           <div className="join-spinner" />
-          <h2 className="join-title">JOINING GAME...</h2>
-          <p className="join-subtitle">Setting up your disguise</p>
+          <h2 className="join-title">بتبدأ اللعبة…</h2>
+          <p className="join-subtitle">بنجهز تنكرك</p>
         </div>
       </div>
     );
@@ -77,10 +77,10 @@ function JoinPage() {
         <div className="join-vignette" />
         <div className="join-card">
           <div className="join-spinner" />
-          <h2 className="join-title">GAME IN PROGRESS</h2>
-          <p className="join-subtitle">This game has already started. You can't join mid-game.</p>
+          <h2 className="join-title">اللعبة شغالة</h2>
+          <p className="join-subtitle">اللعبة بدأت خلاص، مينفعش تنضم في النص.</p>
           <button className="join-home-btn" onClick={() => navigate("/")}>
-            GO HOME
+            ارجع للبيت
           </button>
         </div>
       </div>
@@ -91,10 +91,10 @@ function JoinPage() {
     <div className="join-page">
       <div className="join-vignette" />
       <div className="join-card">
-        <h2 className="join-title">COULDN'T JOIN</h2>
+        <h2 className="join-title">معرفش ينضم</h2>
         <p className="join-subtitle">{errorMsg}</p>
         <button className="join-home-btn" onClick={() => navigate("/")}>
-          GO HOME
+          ارجع للبيت
         </button>
       </div>
     </div>

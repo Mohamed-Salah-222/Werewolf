@@ -41,6 +41,13 @@ function signalColor(level: SignalLevel): string {
   return "#3d2e1a";
 }
 
+const TIMER_LABELS: Record<string, string> = {
+  Short: "قصير",
+  Medium: "وسط",
+  Long: "طويل",
+  VeryLong: "طويل أوي",
+};
+
 // ===== SIGNAL BARS COMPONENT =====
 
 function SignalBars({ level }: { level: SignalLevel }) {
@@ -48,7 +55,7 @@ function SignalBars({ level }: { level: SignalLevel }) {
   const dimColor = "rgba(201, 168, 76, 0.15)";
 
   return (
-    <div className={`wr-signal-bars ${level === 0 ? "wr-signal-bars--measuring" : ""}`} title={level === 0 ? "Measuring..." : `Signal: ${["", "Poor", "Fair", "Good", "Great"][level]}`}>
+    <div className={`wr-signal-bars ${level === 0 ? "wr-signal-bars--measuring" : ""}`} title={level === 0 ? "بنقيس…" : `الإشارة: ${["", "ضعيفة", "مقبولة", "كويسة", "ممتازة"][level]}`}>
       {[1, 2, 3, 4].map((bar) => (
         <div
           key={bar}
@@ -130,7 +137,7 @@ function WaitingRoom() {
     const allReady = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
     if (!allReady) {
       const notReadyCount = players.filter((p) => !p.isReady).length;
-      setStartError(`${notReadyCount} player(s) not ready yet`);
+      setStartError(`${notReadyCount} لسه مش مستعدين`);
       if (startErrorTimeoutRef.current) clearTimeout(startErrorTimeoutRef.current);
       startErrorTimeoutRef.current = setTimeout(() => setStartError(null), 3000);
       return;
@@ -180,11 +187,11 @@ function WaitingRoom() {
   const handleRenameSubmit = useCallback(() => {
     const trimmed = renameValue.trim();
     if (trimmed.length < 2) {
-      setRenameError("Name must be at least 2 characters");
+      setRenameError("الاسم لازم يكون حرفين على الأقل");
       return;
     }
     if (trimmed.length > 20) {
-      setRenameError("Name must be 20 characters or less");
+      setRenameError("الاسم مينفعش يعدي 20 حرف");
       return;
     }
     gameActions.changeName({ gameCode, playerId, newName: trimmed });
@@ -198,7 +205,7 @@ function WaitingRoom() {
   const canStart = players.length >= MIN_PLAYERS && players.every((p) => p.isReady);
   const notReadyCount = players.filter((p) => !p.isReady).length;
   const needMore = MIN_PLAYERS - players.length;
-  const startButtonText = needMore > 0 ? `NEED ${needMore} MORE` : canStart ? "START GAME" : `${notReadyCount} NOT READY`;
+  const startButtonText = needMore > 0 ? `محتاجين ${needMore} كمان` : canStart ? "ابدأ اللعبة" : `${notReadyCount} مش جاهزين`;
 
   // ===== RENDER =====
 
@@ -210,7 +217,7 @@ function WaitingRoom() {
       <div className="wr-center">
         <div className="wr-title-row wr-anim-title">
           {isHost ? (
-            <button className="wr-settings-btn wr-title-btn--left" onClick={() => setSettingsModalOpen(true)} aria-label="Settings">
+            <button className="wr-settings-btn wr-title-btn--left" onClick={() => setSettingsModalOpen(true)} aria-label="الإعدادات">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -219,23 +226,23 @@ function WaitingRoom() {
           ) : (
             <div className="wr-title-btn--left" />
           )}
-          <h1 className="wr-title">WAITING ROOM</h1>
-          <button className={`wr-hint-btn wr-title-btn--right${htpPulsing && settings.showHint ? " wr-hint-btn--pulse" : ""}`} onClick={handleHintClick} aria-label="How to play">
+          <h1 className="wr-title">غرفة الانتظار</h1>
+          <button className={`wr-hint-btn wr-title-btn--right${htpPulsing && settings.showHint ? " wr-hint-btn--pulse" : ""}`} onClick={handleHintClick} aria-label="إزاي بتتلعب">
             <CircleHelp size={34} strokeWidth={1.5} />
           </button>
         </div>
 
         <div className="wr-code-section wr-anim-code">
-          <span className="wr-code-label">GAME CODE</span>
+          <span className="wr-code-label">كود اللعبة</span>
           <button className="wr-code-button" onClick={handleCopyCode}>
             <span className="wr-code-text">{gameCode?.toUpperCase()}</span>
-            <span className="wr-copy-hint">{copied ? "COPIED!" : "TAP TO COPY"}</span>
+            <span className="wr-copy-hint">{copied ? "اتنسخ!" : "دوس تنسخ"}</span>
           </button>
           <ShareButton gameCode={gameCode || ""} />
         </div>
 
         <div className="wr-player-section wr-anim-players">
-          <span className="wr-player-count">PLAYERS {players.length}/12</span>
+          <span className="wr-player-count">اللاعبين {players.length}/12</span>
           <div className="wr-player-list">
             {players.map((p, index) => {
               const signal = pingToSignal(p.ping === 0 ? null : p.ping);
@@ -247,7 +254,7 @@ function WaitingRoom() {
                   <div className="wr-player-info">
                     <span className={`wr-player-name ${p.isReady ? "wr-player-name--ready" : ""}`}>{p.name}</span>
                     {p.isHost && (
-                      <span className="wr-host-badge" title="Host">
+                      <span className="wr-host-badge" title="المضيف">
                         <Crown size={13} strokeWidth={1.8} />
                       </span>
                     )}
@@ -255,12 +262,12 @@ function WaitingRoom() {
                   <div className="wr-player-right">
                     <SignalBars level={signal} />
                     {isMe && (
-                      <button className="wr-dots-btn" onClick={handleRenameOpen} aria-label="Change name">
+                      <button className="wr-dots-btn" onClick={handleRenameOpen} aria-label="غير اسمك">
                         ⋮
                       </button>
                     )}
                     {showKickDots && (
-                      <button className="wr-dots-btn" onClick={() => setKickTarget({ id: p.id, name: p.name })} aria-label="Kick player">
+                      <button className="wr-dots-btn" onClick={() => setKickTarget({ id: p.id, name: p.name })} aria-label="اطرده من اللعبة">
                         ⋮
                       </button>
                     )}
@@ -279,10 +286,10 @@ function WaitingRoom() {
             </button>
           )}
           <button className={`wr-ready-btn ${currentReady ? "wr-ready-btn--active" : ""}`} onClick={handleReady}>
-            {currentReady ? "✓ READY" : "READY"}
+            {currentReady ? "✓ جاهز" : "جاهز"}
           </button>
           <button className="wr-leave-btn" onClick={handleLeave}>
-            LEAVE
+            خروج
           </button>
         </div>
       </div>
@@ -291,16 +298,16 @@ function WaitingRoom() {
       {kickTarget && (
         <div className="wr-kick-overlay" onClick={() => setKickTarget(null)}>
           <div className="wr-kick-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="wr-kick-modal-title">KICK PLAYER</h3>
+            <h3 className="wr-kick-modal-title">طرد لاعب</h3>
             <p className="wr-kick-modal-text">
-              Remove <span className="wr-kick-modal-name">{kickTarget.name}</span> from the game?
+              تشيل <span className="wr-kick-modal-name">{kickTarget.name}</span> من اللعبة؟
             </p>
             <div className="wr-kick-modal-buttons">
               <button className="wr-kick-modal-no" onClick={() => setKickTarget(null)}>
-                CANCEL
+                إلغاء
               </button>
               <button className="wr-kick-modal-yes" onClick={() => handleKick(kickTarget.id)}>
-                KICK
+                اطرده
               </button>
             </div>
           </div>
@@ -311,15 +318,15 @@ function WaitingRoom() {
       {renameModalOpen && (
         <div className="wr-kick-overlay" onClick={() => setRenameModalOpen(false)}>
           <div className="wr-kick-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="wr-kick-modal-title">CHANGE NAME</h3>
+            <h3 className="wr-kick-modal-title">غير اسمك</h3>
             <input className="wr-rename-input" type="text" value={renameValue} onChange={(e) => setRenameValue(e.target.value)} maxLength={20} onKeyDown={(e) => e.key === "Enter" && handleRenameSubmit()} autoFocus />
             {renameError && <p className="wr-rename-error">{renameError}</p>}
             <div className="wr-kick-modal-buttons">
               <button className="wr-kick-modal-no" onClick={() => setRenameModalOpen(false)}>
-                CANCEL
+                إلغاء
               </button>
               <button className="wr-kick-modal-save" onClick={handleRenameSubmit}>
-                SAVE
+                حفظ
               </button>
             </div>
           </div>
@@ -331,15 +338,15 @@ function WaitingRoom() {
         <div className="wr-settings-overlay" onClick={() => setSettingsModalOpen(false)}>
           <div className="wr-settings-modal" onClick={(e) => e.stopPropagation()}>
             <div className="wr-settings-header">
-              <h3 className="wr-settings-title">SETTINGS</h3>
+              <h3 className="wr-settings-title">الإعدادات</h3>
               <button className="wr-settings-close" onClick={() => setSettingsModalOpen(false)}>
                 ✕
               </button>
             </div>
             <div className="wr-settings-body">
               <div className="wr-settings-option">
-                <span className="wr-settings-option-label">DISCUSSION TIMER</span>
-                <span className="wr-settings-option-hint">Minutes per discussion round</span>
+                <span className="wr-settings-option-label">مؤقت النقاش</span>
+                <span className="wr-settings-option-hint">عدد دقايق كل جولة نقاش</span>
                 <div className="wr-settings-timer-options">
                   {Object.entries(TimerOption).map(([key, value]) => (
                     <button
@@ -354,7 +361,7 @@ function WaitingRoom() {
                       }}
                     >
                       <span className="wr-settings-timer-value">{value}</span>
-                      <span className="wr-settings-timer-label">{key}</span>
+                      <span className="wr-settings-timer-label">{TIMER_LABELS[key] || key}</span>
                     </button>
                   ))}
                 </div>
@@ -365,10 +372,10 @@ function WaitingRoom() {
             </div>
             <div className="wr-settings-footer">
               <button className="wr-settings-cancel" onClick={() => setSettingsModalOpen(false)}>
-                CANCEL
+                إلغاء
               </button>
               <button className="wr-settings-save" onClick={handleUpdateSettings}>
-                SAVE
+                حفظ
               </button>
             </div>
           </div>

@@ -9,14 +9,14 @@ function ShareButton({ gameCode }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
   const shareUrl = `${window.location.origin}/join/${gameCode}`;
-  const shareText = `Join my Werewolf game! Code: ${gameCode.toUpperCase()}`;
+  const shareText = `اتفضل العب معايا لعب ذئب! الكود: ${gameCode.toUpperCase()}`;
 
   const handleShare = useCallback(async () => {
     // Try native Web Share API first (mobile share sheet)
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "Werewolf Game",
+          title: "لعبة الذئب",
           text: shareText,
           url: shareUrl,
         });
@@ -53,7 +53,7 @@ function ShareButton({ gameCode }: ShareButtonProps) {
           <svg className="share-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="20 6 9 17 4 12" />
           </svg>
-          LINK COPIED!
+          اللينك اتنسخ!
         </>
       ) : (
         <>
@@ -62,7 +62,7 @@ function ShareButton({ gameCode }: ShareButtonProps) {
             <polyline points="16 6 12 2 8 6" />
             <line x1="12" y1="2" x2="12" y2="15" />
           </svg>
-          INVITE FRIENDS
+          ادعُ أصحابك
         </>
       )}
     </button>
