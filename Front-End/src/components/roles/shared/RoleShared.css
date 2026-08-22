@@ -49,8 +49,6 @@
 .role-name {
   font-size: clamp(11px, 1.2vw, 15px);
   font-family: var(--font-display);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
   color: rgba(240, 230, 208, 0.7);
   white-space: nowrap;
   text-align: center;
@@ -63,7 +61,6 @@
 }
 
 .role-name--self {
-  letter-spacing: 3px;
 }
 
 /* ===== FLIP CARD (portrait card shape) ===== */
@@ -308,7 +305,6 @@
 .role-status-text {
   font-size: clamp(11px, 1.2vw, 15px);
   font-family: var(--font-display);
-  letter-spacing: clamp(3px, 0.5vw, 6px);
 }
 
 .role-status-text--gold {
@@ -329,7 +325,6 @@
 .role-hint-text {
   font-size: clamp(9px, 1vw, 12px);
   font-family: var(--font-display);
-  letter-spacing: clamp(2px, 0.4vw, 4px);
   color: #5a4a30;
 }
 
@@ -369,7 +364,6 @@
   padding: clamp(12px, 1.4vw, 16px) clamp(32px, 4.5vw, 52px);
   font-size: clamp(11px, 1.1vw, 13px);
   font-weight: 400;
-  letter-spacing: clamp(2px, 0.3vw, 4px);
   font-family: var(--font-display);
   color: rgba(240, 230, 208, 0.8);
   background: linear-gradient(180deg, #1e1b17 0%, #141210 50%, #1a1714 100%);
@@ -409,7 +403,6 @@
 .role-bottom-status {
   font-size: clamp(11px, 1vw, 13px);
   font-family: var(--font-display);
-  letter-spacing: 3px;
   color: var(--color-gold);
   animation: rolePulse 2s ease-in-out infinite;
   display: none;
@@ -418,7 +411,6 @@
 .role-bottom-status--done {
   color: var(--color-text-dim);
   font-family: var(--font-body);
-  letter-spacing: 1px;
   animation: none;
   display: none;
 }
@@ -427,7 +419,6 @@
   font-size: clamp(10px, 0.9vw, 12px);
   font-family: var(--font-body);
   color: #5a4a30;
-  letter-spacing: 1px;
   display: none;
 }
 
@@ -484,7 +475,6 @@
 .role-pack-title {
   font-family: var(--font-display);
   font-size: clamp(14px, 3vw, 20px);
-  letter-spacing: clamp(4px, 1vw, 8px);
 }
 
 .role-pack-title--red {
@@ -524,9 +514,7 @@
 .role-pack-name {
   font-family: var(--font-display);
   font-size: clamp(11px, 2.5vw, 14px);
-  letter-spacing: 2px;
   color: rgba(240, 230, 208, 0.8);
-  text-transform: uppercase;
 }
 
 .role-pack-img {
@@ -562,7 +550,6 @@
   padding: 10px 32px;
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: 3px;
   font-family: var(--font-display);
   color: var(--color-gold);
   background: none;
@@ -591,7 +578,6 @@
 .role-no-result-text {
   font-size: clamp(12px, 1.3vw, 16px);
   font-family: var(--font-display);
-  letter-spacing: clamp(3px, 0.5vw, 6px);
   color: var(--color-gold);
   text-shadow: 0 0 16px rgba(90, 74, 48, 0.2);
 }
@@ -600,7 +586,6 @@
   font-size: clamp(10px, 0.9vw, 12px);
   font-family: var(--font-body);
   color: #3d3020;
-  letter-spacing: 1px;
 }
 
 /* ============================================================

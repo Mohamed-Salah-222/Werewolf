@@ -143,7 +143,6 @@
   font-size: clamp(11px, 1vw, 13px);
   font-family: var(--font-body);
   color: #5a4a30;
-  letter-spacing: 0.5px;
   margin: 0;
 }
 
@@ -179,7 +178,6 @@
 .in-btn-text {
   font-size: clamp(11px, 1.1vw, 14px);
   font-family: var(--font-display);
-  letter-spacing: 3px;
   color: var(--color-gold);
   transition: color 0.3s ease;
 }
@@ -192,7 +190,6 @@
 .in-status-text {
   font-size: clamp(12px, 1.3vw, 16px);
   font-family: var(--font-display);
-  letter-spacing: clamp(3px, 0.5vw, 6px);
 }
 
 .in-status-text--pulse {
@@ -244,7 +241,6 @@
 .in-done-title {
   font-size: clamp(11px, 1.2vw, 15px);
   font-family: var(--font-display);
-  letter-spacing: clamp(2px, 0.4vw, 5px);
 }
 
 .in-done-title--green {
@@ -261,7 +257,6 @@
   font-size: clamp(10px, 0.9vw, 12px);
   font-family: var(--font-body);
   color: var(--color-text-dim);
-  letter-spacing: 0.5px;
 }
 
 /* ============================================================

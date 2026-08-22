@@ -114,8 +114,6 @@
 .nrp-label {
   font-size: clamp(8px, 1.2vw, 11px);
   font-family: var(--font-display);
-  letter-spacing: 1px;
-  text-transform: uppercase;
   color: rgba(240, 230, 208, 0.3);
   white-space: nowrap;
   text-align: center;
@@ -139,7 +137,6 @@
   font-size: clamp(8px, 1vw, 11px);
   font-family: var(--font-body);
   color: var(--color-gold);
-  letter-spacing: 0.5px;
   animation: nrpPulse 2s ease-in-out infinite;
 }
 

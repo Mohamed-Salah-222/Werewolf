@@ -37,7 +37,6 @@
 .htp-title {
   font-size: clamp(16px, 1.8vw, 20px);
   font-weight: 400;
-  letter-spacing: 4px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin: 0;
@@ -69,7 +68,6 @@
   padding: 12px 8px;
   font-size: clamp(9px, 0.9vw, 11px);
   font-weight: 400;
-  letter-spacing: 2px;
   font-family: var(--font-display);
   background: none;
   border: none;
@@ -158,7 +156,6 @@
   display: block;
   font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
-  letter-spacing: 2px;
   color: var(--color-text);
   margin-bottom: 4px;
 }
@@ -183,7 +180,6 @@
 .htp-win-label {
   display: block;
   font-size: 10px;
-  letter-spacing: 3px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin-bottom: 12px;
@@ -204,7 +200,6 @@
 .htp-win-team {
   font-family: var(--font-display);
   font-size: 11px;
-  letter-spacing: 1px;
   margin-right: 4px;
 }
 
@@ -239,7 +234,6 @@
   text-align: right;
   font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
-  letter-spacing: 1px;
   color: #3d2e1a;
   flex-shrink: 0;
 }
@@ -247,7 +241,6 @@
 .htp-order-name {
   font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
-  letter-spacing: 2px;
   color: var(--color-text);
 }
 
@@ -259,7 +252,6 @@
 .htp-roles-heading {
   display: block;
   font-size: 10px;
-  letter-spacing: 3px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin-bottom: 12px;
@@ -292,7 +284,6 @@
   font-size: 13px;
   font-family: var(--font-display);
   color: var(--color-gold);
-  letter-spacing: 1px;
 }
 
 .htp-role-player {
@@ -331,14 +322,12 @@
 .htp-char-name {
   font-size: clamp(12px, 1.1vw, 14px);
   font-family: var(--font-display);
-  letter-spacing: 2px;
   color: var(--color-text);
 }
 
 .htp-char-team {
   font-size: 9px;
   font-family: var(--font-display);
-  letter-spacing: 2px;
 }
 
 .htp-char-ability {

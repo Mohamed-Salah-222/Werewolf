@@ -34,7 +34,6 @@
 .disc-title {
   font-size: clamp(20px, 3vw, 36px);
   font-weight: 400;
-  letter-spacing: clamp(3px, 0.6vw, 8px);
   margin: 0 0 8px 0;
   font-family: var(--font-display);
   color: var(--color-gold);
@@ -142,7 +141,6 @@
   font-weight: 400;
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 2px;
   text-shadow: 0 0 20px rgba(201, 168, 76, 0.15);
 }
 
@@ -206,7 +204,6 @@
   align-items: center;
   cursor: pointer;
   font-family: var(--font-display);
-  letter-spacing: 2px;
   transition: color 0.2s ease;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -244,7 +241,6 @@
   display: block;
   font-size: 10px;
   color: #5a4a30;
-  letter-spacing: 3px;
   margin-bottom: 6px;
   font-family: var(--font-display);
 }
@@ -253,7 +249,6 @@
   font-size: clamp(18px, 1.8vw, 22px);
   font-weight: 400;
   font-family: var(--font-display);
-  letter-spacing: 2px;
 }
 
 .disc-recap-role-name--villain {
@@ -281,7 +276,6 @@
   color: var(--color-villain);
   font-size: clamp(14px, 1.3vw, 16px);
   font-family: var(--font-display);
-  letter-spacing: 2px;
   margin-bottom: 16px;
 }
 
@@ -291,7 +285,6 @@
   padding: clamp(8px, 1vw, 12px) clamp(20px, 2.5vw, 32px);
   font-size: clamp(11px, 1vw, 13px);
   font-weight: 400;
-  letter-spacing: 3px;
   background-color: transparent;
   color: var(--color-text-faint);
   border: 1px solid var(--color-border);
@@ -371,7 +364,6 @@
 .disc-phase-title-modal {
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 4px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin: 0;
@@ -426,7 +418,6 @@
   display: block;
   font-size: clamp(11px, 1vw, 13px);
   font-family: var(--font-display);
-  letter-spacing: 2px;
   color: var(--color-text);
   margin-bottom: 4px;
 }
@@ -449,7 +440,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 3px;
   font-family: var(--font-display);
   background-color: var(--color-gold);
   color: #0f0d0a;

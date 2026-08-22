@@ -45,7 +45,6 @@
 .res-winner-text {
   font-size: 32px;
   font-weight: 400;
-  letter-spacing: 6px;
   margin-bottom: 8px;
   font-family: var(--font-display);
   text-shadow: 0 0 20px currentColor;
@@ -78,7 +77,6 @@
 .res-eliminated-label {
   font-size: 10px;
   color: #5a4a30;
-  letter-spacing: 3px;
   margin-bottom: 6px;
   font-family: var(--font-display);
 }
@@ -88,7 +86,6 @@
   font-weight: 400;
   margin-bottom: 4px;
   font-family: var(--font-display);
-  letter-spacing: 3px;
   color: var(--color-text);
 }
 
@@ -96,7 +93,6 @@
   font-size: 14px;
   margin-bottom: 6px;
   font-family: var(--font-display);
-  letter-spacing: 2px;
 }
 
 .res-eliminated-votes {
@@ -114,7 +110,6 @@
 .res-section-title {
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 4px;
   margin-bottom: 12px;
   font-family: var(--font-display);
   color: var(--color-gold);
@@ -152,7 +147,6 @@
   font-size: 13px;
   font-weight: 400;
   font-family: var(--font-display);
-  letter-spacing: 1px;
 }
 
 /* ===== VOTE TOGGLE ===== */
@@ -167,7 +161,6 @@
   margin-bottom: 10px;
   cursor: pointer;
   font-family: var(--font-display);
-  letter-spacing: 2px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -284,7 +277,6 @@
 .res-sequence-role {
   font-family: var(--font-display);
   font-size: 12px;
-  letter-spacing: 1.5px;
   font-weight: 400;
 }
 
@@ -322,7 +314,6 @@
   padding: 14px;
   font-size: 13px;
   font-weight: 400;
-  letter-spacing: 3px;
   font-family: var(--font-display);
   color: rgba(240, 230, 208, 0.8);
   background: linear-gradient(180deg, #1e1b17 0%, #141210 50%, #1a1714 100%);
@@ -373,7 +364,6 @@
   padding: 14px;
   font-size: 13px;
   font-weight: 400;
-  letter-spacing: 3px;
   background-color: transparent;
   color: #6b5a3a;
   border: 1px solid #2a2019;
@@ -417,7 +407,6 @@
 
   .res-winner-text {
     font-size: 26px;
-    letter-spacing: 4px;
   }
 
   .res-personal-result {
@@ -520,7 +509,6 @@
 
   .res-winner-text {
     font-size: 22px;
-    letter-spacing: 3px;
   }
 }
 
@@ -531,7 +519,6 @@
 
   .res-winner-text {
     font-size: 18px;
-    letter-spacing: 2px;
   }
 }
 

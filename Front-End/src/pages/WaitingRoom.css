@@ -113,7 +113,6 @@
 .wr-title {
   font-size: clamp(16px, 1.8vw, 22px);
   font-weight: 400;
-  letter-spacing: clamp(3px, 0.5vw, 6px);
   color: var(--color-gold);
   margin: 0;
   text-align: center;
@@ -194,7 +193,6 @@
 }
 .wr-code-label {
   font-size: 10px;
-  letter-spacing: 4px;
   color: #5a4a30;
   margin-bottom: 4px;
   font-family: var(--font-display);
@@ -218,13 +216,11 @@
 .wr-code-text {
   font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 400;
-  letter-spacing: clamp(4px, 0.6vw, 8px);
   color: var(--color-gold);
   font-family: var(--font-display);
 }
 .wr-copy-hint {
   font-size: 9px;
-  letter-spacing: 3px;
   color: #5a4a30;
   font-family: var(--font-body);
 }
@@ -239,7 +235,6 @@
 .wr-player-count {
   display: block;
   font-size: 10px;
-  letter-spacing: 4px;
   color: #5a4a30;
   margin-bottom: 10px;
   text-align: center;
@@ -378,7 +373,6 @@
 .wr-kick-modal-title {
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 4px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin: 0 0 16px 0;
@@ -404,7 +398,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: transparent;
   color: #5a4a30;
   border: 1px solid var(--color-border);
@@ -425,7 +418,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: rgba(204, 68, 68, 0.15);
   color: #c44;
   border: 1px solid rgba(204, 68, 68, 0.3);
@@ -447,7 +439,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: rgba(74, 124, 63, 0.15);
   color: #4a7c3f;
   border: 1px solid rgba(74, 124, 63, 0.3);
@@ -503,7 +494,6 @@
   padding: 14px;
   font-size: 13px;
   font-weight: 400;
-  letter-spacing: 4px;
   font-family: var(--font-display);
   color: rgba(240, 230, 208, 0.8);
   background: linear-gradient(180deg, #1e1b17 0%, #141210 50%, #1a1714 100%);
@@ -535,7 +525,6 @@
   color: rgba(240, 230, 208, 0.2);
   border: 1px solid rgba(80, 70, 55, 0.2);
   cursor: not-allowed;
-  letter-spacing: 3px;
   font-size: 12px;
   box-shadow: none;
   text-shadow: none;
@@ -546,7 +535,6 @@
   padding: 10px;
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: 3px;
   background-color: transparent;
   color: #5a3a2a;
   border: 1px solid #2a1510;
@@ -575,7 +563,6 @@
   padding: 10px;
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: 3px;
   background-color: transparent;
   color: #8b3a3a;
   border: 1px solid #5a2020;
@@ -595,7 +582,6 @@
   padding: 10px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: rgba(180, 70, 70, 0.2);
   color: #d97a7a;
   border: 1px solid #8b4545;
@@ -623,7 +609,6 @@
   padding: 14px 10px;
   font-size: 13px;
   font-weight: 600;
-  letter-spacing: 2px;
   background-color: rgba(201, 168, 76, 0.25);
   color: #f0d060;
   border: 1px solid #c9a84c;
@@ -686,7 +671,6 @@
 .wr-settings-title {
   font-size: 16px;
   font-weight: 400;
-  letter-spacing: 4px;
   color: var(--color-gold);
   font-family: var(--font-display);
   margin: 0;
@@ -715,7 +699,6 @@
 .wr-settings-option-label {
   font-size: 11px;
   font-weight: 400;
-  letter-spacing: 3px;
   color: var(--color-text);
   font-family: var(--font-display);
 }
@@ -761,10 +744,8 @@
 }
 .wr-settings-timer-label {
   font-size: 9px;
-  letter-spacing: 2px;
   color: #5a4a30;
   font-family: var(--font-display);
-  text-transform: uppercase;
 }
 .wr-settings-timer-btn--active .wr-settings-timer-value {
   text-shadow: 0 0 10px rgba(201, 168, 76, 0.3);
@@ -783,7 +764,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: transparent;
   color: #5a4a30;
   border: 1px solid var(--color-border);
@@ -803,7 +783,6 @@
   padding: 12px;
   font-size: 12px;
   font-weight: 400;
-  letter-spacing: 2px;
   background-color: var(--color-gold);
   color: #0f0d0a;
   border: none;
@@ -976,11 +955,9 @@
   .wr-start-btn {
     padding: 10px;
     font-size: 10px;
-    letter-spacing: 2px;
   }
   .wr-start-btn:disabled {
     font-size: 9px;
-    letter-spacing: 1px;
   }
   .wr-ready-btn,
   .wr-leave-btn,

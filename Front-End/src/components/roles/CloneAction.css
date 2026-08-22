@@ -26,7 +26,6 @@
 .cl-banner-text {
   font-size: clamp(9px, 0.9vw, 11px);
   font-weight: 400;
-  letter-spacing: 3px;
   color: rgba(240, 230, 208, 0.8);
   font-family: var(--font-display);
 }
