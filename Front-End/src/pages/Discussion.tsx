@@ -6,6 +6,12 @@ import "./Discussion.css";
 
 import { useGameStore } from "../store/gameStore";
 import { gameActions } from "../store/sockets";
+import { findCharacter } from "../characters";
+
+/** Resolve any role identifier to its stable id */
+function roleIdOf(name: string): string {
+  return findCharacter(name)?.id ?? name.toLowerCase();
+}
 
 // ===== HELPERS =====
 
@@ -22,9 +28,9 @@ function getTimerState(secondsLeft: number): "normal" | "warning" | "urgent" {
 }
 
 function getRoleTeam(role: string): Team {
-  const villains = ["werewolf", "minion"];
-  if (villains.includes(role.toLowerCase())) return Team.Villain;
-  if (role.toLowerCase() === "joker") return Team.Neutral;
+  const rid = roleIdOf(role);
+  if (rid === "werewolf" || rid === "minion") return Team.Villain;
+  if (rid === "joker") return Team.Neutral;
   return Team.Village;
 }
 
@@ -49,7 +55,7 @@ function getDiscussionRecapRole({
   actionResult: Record<string, unknown> | null;
 }): string {
   const knownOriginalRole = originalRole || hydratedRole || currentRole;
-  const originalRoleLower = knownOriginalRole.toLowerCase();
+  const originalRoleLower = roleIdOf(knownOriginalRole);
 
   if (originalRoleLower === "robber") {
     return getString(actionResult?.newRole) ?? knownOriginalRole;
@@ -61,7 +67,7 @@ function getDiscussionRecapRole({
 
   if (originalRoleLower === "clone") {
     const clonedRole = getString(actionResult?.clonedRole);
-    const clonedRoleLower = clonedRole?.toLowerCase();
+    const clonedRoleLower = clonedRole ? roleIdOf(clonedRole) : null;
 
     if (!clonedRole || !clonedRoleLower) {
       return knownOriginalRole;
@@ -187,11 +193,11 @@ function Discussion() {
       <div className="disc-vignette" />
 
       <div className="disc-content">
-        <button className="disc-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="Phase info">
+        <button className="disc-info-btn" onClick={() => setShowPhaseInfo(true)} aria-label="معلومات المرحلة">
           !
         </button>
 
-        <h1 className="disc-title">DISCUSSION</h1>
+        <h1 className="disc-title">النقاش</h1>
 
         {/* Voice Chat */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>{/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}</div>
@@ -214,19 +220,19 @@ function Discussion() {
         {recapRoleName && (
           <div className="disc-recap">
             <button className="disc-recap-toggle" onClick={() => setShowResult(!showResult)}>
-              <span>{showResult ? "HIDE" : "SHOW"} NIGHT RECAP</span>
+              <span>{showResult ? "اخفي" : "ورّيني"} ملخص الليل</span>
               <span className="disc-recap-arrow">{showResult ? "▲" : "▼"}</span>
             </button>
 
             {showResult && (
               <div className="disc-recap-content">
                 <div className="disc-recap-role">
-                  <span className="disc-recap-label">YOUR ROLE</span>
-                  <span className={`disc-recap-role-name disc-recap-role-name--${roleTeam}`}>{recapRoleName}</span>
+                  <span className="disc-recap-label">دورك</span>
+                  <span className={`disc-recap-role-name disc-recap-role-name--${roleTeam}`}>{findCharacter(recapRoleName)?.name || recapRoleName}</span>
                 </div>
                 {recapMessage && (
                   <div>
-                    <span className="disc-recap-label">WHAT HAPPENED</span>
+                    <span className="disc-recap-label">اللي حصل</span>
                     <p className="disc-recap-message">{recapMessage}</p>
                   </div>
                 )}
@@ -236,12 +242,12 @@ function Discussion() {
         )}
 
         {/* Times up */}
-        {secondsLeft === 0 && <p className="disc-times-up">Time's up! Moving to vote...</p>}
+        {secondsLeft === 0 && <p className="disc-times-up">خلص الوقت! بننتقل للتصويت…</p>}
 
         {/* Host skip button */}
         {isHost && secondsLeft > 0 && (
           <button className="disc-skip-btn" onClick={skipToVote} disabled={skipping}>
-            {skipping ? "SKIPPING..." : "SKIP TO VOTE"}
+            {skipping ? "بنتقل…" : "نطل للتصويت"}
           </button>
         )}
       </div>
@@ -251,38 +257,38 @@ function Discussion() {
         <div className="disc-phase-overlay" onClick={() => setShowPhaseInfo(false)}>
           <div className="disc-phase-modal" onClick={(e) => e.stopPropagation()}>
             <div className="disc-phase-header">
-              <h2 className="disc-phase-title-modal">DISCUSSION</h2>
+              <h2 className="disc-phase-title-modal">النقاش</h2>
               <button className="disc-phase-close" onClick={() => setShowPhaseInfo(false)}>
                 ✕
               </button>
             </div>
             <div className="disc-phase-body">
-              <p className="disc-phase-flavor">The village is awake. Time to find the wolves or throw everyone off your trail.</p>
+              <p className="disc-phase-flavor">القرية صحيت. وقت اللي تكشف العفاريت… أو تلخبط الكل عليك.</p>
 
               <div className="disc-phase-item">
                 <div>
-                  <span className="disc-phase-item-title">TALK IT OUT</span>
-                  <p className="disc-phase-item-desc">This is where everyone discusses, accuses, defends, and bluffs. Use what you learned during the night to figure out who the werewolves are or mislead the village if you are one.</p>
+                  <span className="disc-phase-item-title">اتكلموا</span>
+                  <p className="disc-phase-item-desc">هنا الكل بيناقش ويتتهم ويدافع ويمثل. استخدم اللي عرفته بالليل عشان تعرف مين العفاريت… أو ضلل القرية لو انت واحد منهم.</p>
                 </div>
               </div>
 
               <div className="disc-phase-item">
                 <div>
-                  <span className="disc-phase-item-title">NIGHT RECAP</span>
-                  <p className="disc-phase-item-desc">Tap "SHOW NIGHT RECAP" to review your role and what happened during your night action. Only you can see your own recap.</p>
+                  <span className="disc-phase-item-title">ملخص الليل</span>
+                  <p className="disc-phase-item-desc">دوس «ورّيني ملخص الليل» تراجع دورك واللي حصل في حركتك. الملخص ده ليك انت بس.</p>
                 </div>
               </div>
 
               <div className="disc-phase-item">
                 <div>
-                  <span className="disc-phase-item-title">TIMER</span>
-                  <p className="disc-phase-item-desc">The circular timer counts down the discussion period. When it hits zero, voting begins automatically. The host can skip to vote early if everyone is ready.</p>
+                  <span className="disc-phase-item-title">المؤقت</span>
+                  <p className="disc-phase-item-desc">الدايرة بتعد وقت النقاش بالعكس. توصل صفر، التصويت يبدأ لوحده. والمضيف ينقلكم بدري لو الكل خلص.</p>
                 </div>
               </div>
             </div>
             <div className="disc-phase-footer">
               <button className="disc-phase-dismiss" onClick={() => setShowPhaseInfo(false)}>
-                GOT IT
+                فهمت
               </button>
             </div>
           </div>
@@ -298,7 +304,7 @@ function Discussion() {
           navigate("/");
         }}
       >
-        LEAVE
+        خروج
       </button>
     </div>
   );

@@ -58,7 +58,7 @@ function Vote() {
   const missingVotes = totalPlayers - totalVoted;
 
   const getVotedName = () => {
-    if (selected === "noWerewolf") return "No Werewolf";
+    if (selected === "noWerewolf") return "مفيش عفريت";
     return storePlayers.find((p) => p.id === selected)?.name || "Unknown";
   };
 
@@ -70,16 +70,16 @@ function Vote() {
       {viewState === "sealing" && (
         <div className="vote-seal-overlay">
           <div className="vote-seal-content">
-            <span className="vote-seal-text">VOTE SEALED</span>
+            <span className="vote-seal-text">التصويت اتسد</span>
           </div>
         </div>
       )}
 
       <div className={`vote-content ${viewState === "sealing" ? "vote-content--fading" : ""}`}>
-        <h1 className="vote-title">THE VOTE</h1>
-        <p className="vote-subtitle">Who do you think is the Werewolf?</p>
+        <h1 className="vote-title">التصويت</h1>
+        <p className="vote-subtitle">مين في رأيك العفريت؟</p>
         <p className="vote-count">
-          {totalVoted} / {totalPlayers} voted
+          {totalVoted} / {totalPlayers} صوتوا
         </p>
 
         <div className="vote-voice">{/* <VoiceChat gameCode={gameCode || ""} playerId={playerId} /> */}</div>
@@ -91,16 +91,16 @@ function Vote() {
               {others.map((p, i) => (
                 <button key={p.id} className={selected === p.id ? "vote-item vote-item--selected" : "vote-item"} onClick={() => setSelected(p.id)} style={{ animationDelay: `${i * 0.05}s` }}>
                   <span className="vote-player-name">{p.name}</span>
-                  {votedPlayers.has(p.id) && <span className="vote-voted-badge">VOTED</span>}
+                  {votedPlayers.has(p.id) && <span className="vote-voted-badge">صوّت</span>}
                 </button>
               ))}
               <button className={selected === "noWerewolf" ? "vote-item vote-no-wolf vote-item--selected" : "vote-item vote-no-wolf"} onClick={() => setSelected("noWerewolf")} style={{ animationDelay: `${others.length * 0.05}s` }}>
-                <span className="vote-player-name">No Werewolf</span>
-                <span className="vote-no-wolf-hint">All werewolves are on the ground</span>
+                <span className="vote-player-name">مفيش عفريت</span>
+                <span className="vote-no-wolf-hint">كل العفاريت على الأرض خلاص</span>
               </button>
             </div>
             <button className="vote-btn" onClick={handleVote} disabled={!selected}>
-              CONFIRM VOTE
+              أكد صوتك
             </button>
           </div>
         )}
@@ -110,7 +110,7 @@ function Vote() {
           <div className="vote-waiting-view">
             {/* Your vote summary */}
             <div className="vote-your-choice">
-              <span className="vote-your-label">YOUR VERDICT</span>
+              <span className="vote-your-label">حكمك</span>
               <span className="vote-your-target">{getVotedName()}</span>
             </div>
 
@@ -118,7 +118,7 @@ function Vote() {
             <div className="vote-divider" />
 
             {/* Voter progress */}
-            <p className="vote-waiting-hint">Waiting for other players</p>
+            <p className="vote-waiting-hint">مستني باقي اللاعبين</p>
             <div className="vote-progress-list">
               {storePlayers.map((p, i) => {
                 const isSelf = p.id === playerId;
@@ -127,7 +127,7 @@ function Vote() {
                 return (
                   <div key={p.id} className={`vote-progress-item ${hasVoted ? "vote-progress-item--done" : ""}`} style={{ animationDelay: `${i * 0.06}s` }}>
                     <span className={`vote-progress-dot ${hasVoted ? "vote-progress-dot--done" : ""}`} />
-                    <span className="vote-progress-name">{isSelf ? "You" : p.name}</span>
+                    <span className="vote-progress-name">{isSelf ? "انت" : p.name}</span>
                     {hasVoted && <span className="vote-progress-check">✓</span>}
                   </div>
                 );
@@ -137,7 +137,7 @@ function Vote() {
             {/* Force votes button — host only, only when someone hasn't voted */}
             {isHost && missingVotes > 0 && (
               <button className="vote-force-btn" onClick={() => setShowForceConfirm(true)} disabled={forcing}>
-                {forcing ? "FORCING..." : `FORCE VOTES (${missingVotes} missing)`}
+                {forcing ? "بيفرض…" : `اقفل التصويت غصب (${missingVotes} ناقصين)`}
               </button>
             )}
           </div>
@@ -148,16 +148,16 @@ function Vote() {
       {showForceConfirm && (
         <div className="vote-force-overlay" onClick={() => setShowForceConfirm(false)}>
           <div className="vote-force-modal" onClick={(e) => e.stopPropagation()}>
-            <h3 className="vote-force-modal-title">FORCE VOTES</h3>
+            <h3 className="vote-force-modal-title">فرض الأصوات</h3>
             <p className="vote-force-modal-text">
-              <span className="vote-force-modal-count">{missingVotes}</span> player{missingVotes !== 1 ? "s" : ""} haven't voted yet. Their votes will be assigned randomly.
+              <span className="vote-force-modal-count">{missingVotes}</span> لسه ما صوتوش. أصواتهم هتتحط عشوائي.
             </p>
             <div className="vote-force-modal-buttons">
               <button className="vote-force-modal-no" onClick={() => setShowForceConfirm(false)}>
-                WAIT
+                استنى
               </button>
               <button className="vote-force-modal-yes" onClick={handleForceVotes}>
-                FORCE IT
+                فرضها
               </button>
             </div>
           </div>
@@ -173,7 +173,7 @@ function Vote() {
           navigate("/");
         }}
       >
-        LEAVE
+        خروج
       </button>
     </div>
   );
