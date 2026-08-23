@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { SOCKET_EVENTS } from "@werewolf/shared";
-import { getSocket } from "./socket";
+import { getSocket, setLastGameCode } from "./socket";
 import { useStore, loadSession, clearSession } from "./store";
 import Lobby from "./pages/Lobby";
 import RoleReveal from "./pages/RoleReveal";
@@ -32,6 +32,7 @@ export default function App() {
     }
     getSocket().disconnect();
     clearSession();
+    setLastGameCode(null);
     window.location.reload();
   }, [snapshot, emit]);
 

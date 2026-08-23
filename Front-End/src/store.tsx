@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import type { UpdateGamePayload } from "@werewolf/shared";
-import { getSocket, bindGlobalHandlers, onSnapshot } from "./socket";
+import { getSocket, bindGlobalHandlers, onSnapshot, setLastGameCode } from "./socket";
 import { SESSION_KEY, type StoredSession } from "./config";
 
 interface Store {
@@ -49,6 +49,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSnapshot(snap);
       if (snap) {
         setConnected(true);
+        setLastGameCode(snap.code);
         const me = snap.players.find((p) => p.id === snap.yourPlayerId);
         if (me) saveSession({ gameCode: snap.code, playerId: snap.yourPlayerId!, playerName: me.name });
       }
