@@ -7,6 +7,7 @@ import {
   NUMBER_OF_GROUND_ROLES,
   MIN_PLAYERS,
   MAX_PLAYERS,
+  ERROR_MESSAGES,
 } from "@werewolf/shared";
 import type {
   PlayerId,
@@ -50,6 +51,7 @@ export class Game {
   minimumPlayers: number = MIN_PLAYERS;
   maxPlayers: number = MAX_PLAYERS;
   roleQueue: string[] = [];
+  roleQueueIndex = 0;
   currentGameRolesMap: Map<string, number> = new Map();
   currentTimerSec: number;
   host: PlayerId;
@@ -58,6 +60,7 @@ export class Game {
   endedAt: number | null = null;
   lastActivityAt: number = Date.now();
   actionHistory: Array<{
+    playerId: string;
     role: string;
     playerName: string;
     description: string;
@@ -133,16 +136,10 @@ export class Game {
     this.emit();
   }
 
-  playerReady(playerId: PlayerId) {
-    let ready = false;
-    const toggle = this.readyPlayers.get(playerId);
-    if (toggle === undefined) {
-      ready = true;
-      this.readyPlayers.set(playerId, ready);
-    } else {
-      ready = !toggle;
-      this.readyPlayers.set(playerId, ready);
-    }
+  playerReady(playerId: PlayerId, ready?: boolean) {
+    // explicit value wins; fall back to toggle for legacy callers
+    const next = ready ?? !(this.readyPlayers.get(playerId) ?? false);
+    this.readyPlayers.set(playerId, next);
     if (this.arePlayersReady()) {
       this.allPlayersReady = true;
     }
@@ -153,6 +150,19 @@ export class Game {
   updateSettings(settings: Settings): void {
     this.timer = settings.timer;
 
+    this.emit();
+  }
+
+  assignHost(requesterId: PlayerId, newHostId: PlayerId): void {
+    if (requesterId !== this.host) {
+      throw new Error(ERROR_MESSAGES.HOST_ONLY);
+    }
+    const newHost = this.players.find((p) => p.id === newHostId);
+    if (!newHost) {
+      throw new Error(ERROR_MESSAGES.PLAYER_NOT_FOUND);
+    }
+    this.host = newHost.id;
+    console.log(`👑 Host assigned to ${newHost.name} (${this.host})`);
     this.emit();
   }
 
@@ -303,6 +313,7 @@ export class Game {
       this.groundRoles,
       this.nightManager.getRoleTimers(),
     );
+    this.roleQueueIndex = 0;
 
     this.phase = Phase.Role;
     this.roleRevealEndsAt = Date.now() + 30000;
@@ -358,7 +369,10 @@ export class Game {
   }
 
   nextAction(): any {
-    const nextRoleAction = this.roleQueue.shift();
+    // non-destructive: keep roleQueue intact so snapshots show the full
+    // night order and activeRoleIndex stays in sync
+    const nextRoleAction = this.roleQueue[this.roleQueueIndex];
+    this.roleQueueIndex++;
     if (nextRoleAction === undefined) {
       return;
     }
@@ -388,6 +402,8 @@ export class Game {
   startDay() {
     this.phase = Phase.Discussion;
     this.startedAt = Date.now();
+    // public night recap — everyone sees what every role did
+    this.actionHistory = this.voteResolver.buildActionHistory(this.players);
     const totalSeconds = this.timer * 60;
     // const totalSeconds = 10; // for testing 
     this.currentTimerSec = totalSeconds;
@@ -433,6 +449,7 @@ export class Game {
       throw new Error("Player has already voted");
     }
     this.votes.push({ voter: player, vote: vote });
+    this.emit();
     if (vote === "noWerewolf") {
       this.logger.log(
         `Voter: ${this.getPlayerById(player).name} has voted for No Werewolf`,
@@ -542,6 +559,7 @@ export class Game {
 
     this.availableRoles = this.roleAssigner.createRoles();
     this.roleQueue = this.roleAssigner.createRoleQueue();
+    this.roleQueueIndex = 0;
     this.currentActiveRole = "";
     this.lastActivityAt = Date.now();
 
@@ -601,6 +619,12 @@ export class Game {
   }
 }
 
+function activeRoleIndex(game: Game): number | null {
+  if (!game.currentActiveRole) return null;
+  const i = game.roleQueue.indexOf(game.currentActiveRole);
+  return i >= 0 ? i : null;
+}
+
 export function BuildGameSnapshot(
   game: Game,
   requestingPlayerId?: PlayerId,
@@ -627,6 +651,7 @@ export function BuildGameSnapshot(
     })),
     roleQueue: game.roleQueueWithTimer,
     currentActiveRole: game.currentActiveRole || null,
+    currentActiveRoleIndex: activeRoleIndex(game),
     currentActiveRoleStartedAt: game.currentActiveRoleStartedAt,
     nightTimeRemaining: game.nightTimeRemaining,
     timer: {
@@ -653,7 +678,12 @@ export function BuildGameSnapshot(
         role: p.getRole().name,
       }))
       : null,
-    actionHistory: isEndGame ? game.actionHistory : null,
+    actionHistory:
+      isEndGame
+        ? game.actionHistory
+        : game.phase === Phase.Discussion
+          ? game.actionHistory.filter((a) => a.playerId === requestingPlayerId)
+          : null,
     playerPrivateData: requestingPlayerId
       ? buildPlayerPrivateData(game, requestingPlayerId)
       : null,

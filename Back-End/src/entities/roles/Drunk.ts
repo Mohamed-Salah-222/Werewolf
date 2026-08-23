@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -15,9 +15,9 @@ export const createDrunkAction = (targetRoleId: string): DrunkAction => ({
 
 export class Drunk implements Role {
   public id: string;
-  public name: string = "الليم";
+  public name: string = ROLE_REGISTRY.drunk.name;
   public team: Team = Team.Village;
-  public description: string = "يبدل دوره بكارت أرض عشوائي من غير ما يبص";
+  public description: string = ROLE_REGISTRY.drunk.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

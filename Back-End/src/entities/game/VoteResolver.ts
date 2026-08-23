@@ -91,10 +91,9 @@ export class VoteResolver {
     return { winners, isDraw: false, eliminatedPlayerId: voted, winningTeam: winners };
   }
 
-  buildActionHistory(players: Player[]): Array<{ role: string; playerName: string; description: string }> {
+  buildActionHistory(players: Player[]): Array<{ playerId: string; role: string; playerName: string; description: string }> {
     const roleOrder = ["العفريت", "التابع", "الشبيه", "الرمال", "البناي", "الحرامي", "الشقية", "الليم", "الساهر", "الجوكر"];
-    const actionHistory: Array<{ role: string; playerName: string; description: string }> = [];
-
+    const actionHistory: Array<{ playerId: string; role: string; playerName: string; description: string }> = [];
     for (const roleName of roleOrder) {
       const playersWithRole = players.filter((p) => p.getOriginalRole().name === roleName);
 
@@ -103,6 +102,7 @@ export class VoteResolver {
         if (!result) continue;
 
         actionHistory.push({
+          playerId: player.id,
           role: roleName,
           playerName: player.name,
           description: result.message || "Performed their action",

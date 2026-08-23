@@ -1,3 +1,5 @@
+import { ROLE_REGISTRY } from "./role-registry";
+
 export const MAX_PLAYERS = 12;
 export const MIN_PLAYERS = 6;
 export const NUMBER_OF_GROUND_ROLES = 3;
@@ -5,18 +7,18 @@ export const NUMBER_OF_GROUND_ROLES = 3;
 export const CLONE_ACTIVE_ROLES = ["seer", "robber", "troublemaker", "warlock"];
 
 export const ROLE_NAMES = {
-  WEREWOLF: "العفريت",
-  MINION: "التابع",
-  CLONE: "الشبيه",
-  SEER: "الرمال",
-  MASON: "البناي",
-  ROBBER: "الحرامي",
-  TROUBLEMAKER: "الشقية",
-  DRUNK: "الليم",
-  INSOMNIAC: "الساهر",
-  JOKER: "الجوكر",
-  WARLOCK: "الساحر",
-  ORACLE: "الكاهن",
+  WEREWOLF: ROLE_REGISTRY.werewolf.name,
+  MINION: ROLE_REGISTRY.minion.name,
+  CLONE: ROLE_REGISTRY.clone.name,
+  SEER: ROLE_REGISTRY.seer.name,
+  MASON: ROLE_REGISTRY.mason.name,
+  ROBBER: ROLE_REGISTRY.robber.name,
+  TROUBLEMAKER: ROLE_REGISTRY.troublemaker.name,
+  DRUNK: ROLE_REGISTRY.drunk.name,
+  INSOMNIAC: ROLE_REGISTRY.insomniac.name,
+  JOKER: ROLE_REGISTRY.joker.name,
+  WARLOCK: ROLE_REGISTRY.warlock.name,
+  ORACLE: ROLE_REGISTRY.oracle.name,
 } as const;
 
 export const VALIDATION = {

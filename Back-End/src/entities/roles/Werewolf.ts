@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 import { roleIdOf } from "./roleId";
@@ -14,9 +14,9 @@ export const createWerewolfAction = (): WerewolfAction => ({
 
 export class Werewolf implements Role {
   public id: string;
-  public name: string = "العفريت";
+  public name: string = ROLE_REGISTRY.werewolf.name;
   public team: Team = Team.Villain;
-  public description: string = "يشوف باقي العفاريت. لو لوحده، يشوف كارت أرض واحدة";
+  public description: string = ROLE_REGISTRY.werewolf.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

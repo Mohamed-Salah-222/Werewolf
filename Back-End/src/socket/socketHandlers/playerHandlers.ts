@@ -101,7 +101,7 @@ export function registerPlayerHandlers(ctx: SocketContext): void {
   socket.on(SOCKET_EVENTS.CLIENT.PLAYER_READY, safeHandler("playerReady", socket, ({ gameCode, playerId, ready }) => {
     const game = getGameOrThrow(manager, gameCode);
     const player = game.getPlayerById(playerId);
-    game.playerReady(playerId);
+    game.playerReady(playerId, ready);
     console.log(`Player ${playerId} : ${player.name} ${game.readyPlayers.get(playerId) ? "is ready" : "is not ready"}`);
   }));
 

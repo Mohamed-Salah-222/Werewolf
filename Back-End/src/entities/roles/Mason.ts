@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 import { roleIdOf } from "./roleId";
@@ -14,9 +14,9 @@ export const createMasonAction = (): MasonAction => ({
 
 export class Mason implements Role {
   public id: string;
-  public name: string = "البناي";
+  public name: string = ROLE_REGISTRY.mason.name;
   public team: Team = Team.Village;
-  public description: string = "يصحى مع البنايين التانيين يتشافوا";
+  public description: string = ROLE_REGISTRY.mason.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

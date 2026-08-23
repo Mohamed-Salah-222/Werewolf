@@ -12,6 +12,7 @@ export const SOCKET_EVENTS = {
     CONFIRM_ROLE_REVEAL: "confirmRoleReveal",
     CHANGE_NAME: "changeName",
     KICK_PLAYER: "kickPlayer",
+    ASSIGN_HOST: "assignHost",
     REJOIN_GAME: "rejoinGame",
     SETTINGS_UPDATE: "settingsUpdate",
     PING_MEASURE: "pingMeasure",

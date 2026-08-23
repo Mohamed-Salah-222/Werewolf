@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -15,9 +15,9 @@ export const createJokerAction = (targetRoleId: string): JokerAction => ({
 
 export class Joker implements Role {
   public id: string;
-  public name: string = "الجوكر";
+  public name: string = ROLE_REGISTRY.joker.name;
   public team: Team = Team.Neutral;
-  public description: string = "يبص على كارت أرض. يكسب لوحدو لو اتصوّت عليه";
+  public description: string = ROLE_REGISTRY.joker.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

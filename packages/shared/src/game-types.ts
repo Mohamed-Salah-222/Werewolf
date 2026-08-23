@@ -65,6 +65,7 @@ export interface UpdateGamePayload {
   groundCards: Array<{ id: string; label: string }>;
   roleQueue: Array<{ roleName: string; seconds: number }>;
   currentActiveRole: string | null;
+  currentActiveRoleIndex: number | null;
   currentActiveRoleStartedAt: number | null;
   nightTimeRemaining: number;
   timer: {
@@ -77,7 +78,7 @@ export interface UpdateGamePayload {
   eliminatedPlayerId: PlayerId | null;
   resultsVotes: Array<{ voter: string; vote: string }> | null;
   resultsPlayerRoles: Array<{ playerId: string; name: string; role: string }> | null;
-  actionHistory: Array<{ role: string; playerName: string; description: string }> | null;
+  actionHistory: Array<{ playerId: string; role: string; playerName: string; description: string }> | null;
   playerPrivateData: PlayerPrivateData | null;
   yourPlayerId: PlayerId | null;
   roleRevealEndsAt: number | null;

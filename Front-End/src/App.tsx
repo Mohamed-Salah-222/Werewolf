@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SOCKET_EVENTS } from "@werewolf/shared";
 import { getSocket, connectAndJoin, markInGame } from "./socket";
@@ -9,17 +9,36 @@ import Night from "./pages/Night";
 import Discussion from "./pages/Discussion";
 import Vote from "./pages/Vote";
 import EndGame from "./pages/EndGame";
+import { WolfMoon, ClawMarks } from "./pages/Art";
+import SoundToggle from "./SoundToggle";
+import HowToPlay from "./pages/HowToPlay";
+import { initSfx, sfx } from "./sfx";
 
 export default function App() {
   const { snapshot, connected, error, setError } = useStore();
   const navigate = useNavigate();
   const [hasSession] = useState(() => loadSession() !== null);
+  const prevPhase = useRef<string | null>(null);
+
+  useEffect(() => {
+    initSfx();
+  }, []);
 
   useEffect(() => {
     if (!error) return;
+    sfx.play("error");
     const t = setTimeout(() => setError(null), 4000);
     return () => clearTimeout(t);
   }, [error, setError]);
+
+  // eerie sting whenever the game moves to a new phase
+  useEffect(() => {
+    if (!snapshot) return;
+    if (prevPhase.current && snapshot.phase !== prevPhase.current) {
+      sfx.play(snapshot.phase === "night" ? "phase" : "click");
+    }
+    prevPhase.current = snapshot.phase;
+  }, [snapshot?.phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const emit = useCallback((event: string, payload: Record<string, unknown>) => {
     const s = getSocket();
@@ -55,6 +74,7 @@ export default function App() {
       <header className="topbar">
         <span className="room-code">غرفة {snapshot.code}</span>
         <span className={`conn ${connected ? "on" : "off"}`}>{connected ? "متصل" : "غير متصل"}</span>
+        <SoundToggle />
         <button className="link danger" onClick={leave}>خروج</button>
       </header>
 
@@ -63,7 +83,7 @@ export default function App() {
       {phase === "night" && <Night snapshot={snapshot} emit={emit} />}
       {phase === "discussion" && <Discussion snapshot={snapshot} emit={emit} />}
       {phase === "vote" && <Vote snapshot={snapshot} emit={emit} />}
-      {phase === "endGame" && <EndGame snapshot={snapshot} />}
+      {phase === "endGame" && <EndGame snapshot={snapshot} emit={emit} />}
 
       {!connected && snapshot && (
         <div className="banner">انقطع الاتصال — جاري إعادة الاتصال…</div>
@@ -91,6 +111,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
   const [name, setName] = useState(() => sessionStorage.getItem("werewolf_playerName") ?? "");
   const [code, setCode] = useState(() => (params.get("code") ?? "").toUpperCase().slice(0, 6));
   const [busy, setBusy] = useState<"join" | "create" | null>(null);
+  const [showHowTo, setShowHowTo] = useState(false);
 
   useEffect(() => {
     bridgeSetError = setError;
@@ -101,6 +122,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
 
   const doJoin = async () => {
     if (!code.trim()) return;
+    sfx.play("confirm");
     setBusy("join");
     sessionStorage.setItem("werewolf_playerName", name.trim());
     try {
@@ -112,6 +134,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
   };
 
   const doCreate = async () => {
+    sfx.play("click");
     setBusy("create");
     try {
       const res = await fetch(
@@ -130,6 +153,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
   const doRejoin = async () => {
     const s = loadSession();
     if (!s) return;
+    sfx.play("confirm");
     setBusy("join");
     try {
       await connectAndJoin(s);
@@ -142,7 +166,9 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
 
   return (
     <main className="center-screen">
+      <div className="join-art"><WolfMoon size={140} /></div>
       <h1 className="title">🐺 الوحش</h1>
+      <ClawMarks width={170} />
       <p className="subtitle">وحش ليلة واحدة</p>
 
       <label className="field">
@@ -169,6 +195,9 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
           <button className="btn ghost" disabled={busy !== null} onClick={doRejoin}>استعادة الجلسة</button>
         )}
       </div>
+      <button className="htp-btn" onClick={() => { sfx.play("click"); setShowHowTo(true); }}>؟ إزاي تلعب</button>
+      <SoundToggle />
+      {showHowTo && <HowToPlay onClose={() => setShowHowTo(false)} />}
     </main>
   );
 }

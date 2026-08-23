@@ -12,3 +12,5 @@ export {
   ERROR_MESSAGES,
 } from "./game-constants";
 export type { JoinGameData, RejoinGameData, ClientToServerEvents, ServerToClientEvents } from "./socket-types";
+export { ROLE_REGISTRY, ROLE_ID_BY_NAME } from "./role-registry";
+export type { RoleDef } from "./role-registry";

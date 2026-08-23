@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 import { roleIdOf } from "./roleId";
@@ -14,9 +14,9 @@ export const createMinionAction = (): MinionAction => ({
 
 export class Minion implements Role {
   public id: string;
-  public name: string = "التابع";
+  public name: string = ROLE_REGISTRY.minion.name;
   public team: Team = Team.Villain;
-  public description: string = "يشوف مين العفاريت. يكسب لو اتطرد والعفاريت يكسبوا";
+  public description: string = ROLE_REGISTRY.minion.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

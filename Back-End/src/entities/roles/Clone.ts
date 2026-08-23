@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 import { roleIdOf } from "./roleId";
@@ -20,9 +20,9 @@ export const createCloneAction = (targetPlayer: Player): CloneAction => ({
 
 export class Clone implements Role {
   public id: string;
-  public name: string = "الشبيه";
+  public name: string = ROLE_REGISTRY.clone.name;
   public team: Team = Team.Village;
-  public description: string = "ياخد دور لاعب تاني ويعمل حركته على طول";
+  public description: string = ROLE_REGISTRY.clone.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -90,7 +90,7 @@ export class Clone implements Role {
 
           default:
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a ${clonedRole.name}.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت ${clonedRole.name}.`,
             };
             break;
         }

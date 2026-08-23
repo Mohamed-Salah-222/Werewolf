@@ -24,6 +24,7 @@ export interface ClientToServerEvents {
   skipToVote: (data: { gameCode: string; playerId: PlayerId }) => void;
   playerReady: (data: { gameCode: string; playerId: PlayerId; ready: boolean }) => void;
   kickPlayer: (data: { gameCode: string; hostId: PlayerId; kickedPlayerId: PlayerId }) => void;
+  assignHost: (data: { gameCode: string; playerId: PlayerId; newHostId: PlayerId }) => void;
   settingsUpdate: (data: { gameCode: string; playerId: PlayerId; settings: Settings }) => void;
   pingMeasure: (data: { gameCode: string; playerId: string }) => void;
   reportPing: (data: { gameCode: string; playerId: string; ping: number }) => void;

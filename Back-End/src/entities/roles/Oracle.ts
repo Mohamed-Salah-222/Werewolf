@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -13,9 +13,9 @@ export const createOracleAction = (): OracleAction => ({
 
 export class Oracle implements Role {
   public id: string;
-  public name: string = "الكاهن";
+  public name: string = ROLE_REGISTRY.oracle.name;
   public team: Team = Team.Village;
-  public description: string = "آخر الليل يستلم نتيجة حركة عشوائية للاعب تاني";
+  public description: string = ROLE_REGISTRY.oracle.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

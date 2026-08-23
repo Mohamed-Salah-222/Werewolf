@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -15,9 +15,9 @@ export const createRobberAction = (targetPlayer: Player): RobberAction => ({
 
 export class Robber implements Role {
   public id: string;
-  public name: string = "الحرامي";
+  public name: string = ROLE_REGISTRY.robber.name;
   public team: Team = Team.Village;
-  public description: string = "يسرق دور لاعب تاني ويشوف دوره الجديد";
+  public description: string = ROLE_REGISTRY.robber.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -54,7 +54,7 @@ export class Robber implements Role {
         newTeam: stolenRole.team,
         targetPlayerId: targetPlayer.id,
         targetPlayerName: targetPlayer.name,
-        message: `سرقت دور ${stolenRole.name}`,
+        message: `سرقت دور ${targetPlayer.name} — بقت عندك ${stolenRole.name}`,
       };
     };
   }

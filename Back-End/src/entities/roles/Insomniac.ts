@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -13,9 +13,9 @@ export const createInsomniacAction = (): InsomniacAction => ({
 
 export class Insomniac implements Role {
   public id: string;
-  public name: string = "الساهر";
+  public name: string = ROLE_REGISTRY.insomniac.name;
   public team: Team = Team.Village;
-  public description: string = "يصحى آخر الليل يتأكد دوره اتغير ولا لأ";
+  public description: string = ROLE_REGISTRY.insomniac.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

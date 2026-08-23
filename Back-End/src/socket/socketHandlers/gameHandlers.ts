@@ -132,6 +132,12 @@ export function registerGameHandlers(ctx: SocketContext): void {
     console.log(`Game ${gameCode} restarted`);
   }));
 
+  socket.on(SOCKET_EVENTS.CLIENT.ASSIGN_HOST, safeHandler("assignHost", socket, ({ gameCode, playerId, newHostId }: { gameCode: string; playerId: string; newHostId: string }) => {
+    const game = getGameOrThrow(manager, gameCode);
+    game.assignHost(playerId, newHostId);
+    console.log(`Game ${gameCode}: host assigned to ${newHostId}`);
+  }));
+
   socket.on(SOCKET_EVENTS.CLIENT.SKIP_TO_VOTE, safeHandler("skipToVote", socket, (data: { gameCode: string; playerId: string }) => {
     const game = getGameOrThrow(manager, data.gameCode);
     game.skipToVote(data.playerId);

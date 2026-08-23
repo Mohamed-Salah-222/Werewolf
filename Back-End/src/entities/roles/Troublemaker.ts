@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -17,9 +17,9 @@ export const createTroublemakerAction = (player1: Player, player2: Player): Trou
 
 export class Troublemaker implements Role {
   public id: string;
-  public name: string = "الشقية";
+  public name: string = ROLE_REGISTRY.troublemaker.name;
   public team: Team = Team.Village;
-  public description: string = "يبادل دورين لاعبين من غير ما يشوف";
+  public description: string = ROLE_REGISTRY.troublemaker.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);

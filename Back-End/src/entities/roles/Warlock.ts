@@ -1,5 +1,5 @@
 import { Role } from "./Role";
-import { Team } from "@werewolf/shared";
+import { ROLE_REGISTRY, Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
 
@@ -15,9 +15,9 @@ export const createWarlockAction = (targetPlayer: { id: string }): WarlockAction
 
 export class Warlock implements Role {
   public id: string;
-  public name: string = "الساحر";
+  public name: string = ROLE_REGISTRY.warlock.name;
   public team: Team = Team.Village;
-  public description: string = "يبدل دور لاعب بكارت أرض عشوائي من غير ما يبص";
+  public description: string = ROLE_REGISTRY.warlock.description;
 
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -61,7 +61,7 @@ export class Warlock implements Role {
         targetName: targetPlayer.name,
         targetRoleId: groundRole.id,
         targetGroundIndex: groundIndex,
-        message: `You swapped ${targetPlayer.name}'s role with a random ground card`,
+        message: `بدلت دور ${targetPlayer.name} بكارت أرض… من غير ما تشوف`,
       };
     };
   }
