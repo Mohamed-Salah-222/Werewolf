@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.74% </span>
+                <span class="strong">90.9% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>49/54</span>
+                <span class='fraction'>50/55</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">89.79% </span>
+                <span class="strong">90% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>44/49</span>
+                <span class='fraction'>45/50</span>
             </div>
         
             
@@ -186,10 +186,12 @@
 <a name='L121'></a><a href='#L121'>121</a>
 <a name='L122'></a><a href='#L122'>122</a>
 <a name='L123'></a><a href='#L123'>123</a>
-<a name='L124'></a><a href='#L124'>124</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L124'></a><a href='#L124'>124</a>
+<a name='L125'></a><a href='#L125'>125</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">2x</span>
@@ -313,6 +315,7 @@
 import { Team } from "@werewolf/shared";
 import { Game } from "../game";
 import { Player } from "../Player";
+import { roleIdOf } from "./roleId";
 &nbsp;
 const CLONE_FOLLOW_UP_ROLES = ["seer", "robber", "troublemaker", "warlock"];
 const CLONE_AUTO_ACTION_ROLES = ["drunk", "joker"];
@@ -330,9 +333,9 @@ export const createCloneAction = (targetPlayer: Player): CloneAction =&gt; ({
 &nbsp;
 export class Clone implements Role {
   public id: string;
-  public name: string = "Clone";
+  public name: string = "الشبيه";
   public team: Team = Team.Village;
-  public description: string = "Copies another player's role and performs their action immediately";
+  public description: string = "ياخد دور لاعب تاني ويعمل حركته على طول";
 &nbsp;
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -354,7 +357,7 @@ export class Clone implements Role {
 &nbsp;
       const targetPlayer = game.getPlayerById(action.targetPlayer.id);
       const clonedRole = targetPlayer.getOriginalRole();
-      const clonedRoleName = clonedRole.name.toLowerCase();
+      const clonedRoleName = roleIdOf(clonedRole.name);
 &nbsp;
       player.setRole(clonedRole);
       (player as any)._wasClone = true;
@@ -370,31 +373,31 @@ export class Clone implements Role {
         switch (clonedRoleName) {
           case "werewolf":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Werewolf. You are now on the Villain team.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت عفريت… انت في فريق الشر دلوقتي.`,
             };
             break;
 &nbsp;
           case "minion":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Minion. You are now on the Villain team.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت التابع… انت في فريق الشر دلوقتي.`,
             };
             break;
 &nbsp;
           case "mason":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became a Mason. You will wake with the Masons.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت بنّاي… هتصحى مع البنايين.`,
             };
             break;
 &nbsp;
           case "insomniac":
             autoResult = {
-              message: `You cloned ${targetPlayer.name} and became an Insomniac. You will check your role at the end of the night.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت الساهر… هتشيك على دورك آخر الليل.`,
             };
             break;
 &nbsp;
 <span class="branch-4 cbranch-no" title="branch not covered" >          case "oracle":</span>
 <span class="cstat-no" title="statement not covered" >            autoResult = {</span>
-              message: `You cloned ${targetPlayer.name} and became an Oracle. You will receive a vision at the end of the night.`,
+              message: `استنسخت ${targetPlayer.name} وبقيت الكاهن… هتيجيك رؤية آخر الليل.`,
             };
 <span class="cstat-no" title="statement not covered" >            break;</span>
 &nbsp;
@@ -427,7 +430,7 @@ export class Clone implements Role {
         groundCards,
         otherPlayers,
         delayedWake: CLONE_DELAYED_WAKE_ROLES.includes(clonedRoleName),
-        message: needsSecondAction ? `You cloned ${targetPlayer.name} and became a ${clonedRole.name}. Now perform their action!` : autoResult?.message || <span class="branch-1 cbranch-no" title="branch not covered" >`You became a ${clonedRole.name}`,</span>
+        message: needsSecondAction ? `استنسخت ${targetPlayer.name} وبقيت ${clonedRole.name}… اعمل حركته دلوقتي!` : autoResult?.message || <span class="branch-1 cbranch-no" title="branch not covered" >`بقيت ${clonedRole.name}`,</span>
       };
     };
   }
@@ -439,7 +442,7 @@ export class Clone implements Role {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T11:26:43.142Z
+                at 2026-08-23T12:14:15.604Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

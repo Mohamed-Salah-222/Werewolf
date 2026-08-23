@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">4.68% </span>
+                <span class="strong">6.15% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>3/64</span>
+                <span class='fraction'>4/65</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">5.35% </span>
+                <span class="strong">7.01% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>3/56</span>
+                <span class='fraction'>4/57</span>
             </div>
         
             
@@ -177,10 +177,12 @@
 <a name='L112'></a><a href='#L112'>112</a>
 <a name='L113'></a><a href='#L113'>113</a>
 <a name='L114'></a><a href='#L114'>114</a>
-<a name='L115'></a><a href='#L115'>115</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
+<a name='L115'></a><a href='#L115'>115</a>
+<a name='L116'></a><a href='#L116'>116</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-yes">61x</span>
@@ -295,6 +297,7 @@
 import type { PlayerId, Vote } from "@werewolf/shared";
 import { Player } from "../Player";
 import { Logger } from "../../utils/Logger";
+import { roleIdOf } from "../roles/roleId";
 &nbsp;
 export class VoteResolver {
   constructor(private logger: Logger) {}
@@ -333,7 +336,7 @@ export class VoteResolver {
 <span class="cstat-no" title="statement not covered" >        tiedPlayerIds.length &gt; 0 &amp;&amp;</span>
         tiedPlayerIds.every(<span class="fstat-no" title="function not covered" >(i</span>d) =&gt; {
           const player = <span class="cstat-no" title="statement not covered" >getPlayerById(id);</span>
-<span class="cstat-no" title="statement not covered" >          return player.getRole().name === "Werewolf";</span>
+<span class="cstat-no" title="statement not covered" >          return roleIdOf(player.getRole().name) === "werewolf";</span>
         });
 &nbsp;
 <span class="cstat-no" title="statement not covered" >      if (allWerewolves) {</span>
@@ -359,7 +362,7 @@ export class VoteResolver {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (voted === "noWerewolf") {</span>
 <span class="cstat-no" title="statement not covered" >      for (const player of players) {</span>
-<span class="cstat-no" title="statement not covered" >        if (player.getRole().name === "Werewolf") {</span>
+<span class="cstat-no" title="statement not covered" >        if (roleIdOf(player.getRole().name) === "werewolf") {</span>
 <span class="cstat-no" title="statement not covered" >          winners = Team.Villain;</span>
 <span class="cstat-no" title="statement not covered" >          return { winners, isDraw: false, eliminatedPlayerId: null, winningTeam: winners };</span>
         }
@@ -372,7 +375,7 @@ export class VoteResolver {
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    if (votedPlayerRole.team === Team.Neutral) {</span>
 <span class="cstat-no" title="statement not covered" >      winners = Team.Neutral;</span>
-    } else <span class="cstat-no" title="statement not covered" >if (votedPlayerRole.name === "Minion") {</span>
+    } else <span class="cstat-no" title="statement not covered" >if (roleIdOf(votedPlayerRole.name) === "minion") {</span>
 <span class="cstat-no" title="statement not covered" >      winners = Team.Villain;</span>
     } else <span class="cstat-no" title="statement not covered" >if (votedPlayerRole.team === Team.Villain) {</span>
 <span class="cstat-no" title="statement not covered" >      winners = Team.Village;</span>
@@ -384,7 +387,7 @@ export class VoteResolver {
   }
 &nbsp;
 <span class="fstat-no" title="function not covered" >  buildActionHistory(</span>players: Player[]): Array&lt;{ role: string; playerName: string; description: string }&gt; {
-    const roleOrder = <span class="cstat-no" title="statement not covered" >["Werewolf", "Minion", "Clone", "Seer", "Mason", "Robber", "Troublemaker", "Drunk", "Insomniac", "Joker"];</span>
+    const roleOrder = <span class="cstat-no" title="statement not covered" >["العفريت", "التابع", "الشبيه", "الرمال", "البناي", "الحرامي", "الشقية", "الليم", "الساهر", "الجوكر"];</span>
     const actionHistory: Array&lt;{ role: string; playerName: string; description: string }&gt; = <span class="cstat-no" title="statement not covered" >[];</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    for (const roleName of roleOrder) {</span>
@@ -412,7 +415,7 @@ export class VoteResolver {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T11:26:43.142Z
+                at 2026-08-23T12:14:15.604Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

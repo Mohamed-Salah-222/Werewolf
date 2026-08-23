@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.06% </span>
+                <span class="strong">2.46% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>5/242</span>
+                <span class='fraction'>6/243</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">2.13% </span>
+                <span class="strong">2.55% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>5/234</span>
+                <span class='fraction'>6/235</span>
             </div>
         
             
@@ -561,8 +561,10 @@
 <a name='L496'></a><a href='#L496'>496</a>
 <a name='L497'></a><a href='#L497'>497</a>
 <a name='L498'></a><a href='#L498'>498</a>
-<a name='L499'></a><a href='#L499'>499</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L499'></a><a href='#L499'>499</a>
+<a name='L500'></a><a href='#L500'>500</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1061,6 +1063,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Player } from "../Player";
 import { Game } from "../game/Game";
+import { roleIdOf } from "../roles/roleId";
 &nbsp;
 &nbsp;
 /**
@@ -1070,18 +1073,18 @@ import { Game } from "../game/Game";
 &nbsp;
 export class NightPhaseManager {
   private roleTimers: Map&lt;string, number&gt; = new Map([
-    ["Werewolf", 10],
-    ["Minion", 10],
-    ["Clone", 20],
-    ["Seer", 20],
-    ["Mason", 10],
-    ["Robber", 20],
-    ["Troublemaker", 20],
-    ["Drunk", 10],
-    ["Warlock", 20],
-    ["Insomniac", 10],
-    ["Joker", 10],
-    ["Oracle", 10],
+    ["العفريت", 10],
+    ["التابع", 10],
+    ["الشبيه", 20],
+    ["الرمال", 20],
+    ["البناي", 10],
+    ["الحرامي", 20],
+    ["الشقية", 20],
+    ["الليم", 10],
+    ["الساحر", 20],
+    ["الساهر", 10],
+    ["الجوكر", 10],
+    ["الكاهن", 10],
   ]);
 &nbsp;
   private nightMainTimer: ReturnType&lt;typeof setTimeout&gt; | null = null;
@@ -1178,24 +1181,24 @@ export class NightPhaseManager {
     }
 &nbsp;
     const timerSeconds = <span class="cstat-no" title="statement not covered" >this.roleTimers.get(nextRole) || 10;</span>
-    const playersWithRole = <span class="cstat-no" title="statement not covered" >this.host.players.filter(<span class="fstat-no" title="function not covered" >(p</span>) =&gt; <span class="cstat-no" title="statement not covered" >p.getOriginalRole().name.toLowerCase() === nextRole.toLowerCase())</span>;</span>
+    const playersWithRole = <span class="cstat-no" title="statement not covered" >this.host.players.filter(<span class="fstat-no" title="function not covered" >(p</span>) =&gt; <span class="cstat-no" title="statement not covered" >roleIdOf(p.getOriginalRole().name) === roleIdOf(nextRole))</span>;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    this.host.currentActiveRole = nextRole;</span>
 <span class="cstat-no" title="statement not covered" >    this.host.currentActiveRoleStartedAt = Date.now();</span>
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (nextRole.toLowerCase() === "mason") {</span>
+<span class="cstat-no" title="statement not covered" >    if (roleIdOf(nextRole) === "mason") {</span>
 <span class="cstat-no" title="statement not covered" >      this.handleCloneMason();</span>
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (nextRole.toLowerCase() === "insomniac") {</span>
+<span class="cstat-no" title="statement not covered" >    if (roleIdOf(nextRole) === "insomniac") {</span>
 <span class="cstat-no" title="statement not covered" >      this.handleCloneInsomniac();</span>
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (nextRole.toLowerCase() === "oracle") {</span>
+<span class="cstat-no" title="statement not covered" >    if (roleIdOf(nextRole) === "oracle") {</span>
 <span class="cstat-no" title="statement not covered" >      this.handleCloneOracle();</span>
     }
 &nbsp;
-<span class="cstat-no" title="statement not covered" >    if (["werewolf", "minion", "mason", "drunk", "insomniac", "joker", "oracle"].includes(nextRole.toLowerCase())) {</span>
+<span class="cstat-no" title="statement not covered" >    if (["werewolf", "minion", "mason", "drunk", "insomniac", "joker", "oracle"].includes(roleIdOf(nextRole))) {</span>
 <span class="cstat-no" title="statement not covered" >      playersWithRole.forEach(<span class="fstat-no" title="function not covered" >(p</span>layer) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >        if (this.host.confirmedPlayerPerformActions.includes(player.id)) <span class="cstat-no" title="statement not covered" >return;</span></span>
 &nbsp;
@@ -1250,7 +1253,7 @@ export class NightPhaseManager {
 &nbsp;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 <span class="fstat-no" title="function not covered" >  autoPerformAction(</span>player: Player): any {
-    const roleName = <span class="cstat-no" title="statement not covered" >player.getOriginalRole().name.toLowerCase();</span>
+    const roleName = <span class="cstat-no" title="statement not covered" >roleIdOf(player.getOriginalRole().name);</span>
     const otherPlayers = <span class="cstat-no" title="statement not covered" >this.host.players.filter(<span class="fstat-no" title="function not covered" >(p</span>) =&gt; <span class="cstat-no" title="statement not covered" >p.id !== player.id)</span>;</span>
 &nbsp;
 <span class="cstat-no" title="statement not covered" >    try {</span>
@@ -1373,7 +1376,7 @@ export class NightPhaseManager {
         }
 &nbsp;
         default:
-<span class="cstat-no" title="statement not covered" >          result = { message: "No action performed" };</span>
+<span class="cstat-no" title="statement not covered" >          result = { message: "مفيش حركة اتعملت" };</span>
       }
 &nbsp;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1384,8 +1387,8 @@ export class NightPhaseManager {
       const msg = <span class="cstat-no" title="statement not covered" >error instanceof Error ? error.message : "Unknown error";</span>
 <span class="cstat-no" title="statement not covered" >      console.error(`Error auto-performing action for ${player.name}:`, msg);</span>
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (<span class="cstat-no" title="statement not covered" >player as any).lastActionResult = { message: "Action was auto-performed" };</span>
-<span class="cstat-no" title="statement not covered" >      return { message: "Action was auto-performed" };</span>
+      (<span class="cstat-no" title="statement not covered" >player as any).lastActionResult = { message: "الحركة اتعملت أوتوماتيك" };</span>
+<span class="cstat-no" title="statement not covered" >      return { message: "الحركة اتعملت أوتوماتيك" };</span>
     }
   }
 &nbsp;
@@ -1458,14 +1461,14 @@ export class NightPhaseManager {
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const masons = <span class="cstat-no" title="statement not covered" >this.host.players.filter(<span class="fstat-no" title="function not covered" >(p</span>) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >          if (p.id === player.id) <span class="cstat-no" title="statement not covered" >return false;</span></span>
-          const isOriginalMason = <span class="cstat-no" title="statement not covered" >p.getOriginalRole().name.toLowerCase() === "mason";</span>
+          const isOriginalMason = <span class="cstat-no" title="statement not covered" >roleIdOf(p.getOriginalRole().name) === "mason";</span>
           const isCloneMason = (<span class="cstat-no" title="statement not covered" >p as any)._wasClone === true &amp;&amp; (p as any)._clonedRoleName === "mason";</span>
 <span class="cstat-no" title="statement not covered" >          return isOriginalMason || isCloneMason;</span>
         });
 &nbsp;
         const result = <span class="cstat-no" title="statement not covered" >{</span>
           masons: masons.map(<span class="fstat-no" title="function not covered" >(m</span>) =&gt; (<span class="cstat-no" title="statement not covered" >{ id: m.id, name: m.name })</span>),
-          message: masons.length &gt; 0 ? `You see ${masons.map(<span class="fstat-no" title="function not covered" >(m</span>) =&gt; <span class="cstat-no" title="statement not covered" >m.name)</span>.join(", ")} as fellow Mason(s)` : "You are the only Mason",
+          message: masons.length &gt; 0 ? `إخوتك البنايين: ${masons.map(<span class="fstat-no" title="function not covered" >(m</span>) =&gt; <span class="cstat-no" title="statement not covered" >m.name)</span>.join("، ")}` : "انت البناي الوحيد",
         };
 &nbsp;
         (<span class="cstat-no" title="statement not covered" >player as any).lastActionResult = {</span>
@@ -1492,12 +1495,12 @@ export class NightPhaseManager {
 <span class="cstat-no" title="statement not covered" >      console.log(`🧬💤 Clone-Insomniac ${player.name} checking role during Insomniac slot`);</span>
 <span class="cstat-no" title="statement not covered" >      try {</span>
         const currentRole = <span class="cstat-no" title="statement not covered" >player.getRole();</span>
-        const hasChanged = <span class="cstat-no" title="statement not covered" >currentRole.name.toLowerCase() !== "insomniac";</span>
+        const hasChanged = <span class="cstat-no" title="statement not covered" >roleIdOf(currentRole.name) !== "insomniac";</span>
         const result = <span class="cstat-no" title="statement not covered" >{</span>
-          originalRole: "Insomniac",
+          originalRole: "الساهر",
           currentRole: currentRole.name,
           hasChanged,
-          message: hasChanged ? `Your role changed from Insomniac to ${currentRole.name}!` : "Your role is still Insomniac — no one swapped you.",
+          message: hasChanged ? `دورك اتغير من الساهر لـ${currentRole.name}!` : "دورك لسه الساهر… محدش لمسك.",
         };
 &nbsp;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1564,7 +1567,7 @@ export class NightPhaseManager {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T11:26:42.984Z
+                at 2026-08-23T12:14:15.487Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>

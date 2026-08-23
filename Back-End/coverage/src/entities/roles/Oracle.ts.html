@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">38.35% </span>
+                <span class="strong">39.18% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>28/73</span>
+                <span class='fraction'>29/74</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">12.69% </span>
+                <span class="strong">14.28% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>8/63</span>
+                <span class='fraction'>9/63</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">37.87% </span>
+                <span class="strong">38.8% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>25/66</span>
+                <span class='fraction'>26/67</span>
             </div>
         
             
@@ -224,7 +224,22 @@
 <a name='L159'></a><a href='#L159'>159</a>
 <a name='L160'></a><a href='#L160'>160</a>
 <a name='L161'></a><a href='#L161'>161</a>
-<a name='L162'></a><a href='#L162'>162</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L162'></a><a href='#L162'>162</a>
+<a name='L163'></a><a href='#L163'>163</a>
+<a name='L164'></a><a href='#L164'>164</a>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a>
+<a name='L167'></a><a href='#L167'>167</a>
+<a name='L168'></a><a href='#L168'>168</a>
+<a name='L169'></a><a href='#L169'>169</a>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -279,6 +294,21 @@
 <span class="cline-any cline-yes">1x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -400,9 +430,9 @@ export const createOracleAction = (): OracleAction =&gt; ({
 &nbsp;
 export class Oracle implements Role {
   public id: string;
-  public name: string = "Oracle";
+  public name: string = "الكاهن";
   public team: Team = Team.Village;
-  public description: string = "At the end of night, receives a random action result from another player";
+  public description: string = "آخر الليل يستلم نتيجة حركة عشوائية للاعب تاني";
 &nbsp;
   constructor() {
     this.id = Math.random().toString(36).substring(2, 10);
@@ -431,7 +461,7 @@ export class Oracle implements Role {
       if (otherResults.length === 0) {
         return {
           hasVision: false,
-          message: "The spirits are silent — no visions came to you tonight.",
+          message: "الأرواح ساكتة… مفيش رؤيات لليلة دي.",
         };
       }
 &nbsp;
@@ -453,97 +483,112 @@ export class Oracle implements Role {
  * Builds a role-only vision message from an action result.
  * The Oracle sees role names, NOT player names.
  */
+const AR_TO_ID: Record&lt;string, string&gt; = {
+  "العفريت": "werewolf",
+  "التابع": "minion",
+  "الرمال": "seer",
+  "الحرامي": "robber",
+  "الشقية": "troublemaker",
+  "البناي": "mason",
+  "الليم": "drunk",
+  "الساهر": "insomniac",
+  "الشبيه": "clone",
+  "الجوكر": "joker",
+  "الساحر": "warlock",
+  "الكاهن": "oracle",
+};
+&nbsp;
 function buildVisionMessage(roleName: string, result: Record&lt;string, unknown&gt;): string {
-  const r = roleName.toLowerCase();
+  const r = AR_TO_ID[roleName] ?? <span class="branch-1 cbranch-no" title="branch not covered" >roleName.toLowerCase();</span>
 &nbsp;
   switch (r) {
 <span class="branch-0 cbranch-no" title="branch not covered" >    case "werewolf": {</span>
 <span class="cstat-no" title="statement not covered" >      if (result.isAlone === true &amp;&amp; typeof result.groundCard === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Werewolf saw a ${result.groundCard} on the ground.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `العفريت شاف ${result.groundCard} على الأرض.`;</span>
       }
       const wolves = <span class="cstat-no" title="statement not covered" >result.werewolves as Array&lt;{ name: string }&gt; | undefined;</span>
 <span class="cstat-no" title="statement not covered" >      if (Array.isArray(wolves) &amp;&amp; wolves.length &gt; 0) {</span>
         const names = <span class="cstat-no" title="statement not covered" >wolves.map(<span class="fstat-no" title="function not covered" >(w</span>) =&gt; <span class="cstat-no" title="statement not covered" >w.name)</span>.join(", ");</span>
-<span class="cstat-no" title="statement not covered" >        return `The Werewolf saw that ${names} ${wolves.length &gt; 1 ? "are Werewolves" : "is also a Werewolf"}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `العفريت شاف إن شلته هي: ${names}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Werewolf performed their action.";</span>
+<span class="cstat-no" title="statement not covered" >      return "العفريت عمل حركته.";</span>
     }
 &nbsp;
 <span class="branch-1 cbranch-no" title="branch not covered" >    case "minion": {</span>
       const wolves = <span class="cstat-no" title="statement not covered" >result.werewolves as Array&lt;{ name: string }&gt; | undefined;</span>
 <span class="cstat-no" title="statement not covered" >      if (Array.isArray(wolves) &amp;&amp; wolves.length &gt; 0) {</span>
         const names = <span class="cstat-no" title="statement not covered" >wolves.map(<span class="fstat-no" title="function not covered" >(w</span>) =&gt; <span class="cstat-no" title="statement not covered" >w.name)</span>.join(", ");</span>
-<span class="cstat-no" title="statement not covered" >        return `The Minion saw that the Werewolves are: ${names}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `التابع شاف إن العفاريت هم: ${names}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Minion found no Werewolves.";</span>
+<span class="cstat-no" title="statement not covered" >      return "التابع ملقاش عفاريت.";</span>
     }
 &nbsp;
 <span class="branch-2 cbranch-no" title="branch not covered" >    case "seer": {</span>
 <span class="cstat-no" title="statement not covered" >      if (result.actionType === "player" &amp;&amp; typeof result.role === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Seer saw a ${result.role}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الرمال شاف ${result.role}.`;</span>
       }
 <span class="cstat-no" title="statement not covered" >      if (result.actionType === "ground" &amp;&amp; typeof result.groundRole1 === "string" &amp;&amp; typeof result.groundRole2 === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Seer saw ${result.groundRole1} and ${result.groundRole2} on the ground.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الرمال شاف ${result.groundRole1} و${result.groundRole2} على الأرض.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Seer performed their action.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الرمال عمل حركته.";</span>
     }
 &nbsp;
 <span class="branch-3 cbranch-no" title="branch not covered" >    case "clone": {</span>
 <span class="cstat-no" title="statement not covered" >      if (typeof result.clonedRole === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Clone copied a ${result.clonedRole}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الشبيه استنسخ دور ${result.clonedRole}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Clone performed their action.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الشبيه عمل حركته.";</span>
     }
 &nbsp;
 <span class="branch-4 cbranch-no" title="branch not covered" >    case "mason": {</span>
       const masons = <span class="cstat-no" title="statement not covered" >result.masons as Array&lt;{ name: string }&gt; | undefined;</span>
 <span class="cstat-no" title="statement not covered" >      if (Array.isArray(masons) &amp;&amp; masons.length &gt; 0) {</span>
         const names = <span class="cstat-no" title="statement not covered" >masons.map(<span class="fstat-no" title="function not covered" >(m</span>) =&gt; <span class="cstat-no" title="statement not covered" >m.name)</span>.join(", ");</span>
-<span class="cstat-no" title="statement not covered" >        return `The Mason saw ${names} as a fellow Mason.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `البناي شاف إخوته البنايين: ${names}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Mason is alone.";</span>
+<span class="cstat-no" title="statement not covered" >      return "البناي لوحدو.";</span>
     }
 &nbsp;
     case "robber": {
       <span class="missing-if-branch" title="else path not taken" >E</span>if (typeof result.newRole === "string") {
-        return `The Robber stole a ${result.newRole}.`;
+        return `الحرامي سرق دور وبقى ${result.newRole}.`;
       }
-<span class="cstat-no" title="statement not covered" >      return "The Robber performed their action.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الحرامي عمل حركته.";</span>
     }
 &nbsp;
 <span class="branch-6 cbranch-no" title="branch not covered" >    case "troublemaker": {</span>
 <span class="cstat-no" title="statement not covered" >      if (typeof result.player1Name === "string" &amp;&amp; typeof result.player2Name === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Troublemaker swapped ${result.player1Name} and ${result.player2Name}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الشقية بدلت بين ${result.player1Name} و${result.player2Name}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Troublemaker swapped two players.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الشقية بدلت لاعبين.";</span>
     }
 &nbsp;
 <span class="branch-7 cbranch-no" title="branch not covered" >    case "drunk":</span>
-<span class="cstat-no" title="statement not covered" >      return "The Drunk swapped their role with a ground card.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الليم بدل دوره بكارت أرض.";</span>
 &nbsp;
 <span class="branch-8 cbranch-no" title="branch not covered" >    case "insomniac": {</span>
 <span class="cstat-no" title="statement not covered" >      if (result.hasChanged === true &amp;&amp; typeof result.currentRole === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Insomniac's role was swapped to ${result.currentRole}.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `دور الساهر اتبادل بقى ${result.currentRole}.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Insomniac's role was not swapped.";</span>
+<span class="cstat-no" title="statement not covered" >      return "دور الساهر ماتبادلش.";</span>
     }
 &nbsp;
 <span class="branch-9 cbranch-no" title="branch not covered" >    case "joker": {</span>
 <span class="cstat-no" title="statement not covered" >      if (typeof result.groundRole === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Joker saw a ${result.groundRole} on the ground.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الجوكر شاف ${result.groundRole} على الأرض.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Joker performed their action.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الجوكر عمل حركته.";</span>
     }
 &nbsp;
 <span class="branch-10 cbranch-no" title="branch not covered" >    case "warlock": {</span>
 <span class="cstat-no" title="statement not covered" >      if (typeof result.targetName === "string") {</span>
-<span class="cstat-no" title="statement not covered" >        return `The Warlock swapped ${result.targetName}'s role with a ground card.`;</span>
+<span class="cstat-no" title="statement not covered" >        return `الساحر بدل دور ${result.targetName} بكارت أرض.`;</span>
       }
-<span class="cstat-no" title="statement not covered" >      return "The Warlock swapped a player's role with a ground card.";</span>
+<span class="cstat-no" title="statement not covered" >      return "الساحر بدل دور لاعب بكارت أرض.";</span>
     }
 &nbsp;
 <span class="branch-11 cbranch-no" title="branch not covered" >    default:</span>
-<span class="cstat-no" title="statement not covered" >      return `The ${roleName} performed their action.`;</span>
+<span class="cstat-no" title="statement not covered" >      return `${roleName} عمل حركته.`;</span>
   }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -553,7 +598,7 @@ function buildVisionMessage(roleName: string, result: Record&lt;string, unknown&
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-07-14T11:26:43.142Z
+                at 2026-08-23T12:14:15.604Z
             </div>
         <script src="../../../prettify.js"></script>
         <script>
