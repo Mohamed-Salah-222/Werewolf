@@ -1,7 +1,14 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import type { UpdateGamePayload } from "@werewolf/shared";
-import { getSocket, bindGlobalHandlers, onSnapshot, setLastGameCode } from "./socket";
-import { SESSION_KEY, type StoredSession } from "./config";
+import {
+  getSocket,
+  bindGlobalHandlers,
+  onSnapshot,
+  onKicked,
+  markInGame,
+} from "./socket";
+import { saveSession, clearSession, loadSession } from "./config";
 
 interface Store {
   snapshot: UpdateGamePayload | null;
@@ -20,28 +27,13 @@ const StoreContext = createContext<Store>({
 export function useStore(): Store {
   return useContext(StoreContext);
 }
-
-export function saveSession(s: StoredSession): void {
-  localStorage.setItem(SESSION_KEY, JSON.stringify(s));
-}
-export function loadSession(): StoredSession | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as StoredSession;
-    return s.gameCode && s.playerId ? s : null;
-  } catch {
-    return null;
-  }
-}
-export function clearSession(): void {
-  localStorage.removeItem(SESSION_KEY);
-}
+export { saveSession, loadSession, clearSession };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<UpdateGamePayload | null>(null);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     bindGlobalHandlers();
@@ -49,16 +41,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setSnapshot(snap);
       if (snap) {
         setConnected(true);
-        setLastGameCode(snap.code);
+        markInGame(true);
         const me = snap.players.find((p) => p.id === snap.yourPlayerId);
-        if (me) saveSession({ gameCode: snap.code, playerId: snap.yourPlayerId!, playerName: me.name });
+        if (me && snap.yourPlayerId) {
+          saveSession({ gameCode: snap.code, playerId: snap.yourPlayerId, playerName: me.name });
+        }
       }
-      // keep last snapshot on brief disconnect; null only on fresh leave
+      // keep last snapshot on brief disconnect so the UI doesn't flash;
+      // reconnect handler restores live snapshots automatically
     });
+
+    const offKicked = onKicked(() => {
+      markInGame(false);
+      setSnapshot(null);
+      navigate("/");
+    });
+
     return () => {
       off();
+      offKicked();
     };
-  }, []);
+  }, [navigate]);
 
   // connection status via socket events
   useEffect(() => {

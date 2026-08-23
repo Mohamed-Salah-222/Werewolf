@@ -6,7 +6,28 @@ export const BACKEND_URL =
     ? window.location.origin
     : `${window.location.protocol}//${window.location.hostname}:3000`);
 
-export const SESSION_KEY = "werewolf-session-v2";
+// Per-tab session storage — each browser tab is its own player (same way the old
+// frontend did it with zustand persist over sessionStorage).
+export const SESSION_KEY = "werewolf_game";
+
+export function saveSession(s: StoredSession): void {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(s));
+}
+
+export function loadSession(): StoredSession | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as StoredSession;
+    return s.gameCode && s.playerId ? s : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearSession(): void {
+  sessionStorage.removeItem(SESSION_KEY);
+}
 
 export interface StoredSession {
   gameCode: string;

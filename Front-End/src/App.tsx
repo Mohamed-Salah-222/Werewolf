@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { SOCKET_EVENTS } from "@werewolf/shared";
-import { getSocket, setLastGameCode } from "./socket";
+import { getSocket, connectAndJoin, markInGame } from "./socket";
 import { useStore, loadSession, clearSession } from "./store";
 import Lobby from "./pages/Lobby";
 import RoleReveal from "./pages/RoleReveal";
@@ -11,8 +12,8 @@ import EndGame from "./pages/EndGame";
 
 export default function App() {
   const { snapshot, connected, error, setError } = useStore();
+  const navigate = useNavigate();
   const [hasSession] = useState(() => loadSession() !== null);
-  useStoreSetErrorBridge(setError);
 
   useEffect(() => {
     if (!error) return;
@@ -30,13 +31,14 @@ export default function App() {
     if (snapshot) {
       emit(SOCKET_EVENTS.CLIENT.LEAVE_GAME, { gameCode: snapshot.code, playerId: snapshot.yourPlayerId });
     }
+    markInGame(false);
     getSocket().disconnect();
     clearSession();
-    setLastGameCode(null);
+    navigate("/");
     window.location.reload();
-  }, [snapshot, emit]);
+  }, [snapshot, emit, navigate]);
 
-  // no game yet → join screen
+  // no game yet → join screen (or invite-link prefill via ?code=)
   if (!snapshot) {
     return (
       <>
@@ -47,7 +49,6 @@ export default function App() {
   }
 
   const phase = snapshot.phase;
-  const me = snapshot.players.find((p) => p.id === snapshot.yourPlayerId);
 
   return (
     <div className="app">
@@ -64,7 +65,7 @@ export default function App() {
       {phase === "vote" && <Vote snapshot={snapshot} emit={emit} />}
       {phase === "endGame" && <EndGame snapshot={snapshot} />}
 
-      {me && !me.isConnected && (
+      {!connected && snapshot && (
         <div className="banner">انقطع الاتصال — جاري إعادة الاتصال…</div>
       )}
       <ErrorToast />
@@ -78,19 +79,34 @@ function ErrorToast() {
   return <div className="toast">{error}</div>;
 }
 
+export function setErrorExternally(msg: string | null): void {
+  // set by JoinScreen via store bridge below
+  bridgeSetError?.(msg);
+}
+let bridgeSetError: ((m: string | null) => void) | null = null;
+
 function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const { setError } = useStore();
+  const params = new URLSearchParams(window.location.search);
+  const [name, setName] = useState(() => sessionStorage.getItem("werewolf_playerName") ?? "");
+  const [code, setCode] = useState(() => (params.get("code") ?? "").toUpperCase().slice(0, 6));
   const [busy, setBusy] = useState<"join" | "create" | null>(null);
+
+  useEffect(() => {
+    bridgeSetError = setError;
+    return () => {
+      bridgeSetError = null;
+    };
+  }, [setError]);
 
   const doJoin = async () => {
     if (!code.trim()) return;
     setBusy("join");
+    sessionStorage.setItem("werewolf_playerName", name.trim());
     try {
-      const { connectAndJoin } = await import("./socket");
       await connectAndJoin({ gameCode: code.trim(), playerName: name.trim() });
     } catch (e) {
-      useStoreSetError((e as Error).message);
+      setError((e as Error).message);
     }
     setBusy(null);
   };
@@ -106,7 +122,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
       if (json?.data?.code) setCode(json.data.code.toUpperCase());
       else throw new Error(json?.error ?? "تعذر إنشاء الغرفة");
     } catch (e) {
-      useStoreSetError((e as Error).message);
+      setError((e as Error).message);
     }
     setBusy(null);
   };
@@ -116,10 +132,9 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
     if (!s) return;
     setBusy("join");
     try {
-      const { connectAndJoin } = await import("./socket");
       await connectAndJoin(s);
     } catch {
-      useStoreSetError("تعذر استعادة الجلسة، ادخل من جديد");
+      setError("تعذر استعادة الجلسة، ادخل من جديد");
       clearSession();
     }
     setBusy(null);
@@ -145,7 +160,7 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
         />
       </label>
 
-      <button className="btn primary" disabled={busy !== null || code.length !== 6} onClick={doJoin}>
+      <button className="btn primary big" disabled={busy !== null || code.length !== 6} onClick={doJoin}>
         {busy === "join" ? "…" : "ادخل"}
       </button>
       <div className="row">
@@ -156,13 +171,4 @@ function JoinScreen({ canRejoin }: { canRejoin: boolean }) {
       </div>
     </main>
   );
-}
-
-// small escape hatch to set store error outside provider tree
-let _setError: ((m: string | null) => void) | null = null;
-export function useStoreSetErrorBridge(setter: (m: string | null) => void): void {
-  _setError = setter;
-}
-function useStoreSetError(msg: string): void {
-  _setError?.(msg);
 }

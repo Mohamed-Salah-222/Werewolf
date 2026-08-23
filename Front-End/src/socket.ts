@@ -7,7 +7,7 @@ import type {
   ServerToClientEvents,
 } from "@werewolf/shared";
 import type { UpdateGamePayload } from "@werewolf/shared";
-import { BACKEND_URL, SESSION_KEY, type StoredSession } from "./config";
+import { BACKEND_URL, loadSession, clearSession } from "./config";
 
 export type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -17,7 +17,11 @@ export function getSocket(): GameSocket {
   if (!socket) {
     socket = io(BACKEND_URL, {
       autoConnect: false,
-      transports: ["websocket", "polling"],
+      // hardened reconnection settings (same as old frontend)
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
     });
   }
   return socket;
@@ -28,58 +32,76 @@ type ErrListener = (message: string) => void;
 
 const snapshotListeners = new Set<Listener>();
 const errorListeners = new Set<ErrListener>();
+const kickedListeners = new Set<() => void>();
 let bound = false;
-
-function loadSession(): StoredSession | null {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    if (!raw) return null;
-    const s = JSON.parse(raw) as StoredSession;
-    return s.gameCode && s.playerId ? s : null;
-  } catch {
-    return null;
-  }
-}
 
 export function bindGlobalHandlers(): void {
   if (bound) return;
   const s = getSocket();
+
   s.on(SOCKET_EVENTS.SERVER.UPDATE_GAME_SNAPSHOT, (snap) => {
     snapshotListeners.forEach((fn) => fn(snap));
   });
+
   s.on(SOCKET_EVENTS.SERVER.ERROR, (data) => {
     console.warn("server error:", data?.message);
     if (data?.message) errorListeners.forEach((fn) => fn(data.message));
   });
-  // Auto-rejoin: after an unexpected drop, socket.io hands us a brand-new
-  // connection the backend doesn't know. Replay our saved identity so
-  // snapshots resume (same contract as the old frontend's reconnection).
-  s.on("reconnect" as never, () => {
+
+  s.on(SOCKET_EVENTS.SERVER.KICKED, () => {
+    clearSession();
+    kickedListeners.forEach((fn) => fn());
+  });
+
+  s.on(SOCKET_EVENTS.SERVER.HOST_TRANSFERRED, () => {
+    // snapshot will follow with the new hostId — nothing else to do
+  });
+
+  // ── Hardened reconnect logic (ported from old store/sockets.ts):
+  // after ANY successful reconnect, replay our saved identity so the backend
+  // knows this brand-new socket and snapshots resume.
+  s.on("connect", () => {
     const session = loadSession();
-    if (session && lastGameCode) {
-      console.log("auto-rejoining", session.gameCode);
+    if (session && inGame) {
+      console.log("socket connected → auto-rejoin", session.gameCode);
       s.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, session);
     }
   });
-  s.on("disconnect", () => snapshotListeners.forEach((fn) => fn(null as never)));
+
+  s.on("disconnect", (reason) => {
+    console.warn("socket disconnected:", reason);
+    snapshotListeners.forEach((fn) => fn(null as never));
+  });
+
   bound = true;
 }
 
-// set by store when a snapshot arrives; cleared on explicit leave
-export let lastGameCode: string | null = null;
-export function setLastGameCode(code: string | null): void {
-  lastGameCode = code;
+// tracks whether this tab is actively inside a game (set on snapshot, cleared on leave)
+let inGame = false;
+
+export function markInGame(v: boolean): void {
+  inGame = v;
 }
 
-// null snapshot means disconnected
 export function onSnapshot(fn: Listener): () => void {
   snapshotListeners.add(fn);
-  return () => snapshotListeners.delete(fn);
+  return () => {
+    snapshotListeners.delete(fn);
+  };
 }
 
 export function onError(fn: ErrListener): () => void {
   errorListeners.add(fn);
-  return () => errorListeners.delete(fn);
+  return () => {
+    errorListeners.delete(fn);
+  };
+}
+
+export function onKicked(fn: () => void): () => void {
+  kickedListeners.add(fn);
+  return () => {
+    kickedListeners.delete(fn);
+  };
 }
 
 export function connectAndJoin(data: JoinGameData | RejoinGameData): Promise<void> {
@@ -108,8 +130,15 @@ export function connectAndJoin(data: JoinGameData | RejoinGameData): Promise<voi
     s.once(SOCKET_EVENTS.SERVER.UPDATE_GAME_SNAPSHOT, onOk);
     s.once(SOCKET_EVENTS.SERVER.ERROR, onErr);
 
-    if (!s.connected) s.connect();
-    if (isRejoin) s.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, data);
-    else s.emit(SOCKET_EVENTS.CLIENT.JOIN_GAME, data);
+    const doJoin = () => {
+      if (isRejoin) s.emit(SOCKET_EVENTS.CLIENT.REJOIN_GAME, data);
+      else s.emit(SOCKET_EVENTS.CLIENT.JOIN_GAME, data);
+    };
+
+    if (s.connected) doJoin();
+    else {
+      s.once("connect", doJoin);
+      s.connect();
+    }
   });
 }

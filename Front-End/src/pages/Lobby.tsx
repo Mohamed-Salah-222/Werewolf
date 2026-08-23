@@ -1,5 +1,6 @@
 import { SOCKET_EVENTS, MIN_PLAYERS } from "@werewolf/shared";
 import type { PageProps } from "./types";
+import ShareButton from "./ShareButton";
 
 export default function Lobby({ snapshot, emit }: PageProps) {
   const isHost = snapshot.hostId === snapshot.yourPlayerId;
@@ -13,6 +14,7 @@ export default function Lobby({ snapshot, emit }: PageProps) {
         <h2>غرفة اللعب</h2>
         <p className="hint">شارك الكود مع أصحابك: <b className="code-big">{snapshot.code}</b></p>
         <p className="hint">{count} لاعب — يلزم {MIN_PLAYERS} على الأقل</p>
+        <ShareButton gameCode={snapshot.code} />
       </section>
 
       <ul className="player-list">
