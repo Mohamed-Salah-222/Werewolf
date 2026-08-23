@@ -44,20 +44,18 @@ export default function Lobby({ snapshot, emit }: PageProps) {
       </ul>
 
       <div className="row">
-        {!isHost && (
-          <button
-            className="btn primary"
-            onClick={() =>
-              emit(SOCKET_EVENTS.CLIENT.PLAYER_READY, {
-                gameCode: snapshot.code,
-                playerId: snapshot.yourPlayerId,
-                ready: !me?.isReady,
-              })
-            }
-          >
-            {me?.isReady ? "إلغاء الجاهزية" : "أنا جاهز"}
-          </button>
-        )}
+        <button
+          className={`btn ${me?.isReady ? "ghost" : "primary"}`}
+          onClick={() =>
+            emit(SOCKET_EVENTS.CLIENT.PLAYER_READY, {
+              gameCode: snapshot.code,
+              playerId: snapshot.yourPlayerId,
+              ready: !me?.isReady,
+            })
+          }
+        >
+          {me?.isReady ? "إلغاء الجاهزية" : "أنا جاهز"}
+        </button>
         {isHost && (
           <>
             <button
@@ -70,6 +68,9 @@ export default function Lobby({ snapshot, emit }: PageProps) {
               ابدأ اللعبة
             </button>
             {!allReady && <span className="hint">في انتظار جاهزية الجميع</span>}
+            {allReady && count < MIN_PLAYERS && (
+              <span className="hint">يلزم {MIN_PLAYERS} لاعبين على الأقل</span>
+            )}
           </>
         )}
       </div>
