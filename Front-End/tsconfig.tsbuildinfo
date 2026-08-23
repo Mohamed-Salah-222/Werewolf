@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/config.ts","./src/main.tsx","./src/socket.ts","./src/store.tsx","./src/vite-env.d.ts","./src/pages/Discussion.tsx","./src/pages/EndGame.tsx","./src/pages/Lobby.tsx","./src/pages/Night.tsx","./src/pages/RoleReveal.tsx","./src/pages/Vote.tsx","./src/pages/roleId.ts","./src/pages/types.ts"],"version":"5.9.3"}
