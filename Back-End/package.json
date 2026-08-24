@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon",
-    "build": "tsc",
+    "prebuild": "npm run build --prefix ../packages/shared",
+    "build": "cd ../packages/shared && npm run build && cd ../../Back-End && tsc",
     "start": "node dist/server.js",
     "test": "jest",
     "test:watch": "jest --watch",
